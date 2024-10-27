@@ -51,7 +51,41 @@ If you need to call your page size and request token values something different,
 ```csharp
 var queryResponse = await table.Gsi1.Query
     .Where("gsi1pk = :gsi1pk")
-    .WithValue(":gsi1pk", "Foo")
+    .WithValue(":gsi1pk", "foo")
     .Paginate(paginationRequest)
     .ExecuteAsync();
 ```
+
+## Stream Processing
+FluentDynamoDb can help handle processing DynamoDb Stream events in Amazon Lambda.
+
+```csharp
+foreach (var record in streamEvent.Records)
+{
+    await record.Process()
+        .OnPatternMatch("pk", new Regex(@"^[0-9a-zA-Z]*$"), "sk", new Regex(@"^foo"),
+            (processor) => processor
+                .OnInsert((r) => DoSomething(r))
+                .OnDelete((r) => DoSomething(r))
+        )
+        .OnPatternMatch("pk", new Regex(@"^[0-9a-zA-Z]*$"), "sk", new Regex(@"^bar"),
+            (processor) => processor
+                .OnInsert((r) => DoSomethingElse(r))
+                .OnDelete((r) => DoSomethingElse(r))
+        );
+}
+```
+
+There are various key matching methods available.
+
+- OnMatch
+- OnSortKeyMatch
+- OnPatternMatch
+- OnSortKeyPatternMatch
+
+The DynamoDbRecordEventProcessor instance passed to your lambda expression has event-type filters.
+- OnInsert
+- OnUpdate
+- OnDelete
+- OnNonTtlDelete
+- OnTtlDelete
