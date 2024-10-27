@@ -33,7 +33,7 @@ public class QueryRequestBuilder :
         return this;
     }
     
-    public QueryRequestBuilder UsingConsistantRead()
+    public QueryRequestBuilder UsingConsistentRead()
     {
         _req.ConsistentRead = true;
         return this;
