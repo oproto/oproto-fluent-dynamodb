@@ -32,7 +32,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
 - [ ] 3. Implement Scan operations with intentional friction
-- [ ] 3.1 Create ScanRequestBuilder class
+- [x] 3.1 Create ScanRequestBuilder class
   - Implement `ScanRequestBuilder` class with fluent interface
   - Add support for filter expressions and projection expressions
   - Add support for index scanning, pagination, and consistent read options
