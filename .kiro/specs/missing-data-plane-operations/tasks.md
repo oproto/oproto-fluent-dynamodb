@@ -91,7 +91,7 @@
   - Implement `ToWriteRequests()` method for internal use
   - _Requirements: 4.2, 4.3, 6.1, 6.4_
 
-- [ ] 5.2 Create BatchWriteItemRequestBuilder class
+- [x] 5.2 Create BatchWriteItemRequestBuilder class
   - Implement `BatchWriteItemRequestBuilder` class following `TransactWriteItemsRequestBuilder` pattern
   - Add `WriteToTable(string tableName, Action<BatchWriteItemBuilder> builderAction)` method
   - Add support for consumed capacity and item collection metrics options
