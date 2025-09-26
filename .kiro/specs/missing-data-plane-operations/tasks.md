@@ -74,7 +74,7 @@
   - Handle multiple tables and multiple keys per table
   - _Requirements: 3.1, 3.5, 3.6, 6.1, 6.3_
 
-- [ ] 4.3 Create unit tests for BatchGetItem operations
+- [x] 4.3 Create unit tests for BatchGetItem operations
   - Write comprehensive unit tests for `BatchGetItemBuilder` covering key specification and options
   - Write comprehensive unit tests for `BatchGetItemRequestBuilder` covering multi-table operations
   - Test projection expressions, consistent read, and consumed capacity options
