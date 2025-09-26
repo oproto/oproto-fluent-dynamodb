@@ -58,7 +58,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 5.5_
 
 - [ ] 4. Implement BatchGetItem operations
-- [ ] 4.1 Create BatchGetItemBuilder class
+- [x] 4.1 Create BatchGetItemBuilder class
   - Implement `BatchGetItemBuilder` class following transaction builder pattern
   - Add support for key specification using `IWithKey<BatchGetItemBuilder>` interface
   - Add support for projection expressions and consistent read options
