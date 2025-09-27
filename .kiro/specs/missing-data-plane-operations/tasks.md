@@ -131,10 +131,18 @@
   - Document performance implications and best practices
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 7.2 Create usage examples for each new operation
-  - Create example code demonstrating DeleteItem usage patterns
-  - Create example code demonstrating Scan usage with `AsScannable()` pattern
-  - Create example code demonstrating BatchGetItem usage for multiple tables
-  - Create example code demonstrating BatchWriteItem usage with mixed operations
-  - Include examples of parallel scan usage for large tables
+- [x] 7.2 Expand README.md with comprehensive usage examples
+  - Add DeleteItem usage examples to README.md showing key patterns and condition expressions
+  - Add Scan usage examples demonstrating the `AsScannable()` pattern and parallel scanning
+  - Add BatchGetItem usage examples for single and multiple table scenarios
+  - Add BatchWriteItem usage examples with mixed put/delete operations
+  - Update existing sections to be more comprehensive and include edge cases
   - _Requirements: 1.1, 2.1, 3.1, 4.1_
+
+- [ ] 7.3 Add XML documentation to existing public APIs
+  - Add comprehensive XML documentation to all existing request builders (GetItemRequestBuilder, QueryRequestBuilder, etc.)
+  - Add XML documentation to DynamoDbTableBase and DynamoDbIndex classes
+  - Add XML documentation to all existing interfaces and utility classes
+  - Include usage examples and parameter descriptions in XML comments
+  - Document performance implications and best practices where relevant
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
