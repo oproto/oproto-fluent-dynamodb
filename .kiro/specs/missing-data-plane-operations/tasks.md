@@ -99,7 +99,7 @@
   - Handle multiple tables with mixed put and delete operations
   - _Requirements: 4.1, 4.4, 4.5, 4.6, 6.1, 6.3_
 
-- [ ] 5.3 Create unit tests for BatchWriteItem operations
+- [x] 5.3 Create unit tests for BatchWriteItem operations
   - Write comprehensive unit tests for `BatchWriteItemBuilder` covering put and delete operations
   - Write comprehensive unit tests for `BatchWriteItemRequestBuilder` covering multi-table operations
   - Test model mapping functionality for put operations
@@ -109,7 +109,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
 - [ ] 6. Create integration tests and verify AOT compatibility
-- [ ] 6.1 Create integration tests for all new operations
+- [x] 6.1 Create integration tests for all new operations
   - Write integration tests using mock DynamoDB client for all new request builders
   - Test end-to-end flows for Delete, Scan, BatchGet, and BatchWrite operations
   - Test scannable table wrapper functionality in integration scenarios
