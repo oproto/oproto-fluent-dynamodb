@@ -3,10 +3,21 @@ using Amazon.Lambda.DynamoDBEvents;
 
 namespace Oproto.FluentDynamoDb.Streams;
 
+/// <summary>
+/// Processor for DynamoDB Stream records that provides pattern matching capabilities.
+/// Allows you to conditionally process stream records based on key values and patterns.
+/// </summary>
 public class DynamoDbStreamRecordProcessor
 {
+    /// <summary>
+    /// Gets the DynamoDB stream record being processed.
+    /// </summary>
     public DynamoDBEvent.DynamodbStreamRecord Record { get; private init; }
 
+    /// <summary>
+    /// Initializes a new instance of the DynamoDbStreamRecordProcessor.
+    /// </summary>
+    /// <param name="record">The DynamoDB stream record to process.</param>
     public DynamoDbStreamRecordProcessor(DynamoDBEvent.DynamodbStreamRecord record)
     {
         Record = record;
@@ -27,13 +38,23 @@ public static class DynamoDbStreamProcessorExtensions
     }
     
     /// <summary>
-    /// 
+    /// Conditionally processes the stream record if the primary key matches the specified value.
+    /// This is useful for filtering stream records to only process specific entities.
     /// </summary>
-    /// <param name="recordProcessor"></param>
-    /// <param name="pkName"></param>
-    /// <param name="pkValue"></param>
-    /// <param name="processFunc"></param>
-    /// <returns></returns>
+    /// <param name="recordProcessor">The record processor task.</param>
+    /// <param name="pkName">The name of the primary key attribute.</param>
+    /// <param name="pkValue">The expected value of the primary key.</param>
+    /// <param name="processFunc">The function to execute if the key matches.</param>
+    /// <returns>The record processor for further chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await record.Process()
+    ///     .OnMatch("pk", "USER#123", async processor => 
+    ///     {
+    ///         await processor.OnInsert(async r => Console.WriteLine("User 123 created"));
+    ///     });
+    /// </code>
+    /// </example>
     public static async Task<DynamoDbStreamRecordProcessor> OnMatch(
         this Task<DynamoDbStreamRecordProcessor> recordProcessor, string pkName, string pkValue, Func<Task<DynamoDbStreamRecordEventProcessor>,Task> processFunc)
     {

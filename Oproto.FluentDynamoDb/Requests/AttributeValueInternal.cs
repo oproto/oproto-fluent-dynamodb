@@ -2,6 +2,11 @@ using Amazon.DynamoDBv2.Model;
 
 namespace Oproto.FluentDynamoDb.Requests;
 
+/// <summary>
+/// Internal class for managing attribute value mappings in DynamoDB expressions.
+/// This class handles the collection and type conversion of expression attribute values
+/// that are used to parameterize DynamoDB expressions safely.
+/// </summary>
 internal class AttributeValueInternal()
 {
     public Dictionary<string, AttributeValue> AttributeValues { get; init; } = new Dictionary<string, AttributeValue>();

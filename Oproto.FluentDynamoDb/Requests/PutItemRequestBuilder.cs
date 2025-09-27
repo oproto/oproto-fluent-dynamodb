@@ -4,6 +4,30 @@ using Oproto.FluentDynamoDb.Requests.Interfaces;
 
 namespace Oproto.FluentDynamoDb.Requests;
 
+/// <summary>
+/// Fluent builder for DynamoDB PutItem operations.
+/// PutItem creates a new item or completely replaces an existing item with the same primary key.
+/// Use conditional expressions to prevent overwriting existing items when needed.
+/// </summary>
+/// <example>
+/// <code>
+/// // Put a new item
+/// var response = await table.Put
+///     .WithItem(new Dictionary&lt;string, AttributeValue&gt;
+///     {
+///         ["id"] = new AttributeValue { S = "123" },
+///         ["name"] = new AttributeValue { S = "John Doe" },
+///         ["email"] = new AttributeValue { S = "john@example.com" }
+///     })
+///     .ExecuteAsync();
+/// 
+/// // Conditional put (only if item doesn't exist)
+/// var response = await table.Put
+///     .WithItem(item)
+///     .Where("attribute_not_exists(id)")
+///     .ExecuteAsync();
+/// </code>
+/// </example>
 public class PutItemRequestBuilder : IWithAttributeNames<PutItemRequestBuilder>, IWithAttributeValues<PutItemRequestBuilder>,
     IWithConditionExpression<PutItemRequestBuilder>
 {

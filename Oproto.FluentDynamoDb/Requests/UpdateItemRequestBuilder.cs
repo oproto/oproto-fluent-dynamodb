@@ -4,6 +4,33 @@ using Oproto.FluentDynamoDb.Requests.Interfaces;
 
 namespace Oproto.FluentDynamoDb.Requests;
 
+/// <summary>
+/// Fluent builder for DynamoDB UpdateItem operations.
+/// UpdateItem modifies existing items or creates them if they don't exist (upsert behavior).
+/// Use update expressions to specify which attributes to modify and how to modify them.
+/// </summary>
+/// <example>
+/// <code>
+/// // Update specific attributes
+/// var response = await table.Update
+///     .WithKey("id", "123")
+///     .Set("SET #name = :name, #status = :status")
+///     .WithAttribute("#name", "name")
+///     .WithAttribute("#status", "status")
+///     .WithValue(":name", "John Doe")
+///     .WithValue(":status", "ACTIVE")
+///     .ExecuteAsync();
+/// 
+/// // Conditional update
+/// var response = await table.Update
+///     .WithKey("id", "123")
+///     .Set("SET #count = #count + :inc")
+///     .Where("attribute_exists(id)")
+///     .WithAttribute("#count", "count")
+///     .WithValue(":inc", 1)
+///     .ExecuteAsync();
+/// </code>
+/// </example>
 public class UpdateItemRequestBuilder : 
     IWithKey<UpdateItemRequestBuilder>, IWithConditionExpression<UpdateItemRequestBuilder>, IWithAttributeNames<UpdateItemRequestBuilder>, IWithAttributeValues<UpdateItemRequestBuilder>
 {
@@ -54,6 +81,28 @@ public class UpdateItemRequestBuilder :
         return this;
     }
     
+    /// <summary>
+    /// Specifies the update expression that defines how to modify the item.
+    /// Update expressions support SET, ADD, REMOVE, and DELETE actions.
+    /// Use attribute name parameters (e.g., "#name") and value parameters (e.g., ":value") in expressions.
+    /// </summary>
+    /// <param name="updateExpression">The update expression defining the modifications.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// // SET: Update or create attributes
+    /// .Set("SET #name = :name, #status = :status")
+    /// 
+    /// // ADD: Increment numbers or add to sets
+    /// .Set("ADD #count :inc, #tags :newTags")
+    /// 
+    /// // REMOVE: Delete attributes
+    /// .Set("REMOVE #oldField, #tempData")
+    /// 
+    /// // Combined operations
+    /// .Set("SET #name = :name ADD #count :inc REMOVE #oldField")
+    /// </code>
+    /// </example>
     public UpdateItemRequestBuilder Set(string updateExpression)
     {
         _req.UpdateExpression = updateExpression;
