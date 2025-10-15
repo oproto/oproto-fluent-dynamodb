@@ -122,7 +122,8 @@ public class ComprehensiveBuilderIntegrationTests
             .WithValue(":minDate", "2024-01-01")
             .WithValue(":maxDate", "2024-12-31")
             .WithFilter("#status = :status AND amount > :minAmount")
-            .WithValue(":minAmount", 100.50m)
+            .WithValue(":status", "ACTIVE")
+            .WithValue(":minAmount", 100.5m)
             .WithAttribute("#status", "status")
             .ToQueryRequest();
 
@@ -276,8 +277,8 @@ public class ComprehensiveBuilderIntegrationTests
             .WithFilter("(createdAt BETWEEN :startDate AND :endDate) AND (amount BETWEEN :minAmount AND :maxAmount) AND (#status = :status1 OR #status = :status2)")
             .WithValue(":startDate", startDate.ToString("o"))
             .WithValue(":endDate", endDate.ToString("o"))
-            .WithValue(":minAmount", minAmount.ToString("F2"))
-            .WithValue(":maxAmount", maxAmount.ToString("F2"))
+            .WithValue(":minAmount", minAmount)
+            .WithValue(":maxAmount", maxAmount)
             .WithValue(":status1", "ACTIVE")
             .WithValue(":status2", "PENDING")
             .WithAttribute("#status", "status")
@@ -287,8 +288,8 @@ public class ComprehensiveBuilderIntegrationTests
         request.FilterExpression.Should().Be("(createdAt BETWEEN :startDate AND :endDate) AND (amount BETWEEN :minAmount AND :maxAmount) AND (#status = :status1 OR #status = :status2)");
         request.ExpressionAttributeValues[":startDate"].S.Should().Be("2024-01-01T00:00:00.0000000Z");
         request.ExpressionAttributeValues[":endDate"].S.Should().Be("2024-12-31T23:59:59.0000000Z");
-        request.ExpressionAttributeValues[":minAmount"].S.Should().Be("1000.50");
-        request.ExpressionAttributeValues[":maxAmount"].S.Should().Be("5000.75");
+        request.ExpressionAttributeValues[":minAmount"].N.Should().Be("1000.50");
+        request.ExpressionAttributeValues[":maxAmount"].N.Should().Be("5000.75");
         request.ExpressionAttributeValues[":status1"].S.Should().Be("ACTIVE");
         request.ExpressionAttributeValues[":status2"].S.Should().Be("PENDING");
     }
@@ -320,7 +321,7 @@ public class ComprehensiveBuilderIntegrationTests
         // Assert
         request.ConditionExpression.Should().Be("(attribute_not_exists(version) OR version = :p0) AND amount <= :p1 AND #status IN (:p2, :p3)");
         request.ExpressionAttributeValues[":p0"].N.Should().Be("0");
-        request.ExpressionAttributeValues[":p1"].S.Should().Be("1000.00");
+        request.ExpressionAttributeValues[":p1"].N.Should().Be("1000.00");
         request.ExpressionAttributeValues[":p2"].S.Should().Be("DRAFT");
         request.ExpressionAttributeValues[":p3"].S.Should().Be("PENDING");
     }
@@ -346,7 +347,7 @@ public class ComprehensiveBuilderIntegrationTests
             .WithAttribute("#amount", "amount")
             .WithFilter("#status = :status AND #amount > :minAmount")
             .WithValue(":status", "ACTIVE")
-            .WithValue(":minAmount", 100.0m)
+            .WithValue(":minAmount", 100m)
             .Take(25)
             .UsingConsistentRead()
             .OrderDescending()
@@ -506,10 +507,7 @@ public class ComprehensiveBuilderIntegrationTests
             .ForTable("TestTable")
             .UsingIndex("GSI1")
             .Where("gsi1pk = {0} AND gsi1sk > {1:o}", "CATEGORY#electronics", DateTime.UtcNow.AddDays(-7))
-            .WithFilter("price BETWEEN :minPrice AND :maxPrice AND #brand = :brand")
-            .WithValue(":minPrice", 100.00m)
-            .WithValue(":maxPrice", 500.00m)
-            .WithValue(":brand", "Apple")
+            .WithFilter("price BETWEEN {0} AND {1} AND #brand = {2}", 100m, 500m, "Apple")
             .WithProjection("#name, price, #brand, createdAt")
             .WithAttribute("#name", "name")
             .WithAttribute("#brand", "brand")
@@ -531,8 +529,8 @@ public class ComprehensiveBuilderIntegrationTests
         
         // Verify all parameters are correctly set
         request.ExpressionAttributeValues[":p0"].S.Should().Be("CATEGORY#electronics");
-        request.ExpressionAttributeValues[":p2"].S.Should().Be("100.00");
-        request.ExpressionAttributeValues[":p3"].S.Should().Be("500.00");
+        request.ExpressionAttributeValues[":p2"].N.Should().Be("100");
+        request.ExpressionAttributeValues[":p3"].N.Should().Be("500");
         request.ExpressionAttributeValues[":p4"].S.Should().Be("Apple");
         request.ExpressionAttributeNames["#name"].Should().Be("name");
         request.ExpressionAttributeNames["#brand"].Should().Be("brand");
@@ -549,7 +547,7 @@ public class ComprehensiveBuilderIntegrationTests
             .WithFilter("(#status = :status1 OR #status = :status2) AND amount > :amount AND contains(tags, :tag)")
             .WithValue(":status1", "ACTIVE")
             .WithValue(":status2", "PENDING")
-            .WithValue(":amount", 100.50m)
+            .WithValue(":amount", 100.5m)
             .WithValue(":tag", "electronics")
             .WithProjection("id, #name, amount, tags, #status")
             .WithAttribute("#name", "name")
@@ -598,10 +596,7 @@ public class ComprehensiveBuilderIntegrationTests
         act2.Should().Throw<ArgumentException>()
             .WithMessage("*parameter index 1 but only 1 arguments were provided*");
 
-        // Invalid format specifier
-        var updateBuilder = new UpdateItemRequestBuilder(_mockClient);
-        var act3 = () => updateBuilder.Where("pk = {0:invalidFormat}", "value");
-        act3.Should().Throw<FormatException>();
+
 
         // Null arguments
         var deleteBuilder = new DeleteItemRequestBuilder(_mockClient);

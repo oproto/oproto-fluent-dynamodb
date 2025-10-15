@@ -551,10 +551,10 @@ public class AttributeValueInternalTests
     [Fact]
     public void AddFormattedValue_InvalidFormatSpecifier_ShouldThrowFormatException()
     {
-        // Act & Assert
-        var action = () => _helper.AddFormattedValue(123, "INVALID");
+        // Act & Assert - Use "Z" format which is invalid for integers
+        var action = () => _helper.AddFormattedValue(123, "Z");
         action.Should().Throw<FormatException>()
-            .WithMessage("*INVALID*");
+            .WithMessage("*Format specifier was invalid*");
     }
 
     [Fact]

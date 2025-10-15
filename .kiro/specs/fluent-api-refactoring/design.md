@@ -113,6 +113,16 @@ public interface IWithUpdateExpression<out TBuilder>
 }
 ```
 
+#### IWithFilterExpression<T> (New)
+```csharp
+public interface IWithFilterExpression<out TBuilder>
+{
+    AttributeValueInternal GetAttributeValueHelper(); // For parameter generation
+    TBuilder SetFilterExpression(string expression); // For setting the processed expression
+    TBuilder Self { get; }
+}
+```
+
 ### Extension Method Classes
 
 #### WithAttributeValuesExtensions
@@ -190,6 +200,23 @@ public static class WithUpdateExpressionExtensions
 }
 ```
 
+#### WithFilterExpressionExtensions (New)
+```csharp
+public static class WithFilterExpressionExtensions 
+{
+    // Existing API (moved from builders)
+    public static T WithFilter<T>(this IWithFilterExpression<T> builder, string filterExpression)
+    
+    // NEW: Format string support for filter expressions
+    public static T WithFilter<T>(this IWithFilterExpression<T> builder, string format, params object[] args)
+    
+    // FUTURE: Convenience methods (not in initial implementation)
+    // public static T FilterEquals<T>(this IWithFilterExpression<T> builder, string attributeName, object value)
+    // public static T FilterExists<T>(this IWithFilterExpression<T> builder, string attributeName)
+    // public static T FilterBetween<T>(this IWithFilterExpression<T> builder, string attributeName, object low, object high)
+}
+```
+
 ### Enhanced Parameter Handling
 
 #### New Where Method Overload
@@ -251,6 +278,17 @@ public interface IWithConditionExpression<out TBuilder>
 // Step 4: Replace placeholders: "SET #name = :p0, updated_time = :p1"
 // Step 5: Add parameters to builder's AttributeValueInternal
 // Result: Expression set to "SET #name = :p0, updated_time = :p1", parameters added automatically
+```
+
+#### Filter Expression Format String Processing
+```csharp
+// Input:  .WithFilter("#status = {0} AND #amount > {1:F2}", "ACTIVE", 99.999m)
+// Step 1: Parse format string, find {0} and {1:F2}
+// Step 2: Generate parameter names :p0, :p1 using builder's parameter generator
+// Step 3: Convert values: "ACTIVE" -> AttributeValue{S="ACTIVE"}, 99.999m -> AttributeValue{N="100.00"}
+// Step 4: Replace placeholders: "#status = :p0 AND #amount > :p1"
+// Step 5: Add parameters to builder's AttributeValueInternal
+// Result: Filter expression set to "#status = :p0 AND #amount > :p1", parameters added automatically
 ```
 
 #### Type Conversion and Formatting

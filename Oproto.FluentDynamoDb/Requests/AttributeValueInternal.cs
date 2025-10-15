@@ -129,18 +129,18 @@ public class AttributeValueInternal()
                 bool b when string.IsNullOrEmpty(format) => new AttributeValue { BOOL = b, IsBOOLSet = true },
                 bool b when !string.IsNullOrEmpty(format) => throw new FormatException($"Boolean values do not support format strings. Format '{format}' is not valid for boolean type."),
                 
-                // Numeric types
-                byte b => new AttributeValue { N = string.IsNullOrEmpty(format) ? b.ToString(CultureInfo.InvariantCulture) : b.ToString(format, CultureInfo.InvariantCulture) },
-                sbyte sb => new AttributeValue { N = string.IsNullOrEmpty(format) ? sb.ToString(CultureInfo.InvariantCulture) : sb.ToString(format, CultureInfo.InvariantCulture) },
-                short s => new AttributeValue { N = string.IsNullOrEmpty(format) ? s.ToString(CultureInfo.InvariantCulture) : s.ToString(format, CultureInfo.InvariantCulture) },
-                ushort us => new AttributeValue { N = string.IsNullOrEmpty(format) ? us.ToString(CultureInfo.InvariantCulture) : us.ToString(format, CultureInfo.InvariantCulture) },
-                int i => new AttributeValue { N = string.IsNullOrEmpty(format) ? i.ToString(CultureInfo.InvariantCulture) : i.ToString(format, CultureInfo.InvariantCulture) },
-                uint ui => new AttributeValue { N = string.IsNullOrEmpty(format) ? ui.ToString(CultureInfo.InvariantCulture) : ui.ToString(format, CultureInfo.InvariantCulture) },
-                long l => new AttributeValue { N = string.IsNullOrEmpty(format) ? l.ToString(CultureInfo.InvariantCulture) : l.ToString(format, CultureInfo.InvariantCulture) },
-                ulong ul => new AttributeValue { N = string.IsNullOrEmpty(format) ? ul.ToString(CultureInfo.InvariantCulture) : ul.ToString(format, CultureInfo.InvariantCulture) },
-                float f => new AttributeValue { N = string.IsNullOrEmpty(format) ? f.ToString(CultureInfo.InvariantCulture) : f.ToString(format, CultureInfo.InvariantCulture) },
-                double d => new AttributeValue { N = string.IsNullOrEmpty(format) ? d.ToString(CultureInfo.InvariantCulture) : d.ToString(format, CultureInfo.InvariantCulture) },
-                decimal dec => new AttributeValue { N = string.IsNullOrEmpty(format) ? dec.ToString(CultureInfo.InvariantCulture) : dec.ToString(format, CultureInfo.InvariantCulture) },
+                // Numeric types - validate format strings to ensure proper error handling
+                byte b => new AttributeValue { N = string.IsNullOrEmpty(format) ? b.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(b, format) },
+                sbyte sb => new AttributeValue { N = string.IsNullOrEmpty(format) ? sb.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(sb, format) },
+                short s => new AttributeValue { N = string.IsNullOrEmpty(format) ? s.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(s, format) },
+                ushort us => new AttributeValue { N = string.IsNullOrEmpty(format) ? us.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(us, format) },
+                int i => new AttributeValue { N = string.IsNullOrEmpty(format) ? i.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(i, format) },
+                uint ui => new AttributeValue { N = string.IsNullOrEmpty(format) ? ui.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(ui, format) },
+                long l => new AttributeValue { N = string.IsNullOrEmpty(format) ? l.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(l, format) },
+                ulong ul => new AttributeValue { N = string.IsNullOrEmpty(format) ? ul.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(ul, format) },
+                float f => new AttributeValue { N = string.IsNullOrEmpty(format) ? f.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(f, format) },
+                double d => new AttributeValue { N = string.IsNullOrEmpty(format) ? d.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(d, format) },
+                decimal dec => new AttributeValue { N = string.IsNullOrEmpty(format) ? dec.ToString(CultureInfo.InvariantCulture) : FormatNumericValue(dec, format) },
                 
                 // Enum handling - convert to string (format strings not supported for enums)
                 Enum e when string.IsNullOrEmpty(format) => new AttributeValue { S = e.ToString() },
@@ -172,6 +172,31 @@ public class AttributeValueInternal()
         }
     }
     
+    /// <summary>
+    /// Formats a numeric value with the specified format string, ensuring proper error handling for invalid formats.
+    /// </summary>
+    /// <param name="value">The numeric value to format.</param>
+    /// <param name="format">The format string to apply.</param>
+    /// <returns>The formatted string representation of the value.</returns>
+    /// <exception cref="FormatException">Thrown when the format string is invalid for the numeric type.</exception>
+    private static string FormatNumericValue(IFormattable value, string format)
+    {
+        try
+        {
+            return value.ToString(format, CultureInfo.InvariantCulture);
+        }
+        catch (FormatException)
+        {
+            // Re-throw FormatExceptions as-is
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Convert other exceptions to FormatException for consistency
+            throw new FormatException($"Invalid format specifier '{format}' for parameter of type {value.GetType().Name}.", ex);
+        }
+    }
+
     /// <summary>
     /// Gets the parameter generator instance for this AttributeValueInternal.
     /// Used by extension methods to generate consistent parameter names.

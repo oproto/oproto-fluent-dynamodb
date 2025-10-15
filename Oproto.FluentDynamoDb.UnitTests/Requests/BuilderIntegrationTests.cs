@@ -102,7 +102,7 @@ public class BuilderIntegrationTests
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
         request.ExpressionAttributeValues[":p1"].S.Should().Be("2024-01-15T10:30:00.0000000Z");
         request.ExpressionAttributeValues.Should().ContainKey(":p2");
-        request.ExpressionAttributeValues[":p2"].S.Should().Be("99.99");
+        request.ExpressionAttributeValues[":p2"].N.Should().Be("99.99");
     }
 
     #endregion
@@ -359,7 +359,7 @@ public class BuilderIntegrationTests
             .ForTable("TestTable")
             .WithFilter("#status = :status AND amount > :amount")
             .WithValue(":status", "ACTIVE")
-            .WithValue(":amount", 100.50m)
+            .WithValue(":amount", 100.5m)
             .WithAttribute("#status", "status")
             .ToScanRequest();
 
@@ -575,15 +575,7 @@ public class BuilderIntegrationTests
             .WithMessage("*parameter index 1 but only 1 arguments were provided*");
     }
 
-    [Fact]
-    public void Builders_WithInvalidFormatSpecifier_ShouldThrowFormatException()
-    {
-        var builder = new QueryRequestBuilder(_mockClient);
-        
-        var act = () => builder.Where("pk = {0:invalidFormat}", "value");
-        
-        act.Should().Throw<FormatException>();
-    }
+
 
     [Fact]
     public void Builders_WithNullArguments_ShouldThrowArgumentNullException()

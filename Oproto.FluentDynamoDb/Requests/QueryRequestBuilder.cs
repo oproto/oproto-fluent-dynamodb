@@ -31,7 +31,7 @@ namespace Oproto.FluentDynamoDb.Requests;
 /// </code>
 /// </example>
 public class QueryRequestBuilder :
-    IWithAttributeNames<QueryRequestBuilder>, IWithConditionExpression<QueryRequestBuilder>, IWithAttributeValues<QueryRequestBuilder>
+    IWithAttributeNames<QueryRequestBuilder>, IWithConditionExpression<QueryRequestBuilder>, IWithAttributeValues<QueryRequestBuilder>, IWithFilterExpression<QueryRequestBuilder>
 {
     /// <summary>
     /// Initializes a new instance of the QueryRequestBuilder.
@@ -67,6 +67,17 @@ public class QueryRequestBuilder :
     public QueryRequestBuilder SetConditionExpression(string expression)
     {
         _req.KeyConditionExpression = expression;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the filter expression on the builder.
+    /// </summary>
+    /// <param name="expression">The processed filter expression to set.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public QueryRequestBuilder SetFilterExpression(string expression)
+    {
+        _req.FilterExpression = expression;
         return this;
     }
 
@@ -125,27 +136,7 @@ public class QueryRequestBuilder :
         return this;
     }
     
-    /// <summary>
-    /// Adds a filter expression to further refine the query results after the key condition is applied.
-    /// Filter expressions are applied after items are retrieved based on the key condition,
-    /// so they don't reduce consumed read capacity but can reduce the amount of data transferred.
-    /// </summary>
-    /// <param name="filterExpression">A condition expression that filters the query results.</param>
-    /// <returns>The builder instance for method chaining.</returns>
-    /// <example>
-    /// <code>
-    /// .WithFilter("#status = :status AND #amount > :minAmount")
-    /// .WithAttribute("#status", "status")
-    /// .WithAttribute("#amount", "amount")
-    /// .WithValue(":status", "ACTIVE")
-    /// .WithValue(":minAmount", 100)
-    /// </code>
-    /// </example>
-    public QueryRequestBuilder WithFilter(string filterExpression)
-    {
-        _req.FilterExpression = filterExpression;
-        return this;
-    }
+
     
     /// <summary>
     /// Specifies a Global Secondary Index (GSI) or Local Secondary Index (LSI) to query.

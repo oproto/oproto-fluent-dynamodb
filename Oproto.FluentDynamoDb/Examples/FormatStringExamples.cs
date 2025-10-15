@@ -5,8 +5,9 @@ using Oproto.FluentDynamoDb.Storage;
 namespace Oproto.FluentDynamoDb.Examples;
 
 /// <summary>
-/// Examples demonstrating the new format string functionality in condition expressions.
-/// Format strings are supported in Where() methods for Query, Update, Delete, and Put operations.
+/// Examples demonstrating the new format string functionality in condition and filter expressions.
+/// Format strings are supported in Where() methods for Query, Update, Delete, and Put operations,
+/// and in WithFilter() methods for Query and Scan operations.
 /// </summary>
 public class FormatStringExamples
 {
@@ -118,6 +119,109 @@ public class FormatStringExamples
                    userId, recentDate)
             .WithValue(":startSk", "ORDER#2024-01")
             .WithValue(":endSk", "ORDER#2024-12")
+            .ExecuteAsync();
+    }
+
+    /// <summary>
+    /// Filter expression format string examples.
+    /// Filter expressions are applied after items are retrieved, reducing data transfer but not consumed capacity.
+    /// </summary>
+    public async Task FilterExpressionFormatStringExamples()
+    {
+        var userId = "USER#123";
+        var status = OrderStatus.Processing;
+        var minAmount = 50.0m;
+        var maxAmount = 500.0m;
+        var createdAfter = DateTime.UtcNow.AddDays(-30);
+        var tag = "important";
+
+        // Basic filter with format strings
+        var result1 = await _table.Query
+            .Where("pk = {0}", userId)
+            .WithFilter("#status = {0} AND #amount > {1:F2}", status, minAmount)
+            .WithAttribute("#status", "status")
+            .WithAttribute("#amount", "amount")
+            .ExecuteAsync();
+
+        // Complex filter with multiple conditions and types
+        var result2 = await _table.Query
+            .Where("pk = {0}", userId)
+            .WithFilter("#status = {0} AND #amount BETWEEN {1:F2} AND {2:F2} AND #created > {3:o}", 
+                       status, minAmount, maxAmount, createdAfter)
+            .WithAttribute("#status", "status")
+            .WithAttribute("#amount", "amount")
+            .WithAttribute("#created", "created_date")
+            .ExecuteAsync();
+
+        // Filter with DynamoDB functions
+        var result3 = await _table.Query
+            .Where("pk = {0}", userId)
+            .WithFilter("contains(#tags, {0}) AND size(#items) > {1} AND attribute_exists(#optional)", 
+                       tag, 5)
+            .WithAttribute("#tags", "tags")
+            .WithAttribute("#items", "items")
+            .WithAttribute("#optional", "optional_field")
+            .ExecuteAsync();
+
+        // Filter with IN operator
+        var result4 = await _table.Query
+            .Where("pk = {0}", userId)
+            .WithFilter("#status IN ({0}, {1}, {2})", 
+                       OrderStatus.Processing, OrderStatus.Completed, OrderStatus.Pending)
+            .WithAttribute("#status", "status")
+            .ExecuteAsync();
+
+        // Mixed filter styles - format strings with traditional parameters
+        var result5 = await _table.Query
+            .Where("pk = {0}", userId)
+            .WithFilter("#status = {0} AND #customField = :customValue", status)
+            .WithAttribute("#status", "status")
+            .WithAttribute("#customField", "custom_field")
+            .WithValue(":customValue", "custom data")
+            .ExecuteAsync();
+    }
+
+    /// <summary>
+    /// Scan operations with filter expressions (use sparingly - scans are expensive).
+    /// Note: Requires casting to DynamoDbTableBase to access AsScannable() method.
+    /// </summary>
+    public async Task ScanWithFilterExpressionExamples()
+    {
+        // Cast to DynamoDbTableBase to access AsScannable method
+        if (_table is not DynamoDbTableBase tableBase)
+            throw new InvalidOperationException("Table must inherit from DynamoDbTableBase to access scan operations");
+
+        var status = OrderStatus.Processing;
+        var minAmount = 100.0m;
+        var createdAfter = DateTime.UtcNow.AddDays(-7);
+
+        // Basic scan with filter
+        var result1 = await tableBase.AsScannable().Scan
+            .WithFilter("#status = {0} AND #amount > {1:F2}", status, minAmount)
+            .WithAttribute("#status", "status")
+            .WithAttribute("#amount", "amount")
+            .Take(100)  // Limit items examined
+            .ExecuteAsync();
+
+        // Complex scan filter with multiple conditions
+        var result2 = await tableBase.AsScannable().Scan
+            .WithFilter("(#status = {0} OR #status = {1}) AND #created > {2:o} AND attribute_exists(#tags)", 
+                       OrderStatus.Processing, OrderStatus.Completed, createdAfter)
+            .WithAttribute("#status", "status")
+            .WithAttribute("#created", "created_date")
+            .WithAttribute("#tags", "tags")
+            .Take(50)
+            .ExecuteAsync();
+
+        // Scan with projection and filter
+        var result3 = await tableBase.AsScannable().Scan
+            .WithProjection("#id, #name, #status, #amount")
+            .WithFilter("#status = {0} AND #amount BETWEEN {1:F2} AND {2:F2}", 
+                       status, 50.0m, 1000.0m)
+            .WithAttribute("#id", "id")
+            .WithAttribute("#name", "name")
+            .WithAttribute("#status", "status")
+            .WithAttribute("#amount", "amount")
             .ExecuteAsync();
     }
 

@@ -153,12 +153,21 @@ var result = await table.Query
 
 ## What Operations Support Format Strings
 
-Format string support is available in **condition expressions only** - specifically the `Where()` method:
+Format string support is available in **condition expressions and filter expressions** - specifically the `Where()` and `WithFilter()` methods:
 
 ### Query Operations
 ```csharp
+// Key condition expression (Where)
 var result = await table.Query
     .Where("pk = {0} AND begins_with(sk, {1})", "USER#123", "ORDER#")
+    .ExecuteAsync();
+
+// Filter expression (WithFilter) - applied after key condition
+var result = await table.Query
+    .Where("pk = {0}", "USER#123")
+    .WithFilter("#status = {0} AND #amount > {1:F2}", "ACTIVE", 100.50m)
+    .WithAttribute("#status", "status")
+    .WithAttribute("#amount", "amount")
     .ExecuteAsync();
 ```
 
@@ -187,6 +196,83 @@ await table.Put
     .WithKey("pk", "USER#123", "sk", "ORDER#456")
     .Where("attribute_not_exists(pk) OR version < {0}", maxVersion)
     .ExecuteAsync();
+```
+
+## Filter Expression Format Strings
+
+Filter expressions are applied after items are retrieved based on key conditions, reducing data transfer but not consumed capacity. The new `WithFilter(string format, params object[] args)` overload provides the same format string benefits as condition expressions.
+
+### Basic Filter Usage
+
+```csharp
+// New format string approach for filters
+var result = await table.Query
+    .Where("pk = {0}", "USER#123")
+    .WithFilter("#status = {0} AND #amount > {1}", "ACTIVE", 100)
+    .WithAttribute("#status", "status")
+    .WithAttribute("#amount", "amount")
+    .ExecuteAsync();
+
+// Equivalent to the old approach:
+// .WithFilter("#status = :p0 AND #amount > :p1")
+// .WithValue(":p0", "ACTIVE")
+// .WithValue(":p1", 100)
+```
+
+### Filter with DateTime and Numeric Formatting
+
+```csharp
+var createdAfter = DateTime.Now.AddDays(-30);
+var minAmount = 99.999m;
+var maxAmount = 1000.5m;
+
+var result = await table.Query
+    .Where("pk = {0}", "USER#123")
+    .WithFilter("#created > {0:o} AND #amount BETWEEN {1:F2} AND {2:F2}", 
+                createdAfter, minAmount, maxAmount)
+    .WithAttribute("#created", "createdDate")
+    .WithAttribute("#amount", "amount")
+    .ExecuteAsync();
+```
+
+### Complex Filter Conditions
+
+```csharp
+// Multiple conditions with various functions
+var result = await table.Query
+    .Where("pk = {0}", "USER#123")
+    .WithFilter("(#status = {0} OR #status = {1}) AND contains(#tags, {2}) AND size(#items) > {3}", 
+                "ACTIVE", "PENDING", "important", 5)
+    .WithAttribute("#status", "status")
+    .WithAttribute("#tags", "tags")
+    .WithAttribute("#items", "items")
+    .ExecuteAsync();
+```
+
+### Scan Operations with Filters
+
+```csharp
+// Scan with filter expressions (use sparingly - scans are expensive)
+var result = await table.AsScannable().Scan
+    .WithFilter("#status = {0} AND #created > {1:o} AND #amount BETWEEN {2:F2} AND {3:F2}", 
+                "ACTIVE", DateTime.Now.AddDays(-7), 50.0m, 500.0m)
+    .WithAttribute("#status", "status")
+    .WithAttribute("#created", "createdDate")
+    .WithAttribute("#amount", "amount")
+    .Take(100)
+    .ExecuteAsync();
+```
+
+### Filter vs Condition Expression
+
+**Key Condition Expression (`Where`)**: Applied during the query to determine which items to retrieve. More efficient.
+```csharp
+.Where("pk = {0} AND begins_with(sk, {1})", "USER#123", "ORDER#")  // Efficient - uses index
+```
+
+**Filter Expression (`WithFilter`)**: Applied after items are retrieved. Reduces data transfer but not consumed capacity.
+```csharp
+.WithFilter("#status = {0} AND #amount > {1}", "ACTIVE", 100)  // Applied after retrieval
 ```
 
 ## Mixed Usage Patterns
@@ -248,11 +334,15 @@ catch (FormatException ex)
 
 ## Best Practices
 
-1. **Use format strings for condition expressions** - They're more concise and less error-prone than manual parameter naming
-2. **Continue using traditional parameters for other expressions** - Set expressions, key specifications, etc. still use the traditional approach
-3. **Leverage format specifiers** - Use `:o` for DateTime, `:F2` for decimals, etc.
-4. **Handle reserved words** - Continue using `WithAttribute()` for DynamoDB reserved words like "status", "name", "type"
-5. **Mix approaches when needed** - Combine format strings with manual parameters for complex scenarios
+1. **Use format strings for condition and filter expressions** - They're more concise and less error-prone than manual parameter naming
+2. **Understand the difference between Where and WithFilter**:
+   - `Where()`: Key condition expressions - efficient, uses indexes, reduces consumed capacity
+   - `WithFilter()`: Filter expressions - applied after retrieval, reduces data transfer only
+3. **Continue using traditional parameters for other expressions** - Set expressions, key specifications, etc. still use the traditional approach
+4. **Leverage format specifiers** - Use `:o` for DateTime, `:F2` for decimals, etc.
+5. **Handle reserved words** - Continue using `WithAttribute()` for DynamoDB reserved words like "status", "name", "type"
+6. **Use filters judiciously** - Filter expressions don't reduce consumed read capacity, only data transfer
+7. **Mix approaches when needed** - Combine format strings with manual parameters for complex scenarios
 
 ## Architecture Benefits
 
@@ -266,9 +356,9 @@ The refactoring provides these improvements:
 
 ## Conclusion
 
-The enhanced fluent API maintains full backward compatibility while providing significant improvements in developer experience for condition expressions. The format string support eliminates much of the ceremony around parameter handling while maintaining type safety and AOT compatibility.
+The enhanced fluent API maintains full backward compatibility while providing significant improvements in developer experience for condition and filter expressions. The format string support eliminates much of the ceremony around parameter handling while maintaining type safety and AOT compatibility.
 
 Choose the approach that best fits your scenario:
-- Use format strings for condition expressions (`Where()` methods)
+- Use format strings for condition expressions (`Where()` methods) and filter expressions (`WithFilter()` methods)
 - Use the traditional approach for other expressions and when you need fine-grained control
 - Mix both approaches when transitioning existing code or handling complex scenarios

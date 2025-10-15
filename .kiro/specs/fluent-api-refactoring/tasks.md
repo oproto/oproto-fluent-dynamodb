@@ -168,3 +168,40 @@
     - Update usage examples to show Set method format string usage
     - Document the enhanced update expression capabilities
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
+
+- [x] 11. Add filter expression format string support
+  - [x] 11.1 Create IWithFilterExpression interface
+    - Define interface with GetAttributeValueHelper(), SetFilterExpression(), and Self properties
+    - Follow same pattern as IWithConditionExpression and IWithUpdateExpression for consistency
+    - _Requirements: 1.1, 3.1, 5.3, 5.4_
+
+  - [x] 11.2 Implement WithFilterExpressionExtensions class
+    - Create existing WithFilter method as extension method
+    - Implement new WithFilter method with format string support using same logic as Where and Set methods
+    - Reuse format string parsing and parameter generation from existing extensions
+    - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3_
+
+  - [x] 11.3 Update QueryRequestBuilder to implement IWithFilterExpression
+    - Remove existing WithFilter method implementation
+    - Add IWithFilterExpression interface implementation
+    - Add SetFilterExpression method that sets _req.FilterExpression
+    - _Requirements: 1.1, 5.4, 2.1, 2.2, 2.3_
+
+  - [x] 11.4 Update ScanRequestBuilder to implement IWithFilterExpression
+    - Remove existing WithFilter method implementation
+    - Add IWithFilterExpression interface implementation
+    - Add SetFilterExpression method that sets _req.FilterExpression
+    - _Requirements: 1.1, 5.4, 2.1, 2.2, 2.3_
+
+  - [x] 11.5 Create unit tests for filter expression format strings
+    - Test WithFilter method with various format string patterns
+    - Verify parameter generation and AttributeValue conversion in filter expressions
+    - Test mixed usage of format strings and traditional parameters
+    - Test error conditions specific to filter expressions
+    - _Requirements: All requirements validation_
+
+  - [x] 11.6 Update documentation for filter expression format strings
+    - Add XML documentation to WithFilterExpressionExtensions
+    - Update usage examples to show WithFilter method format string usage
+    - Document the enhanced filter expression capabilities
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_

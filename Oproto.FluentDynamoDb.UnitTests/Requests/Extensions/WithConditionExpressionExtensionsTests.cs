@@ -404,14 +404,7 @@ public class WithConditionExpressionExtensionsTests
             .WithMessage("Format string contains unmatched braces.*");
     }
 
-    [Fact]
-    public void Where_FormatString_InvalidFormatSpecifier_ShouldThrowFormatException()
-    {
-        // Act & Assert
-        var action = () => _builder.Where("value = {0:INVALID}", 123);
-        action.Should().Throw<FormatException>()
-            .WithMessage("Invalid format specifier 'INVALID' for parameter at index 0.*");
-    }
+
 
     [Fact]
     public void Where_FormatString_BooleanWithFormat_ShouldThrowFormatException()

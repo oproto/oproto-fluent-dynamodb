@@ -36,7 +36,7 @@ namespace Oproto.FluentDynamoDb.Requests;
 /// </code>
 /// </example>
 public class ScanRequestBuilder :
-    IWithAttributeNames<ScanRequestBuilder>, IWithAttributeValues<ScanRequestBuilder>
+    IWithAttributeNames<ScanRequestBuilder>, IWithAttributeValues<ScanRequestBuilder>, IWithFilterExpression<ScanRequestBuilder>
 {
     /// <summary>
     /// Initializes a new instance of the ScanRequestBuilder.
@@ -65,6 +65,17 @@ public class ScanRequestBuilder :
     public AttributeNameInternal GetAttributeNameHelper() => _attrN;
 
     /// <summary>
+    /// Sets the filter expression on the builder.
+    /// </summary>
+    /// <param name="expression">The processed filter expression to set.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public ScanRequestBuilder SetFilterExpression(string expression)
+    {
+        _req.FilterExpression = expression;
+        return this;
+    }
+
+    /// <summary>
     /// Gets the builder instance for method chaining.
     /// </summary>
     public ScanRequestBuilder Self => this;
@@ -80,22 +91,7 @@ public class ScanRequestBuilder :
         return this;
     }
     
-    /// <summary>
-    /// Specifies a filter expression to reduce the items returned by the scan.
-    /// Note: Filter expressions are applied after items are read, so they don't reduce consumed capacity.
-    /// </summary>
-    /// <param name="filterExpression">The filter expression using DynamoDB expression syntax.</param>
-    /// <returns>The builder instance for method chaining.</returns>
-    /// <example>
-    /// <code>
-    /// .WithFilter("#status = :active AND #createdDate > :since")
-    /// </code>
-    /// </example>
-    public ScanRequestBuilder WithFilter(string filterExpression)
-    {
-        _req.FilterExpression = filterExpression;
-        return this;
-    }
+
     
     /// <summary>
     /// Specifies which attributes to retrieve from each item.

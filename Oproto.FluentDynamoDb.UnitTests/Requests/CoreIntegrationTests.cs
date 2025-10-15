@@ -275,7 +275,7 @@ public class CoreIntegrationTests
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
         request.ExpressionAttributeValues[":p1"].S.Should().Be("2024-01-15T10:30:00.0000000Z");
         request.ExpressionAttributeValues.Should().ContainKey(":p2");
-        request.ExpressionAttributeValues[":p2"].S.Should().Be("99.99");
+        request.ExpressionAttributeValues[":p2"].N.Should().Be("99.99");
     }
 
     [Fact]

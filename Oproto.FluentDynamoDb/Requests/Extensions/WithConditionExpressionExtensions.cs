@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Oproto.FluentDynamoDb.Requests.Interfaces;
+using Oproto.FluentDynamoDb.Utility;
 
 namespace Oproto.FluentDynamoDb.Requests.Extensions;
 
@@ -121,127 +122,8 @@ public static class WithConditionExpressionExtensions
     /// </remarks>
     public static T Where<T>(this IWithConditionExpression<T> builder, string format, params object[] args)
     {
-        var (processedExpression, _) = ProcessFormatString(format, args, builder.GetAttributeValueHelper());
+        var (processedExpression, _) = FormatStringProcessor.ProcessFormatString(format, args, builder.GetAttributeValueHelper());
         return builder.SetConditionExpression(processedExpression);
     }
-    
-    /// <summary>
-    /// Processes a format string by replacing {0}, {1:format} placeholders with generated parameter names
-    /// and adding the corresponding values to the attribute value helper.
-    /// </summary>
-    /// <param name="format">The format string with placeholders.</param>
-    /// <param name="args">The values to substitute.</param>
-    /// <param name="attributeValueHelper">The helper to add generated parameters to.</param>
-    /// <returns>A tuple containing the processed expression and the number of parameters generated.</returns>
-    /// <exception cref="ArgumentException">Thrown when format string is invalid or parameter count doesn't match.</exception>
-    /// <exception cref="ArgumentNullException">Thrown when required parameters are null.</exception>
-    /// <exception cref="FormatException">Thrown when format specifiers are invalid.</exception>
-    private static (string processedExpression, int parameterCount) ProcessFormatString(
-        string format, 
-        object[] args, 
-        AttributeValueInternal attributeValueHelper)
-    {
-        if (string.IsNullOrEmpty(format))
-        {
-            throw new ArgumentException("Format string cannot be null or empty.", nameof(format));
-        }
 
-        if (args == null)
-        {
-            throw new ArgumentNullException(nameof(args));
-        }
-
-        if (attributeValueHelper == null)
-        {
-            throw new ArgumentNullException(nameof(attributeValueHelper));
-        }
-
-        // Regular expression to match format placeholders like {0}, {1:o}, {2:F2}
-        var formatPattern = new Regex(@"\{(\d+)(?::([^}]+))?\}", RegexOptions.Compiled);
-        var matches = formatPattern.Matches(format);
-        
-        if (matches.Count == 0)
-        {
-            // No placeholders found, return as-is
-            return (format, 0);
-        }
-
-        // Validate format string syntax - check for unmatched braces
-        var openBraces = format.Count(c => c == '{');
-        var closeBraces = format.Count(c => c == '}');
-        if (openBraces != closeBraces)
-        {
-            throw new FormatException("Format string contains unmatched braces. Each '{' must have a corresponding '}'.");
-        }
-
-        // Validate that all referenced indices exist in args and are valid
-        var maxIndex = -1;
-        var invalidIndices = new List<string>();
-        
-        foreach (Match match in matches)
-        {
-            var indexStr = match.Groups[1].Value;
-            if (int.TryParse(indexStr, out var index))
-            {
-                if (index < 0)
-                {
-                    invalidIndices.Add(indexStr);
-                }
-                else
-                {
-                    maxIndex = Math.Max(maxIndex, index);
-                }
-            }
-            else
-            {
-                invalidIndices.Add(indexStr);
-            }
-        }
-
-        if (invalidIndices.Count > 0)
-        {
-            throw new FormatException($"Format string contains invalid parameter indices: {string.Join(", ", invalidIndices)}. Parameter indices must be non-negative integers.");
-        }
-
-        if (maxIndex >= args.Length)
-        {
-            throw new ArgumentException($"Format string references parameter index {maxIndex} but only {args.Length} arguments were provided. Parameter indices must be less than the number of arguments.", nameof(format));
-        }
-
-        // Process each placeholder and build the result
-        var result = format;
-        var parameterCount = 0;
-        
-        // Process matches in reverse order to avoid index shifting issues
-        var matchList = matches.Cast<Match>().OrderByDescending(m => m.Index).ToList();
-        
-        foreach (var match in matchList)
-        {
-            var indexStr = match.Groups[1].Value;
-            var formatSpec = match.Groups[2].Success ? match.Groups[2].Value : null;
-            
-            if (int.TryParse(indexStr, out var argIndex) && argIndex < args.Length)
-            {
-                try
-                {
-                    var value = args[argIndex];
-                    var parameterName = attributeValueHelper.AddFormattedValue(value, formatSpec);
-                    
-                    // Replace the placeholder with the generated parameter name
-                    result = result.Substring(0, match.Index) + parameterName + result.Substring(match.Index + match.Length);
-                    parameterCount++;
-                }
-                catch (FormatException ex)
-                {
-                    throw new FormatException($"Invalid format specifier '{formatSpec}' for parameter at index {argIndex}. {ex.Message}", ex);
-                }
-                catch (Exception ex) when (!(ex is ArgumentException || ex is ArgumentNullException || ex is FormatException))
-                {
-                    throw new FormatException($"Error processing parameter at index {argIndex} with format specifier '{formatSpec}': {ex.Message}", ex);
-                }
-            }
-        }
-
-        return (result, parameterCount);
-    }
 }

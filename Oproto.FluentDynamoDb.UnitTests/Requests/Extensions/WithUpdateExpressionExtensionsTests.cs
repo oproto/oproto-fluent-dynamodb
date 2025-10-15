@@ -223,35 +223,29 @@ public class WithUpdateExpressionExtensionsTests
     }
 
     [Fact]
-    public void Set_WithUnmatchedBraces_HandlesGracefully()
+    public void Set_WithUnmatchedBraces_ShouldThrowFormatException()
     {
-        // Arrange - unmatched braces should be handled gracefully
+        // Arrange - unmatched braces should throw an exception
         var format = "SET #name = {0";
         var name = "John";
 
-        // Act - should not throw, but treat as literal text
-        var result = _builder.Set(format, name);
-
-        // Assert - should not process as format string due to unmatched braces
-        result.Should().BeSameAs(_builder);
-        _builder.UpdateExpression.Should().Be("SET #name = {0");
-        _builder.AttributeValueHelper.AttributeValues.Should().BeEmpty();
+        // Act & Assert - should throw FormatException for unmatched braces
+        var action = () => _builder.Set(format, name);
+        action.Should().Throw<FormatException>()
+            .WithMessage("Format string contains unmatched braces.*");
     }
 
     [Fact]
-    public void Set_WithNegativeParameterIndex_HandlesGracefully()
+    public void Set_WithNegativeParameterIndex_ShouldThrowFormatException()
     {
-        // Arrange - negative indices should be handled gracefully
+        // Arrange - negative indices should throw an exception
         var format = "SET #name = {-1}";
         var name = "John";
 
-        // Act - should not throw, but treat as literal text
-        var result = _builder.Set(format, name);
-
-        // Assert - should not process as format string due to invalid index
-        result.Should().BeSameAs(_builder);
-        _builder.UpdateExpression.Should().Be("SET #name = {-1}");
-        _builder.AttributeValueHelper.AttributeValues.Should().BeEmpty();
+        // Act & Assert - should throw FormatException for negative parameter index
+        var action = () => _builder.Set(format, name);
+        action.Should().Throw<FormatException>()
+            .WithMessage("Format string contains invalid parameter indices: -1.*");
     }
 
     [Fact]
