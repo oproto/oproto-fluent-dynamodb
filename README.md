@@ -3,6 +3,24 @@ Oproto.FluentDynamoDb library
 
 A fluent-style API wrapper for Amazon DynamoDB that provides a type-safe, intuitive interface for all DynamoDB operations. This implementation is safe for use in AOT (Ahead-of-Time) compilation projects and follows fluent design patterns for enhanced developer experience.
 
+## 🚀 New Format String Support
+
+The library now supports string.Format-style parameter syntax in condition expressions, eliminating the ceremony of manual parameter naming and separate `.WithValue()` calls.
+
+```csharp
+// Modern approach with format strings
+var result = await table.Query
+    .Where("pk = {0} AND begins_with(sk, {1})", "USER#123", "ORDER#")
+    .ExecuteAsync();
+
+// Traditional approach (still supported)
+var result = await table.Query
+    .Where("pk = :pk AND begins_with(sk, :prefix)")
+    .WithValue(":pk", "USER#123")
+    .WithValue(":prefix", "ORDER#")
+    .ExecuteAsync();
+```
+
 ## Table and Index Definition
 An optional feature of FluentDynamoDb it so define your tables, indexes and access patterns using the DynamoDbTableBase class.
 
@@ -43,6 +61,114 @@ var table = new ToDoTable(...);
 var getItemResponse = await table.GetTodoAsync(todoId);
 ```
 
+## Format String Features
+
+### Supported Format Specifiers
+
+The library supports standard .NET format specifiers for automatic type conversion:
+
+| Format | Description | Example Input | Example Output |
+|--------|-------------|---------------|----------------|
+| `o` | ISO 8601 DateTime | `DateTime.Now` | `2024-01-15T10:30:00.000Z` |
+| `F2` | Fixed-point with 2 decimals | `99.999m` | `100.00` |
+| `X` | Hexadecimal uppercase | `255` | `FF` |
+| `x` | Hexadecimal lowercase | `255` | `ff` |
+| `D` | Decimal integer | `123` | `123` |
+| `P2` | Percentage with 2 decimals | `0.1234m` | `12.34%` |
+
+### DateTime Formatting Examples
+
+```csharp
+var startDate = DateTime.UtcNow.AddDays(-30);
+var endDate = DateTime.UtcNow;
+
+// ISO 8601 formatting with {0:o}
+var result = await table.Query
+    .Where("pk = {0} AND created BETWEEN {1:o} AND {2:o}", 
+           "USER#123", startDate, endDate)
+    .ExecuteAsync();
+```
+
+### Numeric Formatting Examples
+
+```csharp
+var amount = 99.999m;
+
+// Fixed-point formatting with 2 decimal places
+var result = await table.Update
+    .WithKey("pk", "PRODUCT#123")
+    .Set("SET price = {0:F2}", amount)  // Results in "100.00"
+    .ExecuteAsync();
+```
+
+### Update Expression Format Strings
+
+```csharp
+// SET operations with format strings
+var response = await table.Update
+    .WithKey("pk", "user123")
+    .Set("SET #name = {0}, #status = {1}, updated = {2:o}", "John Doe", "ACTIVE", DateTime.UtcNow)
+    .WithAttributeName("#name", "name")
+    .WithAttributeName("#status", "status")
+    .ExecuteAsync();
+
+// ADD operations with format strings
+var response = await table.Update
+    .WithKey("pk", "user123")
+    .Set("ADD #count {0}, #amount {1:F2}", 1, 99.999m)  // Results in "100.00"
+    .WithAttributeName("#count", "count")
+    .WithAttributeName("#amount", "amount")
+    .ExecuteAsync();
+
+// Combined operations
+var response = await table.Update
+    .WithKey("pk", "user123")
+    .Set("SET #name = {0} ADD #count {1} REMOVE #oldField", "Updated Name", 5)
+    .WithAttributeName("#name", "name")
+    .WithAttributeName("#count", "count")
+    .WithAttributeName("#oldField", "oldField")
+    .ExecuteAsync();
+```
+
+### Enum Support and Reserved Words
+
+```csharp
+public enum OrderStatus { Pending, Processing, Completed }
+
+var status = OrderStatus.Processing;
+var result = await table.Query
+    .Where("pk = {0} AND #status = {1}", "USER#123", status)
+    .WithAttributeName("#status", "status")  // Maps #status to actual "status" attribute
+    .ExecuteAsync();
+// Results in: "pk = :p0 AND #status = :p1" with ":p1" = "Processing"
+```
+
+### What Operations Support Format Strings
+
+Format string support is available in **condition expressions and update expressions**:
+
+**Condition expressions** - `Where()` method:
+- **Query operations**: `table.Query.Where("pk = {0}", value)`
+- **Update operations**: `table.Update.Where("attribute_exists({0})", "pk")`  
+- **Delete operations**: `table.Delete.Where("version = {0}", expectedVersion)`
+- **Put operations**: `table.Put.Where("attribute_not_exists({0})", "pk")`
+
+**Update expressions** - `Set()` method:
+- **Update operations**: `table.Update.Set("SET field = {0}, updated = {1:o}", newValue, DateTime.UtcNow)`
+- **Transaction updates**: `transactionBuilder.Update(table, upd => upd.Set("SET field = {0}", newValue))`
+
+**Other methods still use the traditional approach:**
+- Key specifications: `table.Get.WithKey("pk", "value")`
+- Attribute mappings: `table.Query.WithAttributeName("#name", "name")`
+
+### Required Using Statement
+
+To access the format string extension methods, ensure you have:
+
+```csharp
+using Oproto.FluentDynamoDb.Requests.Extensions;
+```
+
 ## Basic Operations
 
 ### Get Item
@@ -53,7 +179,7 @@ var response = await table.Get
     .WithKey("pk", "user123")
     .ExecuteAsync();
 
-// Composite key
+// Composite key with projection
 var response = await table.Get
     .WithKey("pk", "user123", "sk", "profile")
     .WithProjection("username, email, #status")
@@ -72,15 +198,32 @@ var item = new Dictionary<string, AttributeValue>
     ["email"] = new AttributeValue("john@example.com")
 };
 
+// Modern approach with format strings
 var response = await table.Put
     .WithItem(item)
-    .Where("attribute_not_exists(pk)") // Conditional put
+    .Where("attribute_not_exists({0})", "pk") // Conditional put
+    .ExecuteAsync();
+
+// Traditional approach (still supported)
+var response = await table.Put
+    .WithItem(item)
+    .Where("attribute_not_exists(pk)")
     .ExecuteAsync();
 ```
 
 ### Update Item
 Modify an existing item:
 ```csharp
+// Modern approach with format strings in both Set and Where
+var response = await table.Update
+    .WithKey("pk", "user123")
+    .Set("SET #status = {0}, lastModified = {1:o}", "active", DateTime.UtcNow)
+    .WithAttributeName("#status", "status")
+    .Where("attribute_exists({0})", "pk")
+    .ReturnAllNewValues()
+    .ExecuteAsync();
+
+// Traditional approach (still supported)
 var response = await table.Update
     .WithKey("pk", "user123")
     .Set("SET #status = :status, lastModified = :timestamp")
@@ -100,23 +243,21 @@ var response = await table.Delete
     .WithKey("pk", "user123")
     .ExecuteAsync();
 
-// Conditional delete with return values
+// Conditional delete with format strings
 var response = await table.Delete
     .WithKey("pk", "user123", "sk", "profile")
-    .Where("#status = :status")
+    .Where("#status = {0}", "inactive")
     .WithAttributeName("#status", "status")
-    .WithValue(":status", "inactive")
     .ReturnAllOldValues()
     .ExecuteAsync();
 
-// Delete with condition check failure handling
+// Delete with optimistic locking using format strings
 try
 {
     var response = await table.Delete
         .WithKey("pk", "user123")
-        .Where("attribute_exists(pk) AND #version = :expectedVersion")
+        .Where("attribute_exists({0}) AND #version = {1}", "pk", 5)
         .WithAttributeName("#version", "version")
-        .WithValue(":expectedVersion", 5)
         .ExecuteAsync();
 }
 catch (ConditionalCheckFailedException)
@@ -128,29 +269,32 @@ catch (ConditionalCheckFailedException)
 ### Query Operations
 Query items using partition key and optional sort key conditions:
 ```csharp
-// Basic query
+// Basic query with format strings
 var response = await table.Query
-    .Where("pk = :pk")
-    .WithValue(":pk", "user123")
+    .Where("pk = {0}", "user123")
     .ExecuteAsync();
 
-// Advanced query with filtering and projection
+// Advanced query with format strings and filtering
 var response = await table.Query
-    .Where("pk = :pk AND begins_with(sk, :skPrefix)")
-    .WithValue(":pk", "user123")
-    .WithValue(":skPrefix", "order#")
-    .WithFilter("#status = :status")
+    .Where("pk = {0} AND begins_with(sk, {1})", "user123", "order#")
+    .WithFilter("#status = {0}", "completed")
     .WithAttributeName("#status", "status")
-    .WithValue(":status", "completed")
     .WithProjection("orderId, amount, #status")
     .ScanIndexForward(false) // Descending order
     .Take(20)
     .ExecuteAsync();
 
+// Query with date range using format strings
+var startDate = DateTime.UtcNow.AddDays(-30);
+var endDate = DateTime.UtcNow;
+var response = await table.Query
+    .Where("pk = {0} AND created BETWEEN {1:o} AND {2:o}", "user123", startDate, endDate)
+    .Take(10)
+    .ExecuteAsync();
+
 // Query with pagination
 var response = await table.Query
-    .Where("pk = :pk")
-    .WithValue(":pk", "user123")
+    .Where("pk = {0}", "user123")
     .StartAt(lastEvaluatedKey) // From previous page
     .Take(10)
     .ExecuteAsync();
@@ -160,39 +304,35 @@ var response = await table.Query
 Scan operations are intentionally made less accessible to prevent accidental misuse. Access them through the `AsScannable()` method:
 
 ```csharp
-// Basic scan - note the intentional friction
+// Basic scan with format strings - note the intentional friction
 var scannableTable = table.AsScannable();
 var response = await scannableTable.Scan
-    .WithFilter("#status = :status")
+    .WithFilter("#status = {0}", "active")
     .WithAttributeName("#status", "status")
-    .WithValue(":status", "active")
     .WithProjection("pk, username, email")
     .Take(100)
     .ExecuteAsync();
 
-// Parallel scan for large datasets
+// Parallel scan for large datasets with format strings
 var segment1Task = scannableTable.Scan
     .WithSegment(0, 4) // Segment 0 of 4 total segments
-    .WithFilter("#status = :status")
+    .WithFilter("#status = {0}", "active")
     .WithAttributeName("#status", "status")
-    .WithValue(":status", "active")
     .ExecuteAsync();
 
 var segment2Task = scannableTable.Scan
     .WithSegment(1, 4) // Segment 1 of 4 total segments
-    .WithFilter("#status = :status")
+    .WithFilter("#status = {0}", "active")
     .WithAttributeName("#status", "status")
-    .WithValue(":status", "active")
     .ExecuteAsync();
 
 // Process segments in parallel
 var results = await Task.WhenAll(segment1Task, segment2Task);
 
-// Count scan
+// Count scan with format strings
 var countResponse = await scannableTable.Scan
-    .WithFilter("#status = :status")
+    .WithFilter("#status = {0}", "active")
     .WithAttributeName("#status", "status")
-    .WithValue(":status", "active")
     .Count()
     .ExecuteAsync();
 
@@ -338,33 +478,29 @@ The Pagination extension method takes an implementation of IPaginationRequest.
 If your service's request models implement this interface, you can pass the request object directly.
 
 ```csharp
-// Using pagination with Query
+// Using pagination with Query and format strings
 var queryResponse = await table.Gsi1.Query
-    .Where("gsi1pk = :gsi1pk")
-    .WithValue(":gsi1pk", "foo")
+    .Where("gsi1pk = {0}", "foo")
     .Paginate(paginationRequest)
     .ExecuteAsync();
 
-// Using pagination with Scan
+// Using pagination with Scan and format strings
 var scanResponse = await table.AsScannable().Scan
-    .WithFilter("#status = :status")
+    .WithFilter("#status = {0}", "active")
     .WithAttributeName("#status", "status")
-    .WithValue(":status", "active")
     .Paginate(paginationRequest)
     .ExecuteAsync();
 
-// Manual pagination
+// Manual pagination with format strings
 var firstPage = await table.Query
-    .Where("pk = :pk")
-    .WithValue(":pk", "user123")
+    .Where("pk = {0}", "user123")
     .Take(10)
     .ExecuteAsync();
 
 if (firstPage.LastEvaluatedKey != null)
 {
     var secondPage = await table.Query
-        .Where("pk = :pk")
-        .WithValue(":pk", "user123")
+        .Where("pk = {0}", "user123")
         .StartAt(firstPage.LastEvaluatedKey)
         .Take(10)
         .ExecuteAsync();
@@ -381,8 +517,7 @@ var paginationRequest = new PaginationRequest
 };
 
 var response = await table.Query
-    .Where("pk = :pk")
-    .WithValue(":pk", "user123")
+    .Where("pk = {0}", "user123")
     .Paginate(paginationRequest)
     .ExecuteAsync();
 ```
@@ -392,20 +527,17 @@ Transactions work slightly different since they aren't tied to a single table. T
 
 #### Write Transactions
 ```csharp
-// Complex write transaction with multiple operations
+// Complex write transaction with format strings
 var transactionResult = await new TransactWriteItemsRequestBuilder(dynamoDbClient)
     .WithClientRequestToken("unique-token-1234")
     .CheckCondition(userTable, condition =>
         condition.WithKey("pk", "user123")
-                 .Where("attribute_exists(pk) AND #status = :status")
-                 .WithAttributeName("#status", "status")
-                 .WithValue(":status", "active"))
+                 .Where("attribute_exists({0}) AND #status = {1}", "pk", "active")
+                 .WithAttributeName("#status", "status"))
     .Update(userTable, upd =>
         upd.WithKey("pk", "user123")
-           .Set("SET balance = balance - :amount, lastTransaction = :timestamp")
-           .WithValue(":amount", 100)
-           .WithValue(":timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-           .Where("balance >= :amount"))
+           .Set("SET balance = balance - {0}, lastTransaction = {1:o}", 100, DateTime.UtcNow)
+           .Where("balance >= {0}", 100))
     .Put(transactionTable, put =>
         put.WithItem(new Dictionary<string, AttributeValue>
         {
@@ -414,20 +546,19 @@ var transactionResult = await new TransactWriteItemsRequestBuilder(dynamoDbClien
             ["amount"] = new AttributeValue { N = "100" },
             ["type"] = new AttributeValue("debit")
         })
-        .Where("attribute_not_exists(pk)"))
+        .Where("attribute_not_exists({0})", "pk"))
     .Delete(tempTable, del =>
         del.WithKey("pk", "temp123")
-           .Where("attribute_exists(pk)"))
+           .Where("attribute_exists({0})", "pk"))
     .ReturnConsumedCapacity()
     .ExecuteAsync();
 
-// Simple transaction example
+// Simple transaction with format strings
 var result = await new TransactWriteItemsRequestBuilder(dynamoDbClient)
     .Update(table, upd =>
         upd.WithKey("pk", "item1")
-           .Set("SET #count = #count + :inc")
-           .WithAttributeName("#count", "count")
-           .WithValue(":inc", 1))
+           .Set("SET #count = #count + {0}", 1)
+           .WithAttributeName("#count", "count"))
     .Put(logTable, put =>
         put.WithItem(new Dictionary<string, AttributeValue>
         {
@@ -578,6 +709,49 @@ foreach (var record in streamEvent.Records)
 }
 ```
 
+## Migration Guide and Best Practices
+
+### No Breaking Changes
+
+All existing code continues to work without modification. The format string features maintain full backward compatibility.
+
+### Gradual Migration
+
+You can mix old and new approaches in the same query:
+
+```csharp
+// Mix format strings with traditional parameters
+var result = await table.Query
+    .Where("pk = {0} AND sk BETWEEN :startSk AND :endSk AND created > {1:o}", 
+           "USER#123", DateTime.Now.AddDays(-7))
+    .WithValue(":startSk", "ORDER#2024-01")
+    .WithValue(":endSk", "ORDER#2024-02")
+    .ExecuteAsync();
+```
+
+### Best Practices
+
+1. **Use format strings for new code** - They're more concise and less error-prone
+2. **Leverage format specifiers** - Use `:o` for DateTime, `:F2` for decimals, etc.
+3. **Mix approaches when needed** - Combine format strings with manual parameters for complex scenarios
+4. **Handle reserved words** - Continue using `WithAttributeName()` for DynamoDB reserved words
+5. **Validate format strings** - The library provides clear error messages for debugging
+
+### Complex Examples
+
+```csharp
+var userId = "USER#123";
+var status = OrderStatus.Completed;
+var minAmount = 50.00m;
+var startDate = DateTime.UtcNow.AddMonths(-6);
+
+var result = await table.Query
+    .Where("pk = {0} AND #status = {1} AND amount >= {2:F2} AND created BETWEEN {3:o} AND {4:o}", 
+           userId, status, minAmount, startDate, DateTime.UtcNow)
+    .WithAttributeName("#status", "status")  // Still need this for reserved words
+    .ExecuteAsync();
+```
+
 ## Error Handling and Best Practices
 
 ### Common Exception Handling
@@ -620,13 +794,10 @@ public async Task<bool> UpdateItemWithOptimisticLocking(string itemId, string ne
     {
         await table.Update
             .WithKey("pk", itemId)
-            .Set("SET #value = :newValue, #version = #version + :inc")
+            .Set("SET #value = {0}, #version = #version + {1}", newValue, 1)
             .WithAttributeName("#value", "value")
             .WithAttributeName("#version", "version")
-            .WithValue(":newValue", newValue)
-            .WithValue(":inc", 1)
-            .Where("#version = :expectedVersion")
-            .WithValue(":expectedVersion", expectedVersion)
+            .Where("#version = {0}", expectedVersion)
             .ExecuteAsync();
         
         return true;
@@ -636,6 +807,33 @@ public async Task<bool> UpdateItemWithOptimisticLocking(string itemId, string ne
         // Version mismatch - item was modified by another process
         return false;
     }
+}
+```
+
+### Format String Error Handling
+```csharp
+try
+{
+    // Invalid: Parameter count mismatch
+    await table.Query
+        .Where("pk = {0} AND sk = {1}", "USER#123")  // Missing second parameter
+        .ExecuteAsync();
+}
+catch (ArgumentException ex)
+{
+    // Error: "Format string references parameter index 1 but only 1 arguments were provided"
+}
+
+try
+{
+    // Invalid: Unsupported format specifier
+    await table.Query
+        .Where("pk = {0} AND amount = {1:InvalidFormat}", "USER#123", 100.50m)
+        .ExecuteAsync();
+}
+catch (FormatException ex)
+{
+    // Error: "Invalid format specifier 'InvalidFormat' for parameter at index 1"
 }
 ```
 
@@ -714,17 +912,14 @@ var response = await table.Get
 
 #### 2. Prefer Query over Scan
 ```csharp
-// Good - efficient query using partition key
+// Good - efficient query using partition key with format strings
 var response = await table.Query
-    .Where("pk = :pk AND begins_with(sk, :prefix)")
-    .WithValue(":pk", "user123")
-    .WithValue(":prefix", "order#")
+    .Where("pk = {0} AND begins_with(sk, {1})", "user123", "order#")
     .ExecuteAsync();
 
 // Avoid - inefficient scan
 var response = await table.AsScannable().Scan
-    .WithFilter("begins_with(sk, :prefix)")
-    .WithValue(":prefix", "order#")
+    .WithFilter("begins_with(sk, {0})", "order#")
     .ExecuteAsync();
 ```
 
@@ -746,15 +941,14 @@ var responses = await Task.WhenAll(tasks);
 
 #### 4. Implement Proper Pagination
 ```csharp
-// Good - proper pagination with reasonable page size
+// Good - proper pagination with format strings and reasonable page size
 var allItems = new List<Dictionary<string, AttributeValue>>();
 Dictionary<string, AttributeValue> lastEvaluatedKey = null;
 
 do
 {
     var query = table.Query
-        .Where("pk = :pk")
-        .WithValue(":pk", "user123")
+        .Where("pk = {0}", "user123")
         .Take(100); // Reasonable page size
     
     if (lastEvaluatedKey != null)
