@@ -53,6 +53,12 @@ public class EntityAnalyzer
         // Extract property information
         ExtractProperties(classDecl, semanticModel, entityModel);
 
+        // Validate individual properties
+        foreach (var property in entityModel.Properties)
+        {
+            ValidatePropertyModel(property);
+        }
+
         // Validate entity configuration
         ValidateEntityModel(entityModel);
 
@@ -62,7 +68,9 @@ public class EntityAnalyzer
         // Extract relationship information
         ExtractRelationships(classDecl, semanticModel, entityModel);
 
-        return _diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error) ? null : entityModel;
+        // Only return null if there are critical errors that prevent code generation
+        var criticalErrors = _diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && IsCriticalError(d.Id)).ToArray();
+        return criticalErrors.Length > 0 ? null : entityModel;
     }
 
     private bool IsPartialClass(ClassDeclarationSyntax classDecl)
@@ -131,6 +139,15 @@ public class EntityAnalyzer
         {
             propertyModel.AttributeName = attributeNameLiteral.Token.ValueText;
         }
+        else
+        {
+            // Fallback: try without "Attribute" suffix
+            dynamoDbAttribute = GetAttribute(propertyDecl, semanticModel, "DynamoDbAttribute");
+            if (dynamoDbAttribute?.ArgumentList?.Arguments.FirstOrDefault()?.Expression is LiteralExpressionSyntax fallbackLiteral)
+            {
+                propertyModel.AttributeName = fallbackLiteral.Token.ValueText;
+            }
+        }
 
         // Extract key attributes
         ExtractKeyAttributes(propertyDecl, semanticModel, propertyModel);
@@ -140,9 +157,6 @@ public class EntityAnalyzer
 
         // Extract queryable attributes
         ExtractQueryableAttributes(propertyDecl, semanticModel, propertyModel);
-
-        // Validate property configuration
-        ValidatePropertyModel(propertyModel);
 
         return propertyModel;
     }
@@ -336,7 +350,7 @@ public class EntityAnalyzer
         var partitionKeyProperties = entityModel.Properties.Where(p => p.IsPartitionKey).ToArray();
         var sortKeyProperties = entityModel.Properties.Where(p => p.IsSortKey).ToArray();
 
-        // Validate partition key
+        // Validate partition key - this is critical for DynamoDB entities
         if (partitionKeyProperties.Length == 0)
         {
             ReportDiagnostic(DiagnosticDescriptors.MissingPartitionKey, 
@@ -717,11 +731,16 @@ public class EntityAnalyzer
                 // Fallback to syntax-based matching for cases where semantic model can't resolve
                 var attributeNameText = attr.Name.ToString();
                 var targetName = attributeName.Replace("Attribute", "");
+                var shortTargetName = targetName.Replace("Attribute", "");
                 
                 return attributeNameText == attributeName ||
                        attributeNameText == targetName ||
+                       attributeNameText == shortTargetName ||
                        attributeNameText.EndsWith("." + attributeName) ||
-                       attributeNameText.EndsWith("." + targetName);
+                       attributeNameText.EndsWith("." + targetName) ||
+                       attributeNameText.EndsWith("." + shortTargetName) ||
+                       // Handle cases where the attribute name in source doesn't have "Attribute" suffix
+                       (attributeName.EndsWith("Attribute") && attributeNameText == attributeName.Substring(0, attributeName.Length - 9));
             });
     }
 
@@ -984,5 +1003,18 @@ public class EntityAnalyzer
     {
         var diagnostic = Diagnostic.Create(descriptor, location ?? Location.None, messageArgs);
         _diagnostics.Add(diagnostic);
+    }
+
+    private static bool IsCriticalError(string diagnosticId)
+    {
+        // Only these errors prevent code generation
+        return diagnosticId switch
+        {
+            "DYNDB001" => true, // Missing partition key
+            "DYNDB002" => true, // Multiple partition keys
+            "DYNDB010" => true, // Entity must be partial
+            "DYNDB007" => false, // Missing DynamoDbAttribute - not critical, can still generate
+            _ => false
+        };
     }
 }

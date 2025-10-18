@@ -195,7 +195,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Ensure proper attribute definitions are available during test compilation
   - _Requirements: 1.1, 1.2, 2.1, 2.2_
 
-- [ ] 21. Fix EntityAnalyzer test failures
+- [x] 21. Fix EntityAnalyzer test failures
   - Fix tests that expect diagnostic reporting but get no diagnostics
   - Fix tests that expect entity analysis results but get null
   - Ensure EntityAnalyzer properly detects and reports validation issues

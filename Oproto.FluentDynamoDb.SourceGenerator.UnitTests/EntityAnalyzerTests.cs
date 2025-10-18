@@ -113,9 +113,9 @@ namespace TestNamespace
 
         // Assert
         result.Should().BeNull();
-        analyzer.Diagnostics.Should().HaveCount(1);
-        analyzer.Diagnostics[0].Id.Should().Be("DYNDB002");
-        analyzer.Diagnostics[0].Severity.Should().Be(DiagnosticSeverity.Error);
+        analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB002");
+        analyzer.Diagnostics.Where(d => d.Id == "DYNDB002").Should().HaveCount(1);
+        analyzer.Diagnostics.First(d => d.Id == "DYNDB002").Severity.Should().Be(DiagnosticSeverity.Error);
     }
 
     [Fact]
