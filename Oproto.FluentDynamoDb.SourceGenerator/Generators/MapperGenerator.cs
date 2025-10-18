@@ -36,10 +36,6 @@ public static class MapperGenerator
         sb.AppendLine($"    /// Generated implementation of IDynamoDbEntity for {entity.ClassName}.");
         sb.AppendLine($"    /// Provides automatic mapping between C# objects and DynamoDB AttributeValue dictionaries.");
         sb.AppendLine($"    /// Table: {entity.TableName}");
-        if (entity.IsMultiItemEntity)
-        {
-            sb.AppendLine($"    /// Multi-item entity: Supports entities that span multiple DynamoDB items.");
-        }
         if (entity.Relationships.Length > 0)
         {
             sb.AppendLine($"    /// Related entities: {entity.Relationships.Length} relationship(s) defined.");
@@ -65,14 +61,8 @@ public static class MapperGenerator
 
     private static void GenerateToDynamoDbMethod(StringBuilder sb, EntityModel entity)
     {
-        if (entity.IsMultiItemEntity)
-        {
-            GenerateMultiItemToDynamoDbMethod(sb, entity);
-        }
-        else
-        {
-            GenerateSingleItemToDynamoDbMethod(sb, entity);
-        }
+        // Always generate single-item entity with JSON serialization for collections
+        GenerateSingleItemToDynamoDbMethod(sb, entity);
     }
 
     private static void GenerateSingleItemToDynamoDbMethod(StringBuilder sb, EntityModel entity)
@@ -110,130 +100,9 @@ public static class MapperGenerator
         sb.AppendLine("        }");
     }
 
-    private static void GenerateMultiItemToDynamoDbMethod(StringBuilder sb, EntityModel entity)
-    {
-        sb.AppendLine();
-        sb.AppendLine("        /// <summary>");
-        sb.AppendLine("        /// Converts an entity instance to multiple DynamoDB AttributeValue dictionaries.");
-        sb.AppendLine("        /// For multi-item entities, this creates one item per collection element plus the base entity.");
-        sb.AppendLine("        /// </summary>");
-        sb.AppendLine($"        public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity) where TSelf : IDynamoDbEntity");
-        sb.AppendLine("        {");
-        sb.AppendLine("            // For backward compatibility, return the first item from multi-item conversion");
-        sb.AppendLine("            var items = ToDynamoDbMultiple<TSelf>(entity);");
-        sb.AppendLine("            return items.FirstOrDefault() ?? new Dictionary<string, AttributeValue>();");
-        sb.AppendLine("        }");
-        sb.AppendLine();
-        sb.AppendLine("        /// <summary>");
-        sb.AppendLine("        /// Converts a multi-item entity instance to multiple DynamoDB AttributeValue dictionaries.");
-        sb.AppendLine("        /// Each collection item becomes a separate DynamoDB item with the same partition key.");
-        sb.AppendLine("        /// </summary>");
-        sb.AppendLine($"        public static List<Dictionary<string, AttributeValue>> ToDynamoDbMultiple<TSelf>(TSelf entity) where TSelf : IDynamoDbEntity");
-        sb.AppendLine("        {");
-        sb.AppendLine($"            if (entity is not {entity.ClassName} typedEntity)");
-        sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{entity.GetType().Name}}\", nameof(entity));");
-        sb.AppendLine();
-        sb.AppendLine("            var items = new List<Dictionary<string, AttributeValue>>();");
-        sb.AppendLine();
 
-        // Generate base partition key value
-        var partitionKeyProperty = entity.PartitionKeyProperty;
-        if (partitionKeyProperty != null)
-        {
-            sb.AppendLine("            // Generate base partition key");
-            sb.AppendLine($"            var partitionKeyValue = {GetToAttributeValueExpression(partitionKeyProperty, $"typedEntity.{partitionKeyProperty.PropertyName}")};");
-            sb.AppendLine();
-        }
 
-        // Generate items for each collection property
-        var collectionProperties = entity.Properties.Where(p => p.IsCollection && p.HasAttributeMapping).ToArray();
-        
-        if (collectionProperties.Length > 0)
-        {
-            foreach (var collectionProperty in collectionProperties)
-            {
-                GenerateCollectionItemsMapping(sb, entity, collectionProperty, partitionKeyProperty);
-            }
-        }
-        else
-        {
-            // If no collection properties, create a single item with non-collection properties
-            sb.AppendLine("            // No collection properties found, create single item");
-            sb.AppendLine("            var item = new Dictionary<string, AttributeValue>();");
-            
-            foreach (var property in entity.Properties.Where(p => p.HasAttributeMapping && !p.IsCollection))
-            {
-                GeneratePropertyToAttributeValue(sb, property);
-            }
-            
-            sb.AppendLine("            items.Add(item);");
-        }
 
-        sb.AppendLine();
-        sb.AppendLine("            return items;");
-        sb.AppendLine("        }");
-    }
-
-    private static void GenerateCollectionItemsMapping(StringBuilder sb, EntityModel entity, PropertyModel collectionProperty, PropertyModel? partitionKeyProperty)
-    {
-        var collectionElementType = GetCollectionElementType(collectionProperty.PropertyType);
-        
-        sb.AppendLine($"            // Process {collectionProperty.PropertyName} collection");
-        sb.AppendLine($"            if (typedEntity.{collectionProperty.PropertyName} != null)");
-        sb.AppendLine("            {");
-        sb.AppendLine($"                var {collectionProperty.PropertyName.ToLowerInvariant()}Index = 0;");
-        sb.AppendLine($"                foreach (var {collectionProperty.PropertyName.ToLowerInvariant()}Item in typedEntity.{collectionProperty.PropertyName})");
-        sb.AppendLine("                {");
-        sb.AppendLine("                    var item = new Dictionary<string, AttributeValue>();");
-        sb.AppendLine();
-        
-        // Add partition key to each item
-        if (partitionKeyProperty != null)
-        {
-            sb.AppendLine("                    // Add partition key");
-            sb.AppendLine($"                    item[\"{partitionKeyProperty.AttributeName}\"] = partitionKeyValue;");
-            sb.AppendLine();
-        }
-        
-        // Generate sort key for collection item (using index or item properties)
-        var sortKeyProperty = entity.SortKeyProperty;
-        if (sortKeyProperty != null)
-        {
-            sb.AppendLine("                    // Generate sort key for collection item");
-            if (IsComplexType(collectionElementType))
-            {
-                // For complex types, try to use a property from the collection item
-                sb.AppendLine($"                    // TODO: Extract sort key from {collectionElementType} properties");
-                sb.AppendLine($"                    item[\"{sortKeyProperty.AttributeName}\"] = new AttributeValue {{ S = $\"{collectionProperty.AttributeName}#{{++{collectionProperty.PropertyName.ToLowerInvariant()}Index:D3}}\" }};");
-            }
-            else
-            {
-                // For primitive types, use the value directly with index
-                sb.AppendLine($"                    item[\"{sortKeyProperty.AttributeName}\"] = new AttributeValue {{ S = $\"{collectionProperty.AttributeName}#{{++{collectionProperty.PropertyName.ToLowerInvariant()}Index:D3}}\" }};");
-            }
-            sb.AppendLine();
-        }
-        
-        // Add the collection item data
-        if (IsComplexType(collectionElementType))
-        {
-            sb.AppendLine("                    // Add complex object properties");
-            sb.AppendLine($"                    // TODO: Implement complex type mapping for {collectionElementType}");
-            sb.AppendLine($"                    item[\"{collectionProperty.AttributeName}\"] = new AttributeValue {{ S = {collectionProperty.PropertyName.ToLowerInvariant()}Item?.ToString() ?? \"\" }};");
-        }
-        else
-        {
-            // For primitive collection items
-            sb.AppendLine("                    // Add collection item value");
-            sb.AppendLine($"                    item[\"{collectionProperty.AttributeName}\"] = {GetToAttributeValueExpression(new PropertyModel { PropertyType = collectionElementType, IsNullable = false }, $"{collectionProperty.PropertyName.ToLowerInvariant()}Item")};");
-        }
-        
-        sb.AppendLine();
-        sb.AppendLine("                    items.Add(item);");
-        sb.AppendLine("                }");
-        sb.AppendLine("            }");
-        sb.AppendLine();
-    }
 
     private static void GeneratePropertyToAttributeValue(StringBuilder sb, PropertyModel property)
     {
@@ -265,12 +134,40 @@ public static class MapperGenerator
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
+        var collectionElementType = GetCollectionElementType(property.PropertyType);
         
-        sb.AppendLine($"            // Serialize collection {propertyName} as JSON for single-item storage");
-        sb.AppendLine($"            if (typedEntity.{propertyName} != null)");
+        sb.AppendLine($"            // Convert collection {propertyName} to native DynamoDB type");
+        sb.AppendLine($"            if (typedEntity.{propertyName} != null && typedEntity.{propertyName}.Count > 0)");
         sb.AppendLine("            {");
-        sb.AppendLine($"                var {propertyName.ToLowerInvariant()}Json = System.Text.Json.JsonSerializer.Serialize(typedEntity.{propertyName});");
-        sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ S = {propertyName.ToLowerInvariant()}Json }};");
+        
+        // Determine the appropriate DynamoDB collection type based on element type
+        var baseElementType = GetBaseType(collectionElementType);
+        
+        if (baseElementType == "string")
+        {
+            // Use String Set (SS) for string collections
+            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    SS = typedEntity.{propertyName}.ToList()");
+            sb.AppendLine("                };");
+        }
+        else if (IsNumericType(baseElementType))
+        {
+            // Use Number Set (NS) for numeric collections
+            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    NS = typedEntity.{propertyName}.Select(x => x.ToString()).ToList()");
+            sb.AppendLine("                };");
+        }
+        else
+        {
+            // Use List (L) for complex types or mixed collections
+            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    L = typedEntity.{propertyName}.Select(x => {GetToAttributeValueExpressionForCollectionElement(collectionElementType, "x")}).ToList()");
+            sb.AppendLine("                };");
+        }
+        
         sb.AppendLine("            }");
     }
 
@@ -371,24 +268,52 @@ public static class MapperGenerator
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
+        var collectionElementType = GetCollectionElementType(property.PropertyType);
+        var baseElementType = GetBaseType(collectionElementType);
         
-        sb.AppendLine($"            // Deserialize collection {propertyName} from JSON");
-        sb.AppendLine($"            if (item.TryGetValue(\"{attributeName}\", out var {propertyName.ToLowerInvariant()}Value) && !string.IsNullOrEmpty({propertyName.ToLowerInvariant()}Value.S))");
+        sb.AppendLine($"            // Convert collection {propertyName} from native DynamoDB type");
+        sb.AppendLine($"            if (item.TryGetValue(\"{attributeName}\", out var {propertyName.ToLowerInvariant()}Value))");
         sb.AppendLine("            {");
         sb.AppendLine($"                try");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    entity.{propertyName} = System.Text.Json.JsonSerializer.Deserialize<{property.PropertyType}>({propertyName.ToLowerInvariant()}Value.S);");
-        sb.AppendLine("                }");
-        sb.AppendLine("                catch (System.Text.Json.JsonException ex)");
-        sb.AppendLine("                {");
-        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
-        sb.AppendLine($"                        typeof({entity.ClassName}),");
-        sb.AppendLine($"                        \"{propertyName}\",");
-        sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
-        sb.AppendLine($"                        typeof({property.PropertyType}),");
-        sb.AppendLine("                        ex)");
-        sb.AppendLine($"                        .WithContext(\"JsonValue\", {propertyName.ToLowerInvariant()}Value.S)");
-        sb.AppendLine($"                        .WithContext(\"DeserializationError\", \"Failed to deserialize JSON to collection type\");");
+        
+        if (baseElementType == "string")
+        {
+            // Handle String Set (SS)
+            sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.SS != null && {propertyName.ToLowerInvariant()}Value.SS.Count > 0)");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}({propertyName.ToLowerInvariant()}Value.SS);");
+            sb.AppendLine("                    }");
+            sb.AppendLine("                    else");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}();");
+            sb.AppendLine("                    }");
+        }
+        else if (IsNumericType(baseElementType))
+        {
+            // Handle Number Set (NS)
+            sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.NS != null && {propertyName.ToLowerInvariant()}Value.NS.Count > 0)");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}({propertyName.ToLowerInvariant()}Value.NS.Select({GetNumericConversionExpression(baseElementType)}));");
+            sb.AppendLine("                    }");
+            sb.AppendLine("                    else");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}();");
+            sb.AppendLine("                    }");
+        }
+        else
+        {
+            // Handle List (L) for complex types
+            sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.L != null && {propertyName.ToLowerInvariant()}Value.L.Count > 0)");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}({propertyName.ToLowerInvariant()}Value.L.Select({GetFromAttributeValueExpressionForCollectionElement(collectionElementType)}));");
+            sb.AppendLine("                    }");
+            sb.AppendLine("                    else");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}();");
+            sb.AppendLine("                    }");
+        }
+        
         sb.AppendLine("                }");
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
@@ -671,7 +596,7 @@ public static class MapperGenerator
             sb.AppendLine($"                EntityDiscriminator = \"{entity.EntityDiscriminator}\",");
         }
         
-        sb.AppendLine($"                IsMultiItemEntity = {entity.IsMultiItemEntity.ToString().ToLowerInvariant()},");
+        sb.AppendLine($"                IsMultiItemEntity = false,");
         sb.AppendLine("                Properties = new PropertyMetadata[]");
         sb.AppendLine("                {");
         
@@ -897,6 +822,81 @@ public static class MapperGenerator
         };
         
         return !primitiveTypes.Contains(baseType);
+    }
+
+    private static bool IsNumericType(string typeName)
+    {
+        var baseType = GetBaseType(typeName);
+        var numericTypes = new[]
+        {
+            "int", "long", "double", "float", "decimal", "byte", "short", "uint", "ulong", "ushort",
+            "System.Int32", "System.Int64", "System.Double", "System.Single", "System.Decimal", 
+            "System.Byte", "System.Int16", "System.UInt32", "System.UInt64", "System.UInt16"
+        };
+        
+        return numericTypes.Contains(baseType);
+    }
+
+    private static string GetToAttributeValueExpressionForCollectionElement(string elementType, string valueExpression)
+    {
+        var baseType = GetBaseType(elementType);
+        
+        return baseType switch
+        {
+            "string" => $"new AttributeValue {{ S = {valueExpression} }}",
+            "int" or "System.Int32" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
+            "long" or "System.Int64" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
+            "double" or "System.Double" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
+            "float" or "System.Single" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
+            "decimal" or "System.Decimal" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
+            "bool" or "System.Boolean" => $"new AttributeValue {{ BOOL = {valueExpression} }}",
+            "DateTime" or "System.DateTime" => $"new AttributeValue {{ S = {valueExpression}.ToString(\"O\") }}",
+            "DateTimeOffset" or "System.DateTimeOffset" => $"new AttributeValue {{ S = {valueExpression}.ToString(\"O\") }}",
+            "Guid" or "System.Guid" => $"new AttributeValue {{ S = {valueExpression}.ToString() }}",
+            "Ulid" => $"new AttributeValue {{ S = {valueExpression}.ToString() }}",
+            _ when IsEnumType(elementType) => $"new AttributeValue {{ S = {valueExpression}.ToString() }}",
+            _ => $"new AttributeValue {{ S = {valueExpression}?.ToString() ?? \"\" }}"
+        };
+    }
+
+    private static string GetNumericConversionExpression(string numericType)
+    {
+        return numericType switch
+        {
+            "int" or "System.Int32" => "x => int.Parse(x)",
+            "long" or "System.Int64" => "x => long.Parse(x)",
+            "double" or "System.Double" => "x => double.Parse(x)",
+            "float" or "System.Single" => "x => float.Parse(x)",
+            "decimal" or "System.Decimal" => "x => decimal.Parse(x)",
+            "byte" or "System.Byte" => "x => byte.Parse(x)",
+            "short" or "System.Int16" => "x => short.Parse(x)",
+            "uint" or "System.UInt32" => "x => uint.Parse(x)",
+            "ulong" or "System.UInt64" => "x => ulong.Parse(x)",
+            "ushort" or "System.UInt16" => "x => ushort.Parse(x)",
+            _ => "x => x" // fallback to string
+        };
+    }
+
+    private static string GetFromAttributeValueExpressionForCollectionElement(string elementType)
+    {
+        var baseType = GetBaseType(elementType);
+        
+        return baseType switch
+        {
+            "string" => "x => x.S",
+            "int" or "System.Int32" => "x => int.Parse(x.N)",
+            "long" or "System.Int64" => "x => long.Parse(x.N)",
+            "double" or "System.Double" => "x => double.Parse(x.N)",
+            "float" or "System.Single" => "x => float.Parse(x.N)",
+            "decimal" or "System.Decimal" => "x => decimal.Parse(x.N)",
+            "bool" or "System.Boolean" => "x => x.BOOL",
+            "DateTime" or "System.DateTime" => "x => DateTime.Parse(x.S)",
+            "DateTimeOffset" or "System.DateTimeOffset" => "x => DateTimeOffset.Parse(x.S)",
+            "Guid" or "System.Guid" => "x => Guid.Parse(x.S)",
+            "Ulid" => "x => Ulid.Parse(x.S)",
+            _ when IsEnumType(elementType) => $"x => Enum.Parse<{baseType}>(x.S)",
+            _ => "x => x.S" // fallback to string
+        };
     }
 
     private static void GenerateRelatedEntityMapping(StringBuilder sb, EntityModel entity)

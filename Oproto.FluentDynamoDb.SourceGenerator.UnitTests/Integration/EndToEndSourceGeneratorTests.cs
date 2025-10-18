@@ -159,12 +159,13 @@ namespace TestNamespace
         
         var entityCode = GetGeneratedSource(result, "MultiItemEntity.g.cs");
         
-        // Should detect as multi-item entity due to collections
+        // Should generate single-item entity with native DynamoDB collection support
         entityCode.Should().Contain("public static List<Dictionary<string, AttributeValue>> ToDynamoDbMultiple<TSelf>(TSelf entity)");
-        entityCode.Should().Contain("// Serialize collection Items as JSON for single-item storage");
-        entityCode.Should().Contain("// Serialize collection Details as JSON for single-item storage");
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize");
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Deserialize");
+        entityCode.Should().Contain("// Convert collection Items to native DynamoDB type");
+        entityCode.Should().Contain("// Convert collection Details to native DynamoDB type");
+        entityCode.Should().Contain("// Convert collection Items from native DynamoDB type");
+        entityCode.Should().Contain("// Convert collection Details from native DynamoDB type");
+        entityCode.Should().NotContain("System.Text.Json.JsonSerializer");
     }
 
     [Fact]

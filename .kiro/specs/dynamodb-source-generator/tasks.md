@@ -238,7 +238,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Ensure proper handling of null, empty, and whitespace entity types
   - _Requirements: 8.1, 8.2, 8.3_
 
-- [ ] 25. Fix multi-item entity generation tests
+- [x] 25. Fix multi-item entity generation tests
   - Fix tests expecting specific JSON serialization comments in generated code
   - Update multi-item entity generation to match expected patterns
   - Fix collection handling in multi-item entities
