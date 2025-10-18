@@ -61,6 +61,10 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
             var fieldsCode = FieldsGenerator.GenerateFieldsClass(entity);
             context.AddSource($"{entity.ClassName}Fields.g.cs", fieldsCode);
 
+            // Generate Keys class with key builder methods
+            var keysCode = KeysGenerator.GenerateKeysClass(entity);
+            context.AddSource($"{entity.ClassName}Keys.g.cs", keysCode);
+
             // Generate placeholder implementation - will be expanded in later tasks
             var sourceCode = GenerateEntityImplementation(entity);
             context.AddSource($"{entity.ClassName}.g.cs", sourceCode);

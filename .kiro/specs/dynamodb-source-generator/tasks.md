@@ -38,7 +38,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Ensure generated field names are compile-time safe and discoverable
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 5. Generate key builder methods
+- [x] 5. Generate key builder methods
   - Create KeysGenerator to produce static key construction methods
   - Generate partition key and sort key builder methods with proper formatting
   - Handle composite keys with multiple components, prefixes, and separators
