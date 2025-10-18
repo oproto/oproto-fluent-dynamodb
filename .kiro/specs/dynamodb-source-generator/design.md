@@ -95,7 +95,135 @@ public enum DynamoDbOperation
 }
 ```
 
-#### 2. IDynamoDbEntity Interface
+**Computed and Composite Key Attributes:**
+```csharp
+[AttributeUsage(AttributeTargets.Property)]
+public class ComputedAttribute : Attribute
+{
+    public string[] SourceProperties { get; }
+    public string? Format { get; set; }
+    public string? Separator { get; set; } = "#";
+    
+    public ComputedAttribute(params string[] sourceProperties) 
+        => SourceProperties = sourceProperties;
+}
+
+[AttributeUsage(AttributeTargets.Property)]
+public class ExtractedAttribute : Attribute
+{
+    public string SourceProperty { get; }
+    public int Index { get; set; }
+    public string? Separator { get; set; } = "#";
+    
+    public ExtractedAttribute(string sourceProperty, int index) 
+    {
+        SourceProperty = sourceProperty;
+        Index = index;
+    }
+}
+```
+
+#### 2. Computed and Composite Key Patterns
+
+**Pattern 1: Computed Composite Keys**
+```csharp
+[DynamoDbTable("customers")]
+public partial class Customer
+{
+    // Source properties (not directly mapped to DynamoDB)
+    public string TenantId { get; set; }
+    public string CustomerId { get; set; }
+    
+    // Computed composite partition key
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    [Computed(nameof(TenantId), nameof(CustomerId))]
+    public string Pk { get; set; }
+    
+    // Computed GSI keys
+    [GlobalSecondaryIndex("StatusIndex", IsPartitionKey = true)]
+    [DynamoDbAttribute("gsi1_pk")]
+    [Computed(nameof(Status), Format = "STATUS#{0}")]
+    public string StatusIndexPk { get; set; }
+    
+    [DynamoDbAttribute("status")]
+    public string Status { get; set; }
+}
+
+// Generated code handles computation:
+// entity.Pk = $"{entity.TenantId}#{entity.CustomerId}";
+// entity.StatusIndexPk = $"STATUS#{entity.Status}";
+```
+
+**Pattern 2: Extracted Component Properties**
+```csharp
+[DynamoDbTable("customers")]
+public partial class Customer
+{
+    // Composite key stored in DynamoDB
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string Pk { get; set; }
+    
+    // Extracted component properties (not directly mapped)
+    [Extracted(nameof(Pk), 0)]
+    public string TenantId { get; set; }
+    
+    [Extracted(nameof(Pk), 1)]
+    public string CustomerId { get; set; }
+}
+
+// Generated code handles extraction:
+// var parts = entity.Pk.Split('#');
+// entity.TenantId = parts[0];
+// entity.CustomerId = parts[1];
+```
+
+**Pattern 3: Bidirectional Mapping**
+```csharp
+[DynamoDbTable("customers")]
+public partial class Customer
+{
+    // Component properties
+    public string TenantId { get; set; }
+    public string CustomerId { get; set; }
+    
+    // Computed composite key with extraction support
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    [Computed(nameof(TenantId), nameof(CustomerId))]
+    public string Pk { get; set; }
+    
+    // Alternative: Use both attributes for bidirectional mapping
+    [Extracted(nameof(Pk), 0)]
+    public string ExtractedTenantId => TenantId; // Read-only computed property
+}
+
+// Generated ToDynamoDb: Computes Pk from TenantId + CustomerId
+// Generated FromDynamoDb: Extracts TenantId + CustomerId from Pk
+```
+
+**Pattern 4: Custom Formats and Separators**
+```csharp
+[DynamoDbTable("transactions")]
+public partial class Transaction
+{
+    public DateTime Date { get; set; }
+    public string TransactionType { get; set; }
+    public int SequenceNumber { get; set; }
+    
+    // Custom format with date formatting
+    [SortKey]
+    [DynamoDbAttribute("sk")]
+    [Computed(nameof(Date), nameof(TransactionType), nameof(SequenceNumber), 
+              Format = "{0:yyyy-MM-dd}#{1}#{2:D6}", Separator = "#")]
+    public string Sk { get; set; }
+    
+    // Result: "2024-03-15#PAYMENT#000123"
+}
+```
+
+#### 3. IDynamoDbEntity Interface
 
 ```csharp
 public interface IDynamoDbEntity
@@ -429,6 +557,22 @@ public class PropertyModel
     public bool IsNullable { get; set; }
     public KeyFormatModel? KeyFormat { get; set; }
     public QueryableModel? Queryable { get; set; }
+    public ComputedKeyModel? ComputedKey { get; set; }
+    public ExtractedKeyModel? ExtractedKey { get; set; }
+}
+
+public class ComputedKeyModel
+{
+    public string[] SourceProperties { get; set; }
+    public string? Format { get; set; }
+    public string Separator { get; set; } = "#";
+}
+
+public class ExtractedKeyModel
+{
+    public string SourceProperty { get; set; }
+    public int Index { get; set; }
+    public string Separator { get; set; } = "#";
 }
 
 public class IndexModel
@@ -445,6 +589,86 @@ public class RelationshipModel
     public string SortKeyPattern { get; set; }
     public string? EntityType { get; set; }
     public bool IsCollection { get; set; }
+}
+```
+
+### Computed Key Generation Logic
+
+**Generated ToDynamoDb Method with Computed Keys:**
+```csharp
+public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity) 
+    where TSelf : IDynamoDbEntity
+{
+    if (entity is not Customer typedEntity)
+        throw new ArgumentException($"Expected Customer, got {entity.GetType().Name}");
+    
+    // Compute composite keys before mapping
+    typedEntity.Pk = $"{typedEntity.TenantId}#{typedEntity.CustomerId}";
+    typedEntity.StatusIndexPk = $"STATUS#{typedEntity.Status}";
+    
+    var item = new Dictionary<string, AttributeValue>();
+    
+    // Map computed keys to DynamoDB
+    item["pk"] = new AttributeValue { S = typedEntity.Pk };
+    item["gsi1_pk"] = new AttributeValue { S = typedEntity.StatusIndexPk };
+    item["status"] = new AttributeValue { S = typedEntity.Status };
+    
+    return item;
+}
+```
+
+**Generated FromDynamoDb Method with Extracted Keys:**
+```csharp
+public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item) 
+    where TSelf : IDynamoDbEntity
+{
+    if (typeof(TSelf) != typeof(Customer))
+        throw new ArgumentException($"Expected Customer, got {typeof(TSelf).Name}");
+    
+    var entity = new Customer();
+    
+    // Map from DynamoDB first
+    if (item.TryGetValue("pk", out var pkValue))
+        entity.Pk = pkValue.S;
+    
+    if (item.TryGetValue("status", out var statusValue))
+        entity.Status = statusValue.S;
+    
+    // Extract component properties from composite keys
+    if (!string.IsNullOrEmpty(entity.Pk))
+    {
+        var pkParts = entity.Pk.Split('#');
+        if (pkParts.Length >= 2)
+        {
+            entity.TenantId = pkParts[0];
+            entity.CustomerId = pkParts[1];
+        }
+    }
+    
+    return (TSelf)(object)entity;
+}
+```
+
+**Generated Key Builder Methods:**
+```csharp
+public static partial class CustomerKeys
+{
+    public static string Pk(string tenantId, string customerId)
+    {
+        return $"{tenantId}#{customerId}";
+    }
+    
+    public static string StatusIndexPk(string status)
+    {
+        return $"STATUS#{status}";
+    }
+    
+    // Extraction helpers
+    public static (string TenantId, string CustomerId) ExtractPkComponents(string pk)
+    {
+        var parts = pk.Split('#');
+        return parts.Length >= 2 ? (parts[0], parts[1]) : (string.Empty, string.Empty);
+    }
 }
 ```
 
@@ -475,6 +699,30 @@ public static class DiagnosticDescriptors
         "Conflicting entity types",
         "Multiple entities in table '{0}' have conflicting sort key patterns",
         "DynamoDb", 
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+    
+    public static readonly DiagnosticDescriptor InvalidComputedKeySource = new(
+        "DYNDB004",
+        "Invalid computed key source",
+        "Computed property '{0}' references non-existent source property '{1}'",
+        "DynamoDb",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+    
+    public static readonly DiagnosticDescriptor InvalidExtractedKeySource = new(
+        "DYNDB005",
+        "Invalid extracted key source",
+        "Extracted property '{0}' references non-existent source property '{1}'",
+        "DynamoDb",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+    
+    public static readonly DiagnosticDescriptor CircularKeyDependency = new(
+        "DYNDB006",
+        "Circular key dependency",
+        "Circular dependency detected between computed properties: {0}",
+        "DynamoDb",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 }

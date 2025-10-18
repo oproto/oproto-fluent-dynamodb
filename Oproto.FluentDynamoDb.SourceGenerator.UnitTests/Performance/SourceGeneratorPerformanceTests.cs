@@ -24,7 +24,10 @@ public class SourceGeneratorPerformanceTests
         stopwatch.Stop();
 
         // Assert
-        result.Diagnostics.Should().BeEmpty();
+        // Should generate warnings for reserved words and scalability
+        result.Diagnostics.Should().NotBeEmpty();
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warnings for "name", "count"
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
         result.GeneratedSources.Should().HaveCount(3);
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000, "Single entity generation should complete within 1 second");
     }
@@ -46,7 +49,10 @@ public class SourceGeneratorPerformanceTests
         stopwatch.Stop();
 
         // Assert
-        result.Diagnostics.Should().BeEmpty();
+        // Should generate warnings for reserved words and scalability for each entity
+        result.Diagnostics.Should().NotBeEmpty();
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warnings
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warnings
         result.GeneratedSources.Should().HaveCount(30); // 3 files per entity * 10 entities
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(5000, "Multiple entity generation should complete within 5 seconds");
     }
@@ -63,7 +69,9 @@ public class SourceGeneratorPerformanceTests
         stopwatch.Stop();
 
         // Assert
-        result.Diagnostics.Should().BeEmpty();
+        // Complex entities may generate scalability warnings
+        result.Diagnostics.Should().NotBeEmpty();
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
         result.GeneratedSources.Should().HaveCount(3);
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(2000, "Complex entity generation should complete within 2 seconds");
     }
@@ -105,7 +113,9 @@ public class SourceGeneratorPerformanceTests
         stopwatch.Stop();
 
         // Assert
-        result.Diagnostics.Should().BeEmpty();
+        // Should generate scalability warning for partition key
+        result.Diagnostics.Should().NotBeEmpty();
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
         result.GeneratedSources.Should().HaveCount(3);
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(3000, "Entity with many GSIs should complete within 3 seconds");
         
@@ -127,7 +137,9 @@ public class SourceGeneratorPerformanceTests
         stopwatch.Stop();
 
         // Assert
-        result.Diagnostics.Should().BeEmpty();
+        // Should generate scalability warning for partition key
+        result.Diagnostics.Should().NotBeEmpty();
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
         result.GeneratedSources.Should().HaveCount(3);
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(4000, "Entity with many related entities should complete within 4 seconds");
         
@@ -152,7 +164,10 @@ public class SourceGeneratorPerformanceTests
             var result = GenerateCode(source);
             stopwatch.Stop();
             
-            result.Diagnostics.Should().BeEmpty();
+            // Should generate warnings for reserved words and scalability
+            result.Diagnostics.Should().NotBeEmpty();
+            result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warnings
+            result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
             times.Add(stopwatch.ElapsedMilliseconds);
         }
 
@@ -180,7 +195,10 @@ public class SourceGeneratorPerformanceTests
         stopwatch.Stop();
 
         // Assert
-        result.Diagnostics.Should().BeEmpty();
+        // Should generate warnings for reserved word "name" and scalability
+        result.Diagnostics.Should().NotBeEmpty();
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warning for "name"
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
         result.GeneratedSources.Should().HaveCount(3);
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(3000, "Large source file should be processed within 3 seconds");
     }

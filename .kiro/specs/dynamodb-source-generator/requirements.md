@@ -234,7 +234,19 @@ The attributes must capture sufficient metadata about types, relationships, inde
 4. WHEN related entities are defined, THE Attributes SHALL capture relationship metadata that could support future join-style LINQ expressions
 5. WHEN the attribute design is complete, THE Metadata SHALL provide a foundation for AOT-compatible LINQ expression trees
 
-### Requirement 14: Error Handling and Diagnostics
+### Requirement 14: Computed and Composite Key Support
+
+**User Story:** As a developer, I want to define computed composite keys and extract components from existing keys so that I can follow DynamoDB best practices for key design.
+
+#### Acceptance Criteria
+
+1. WHEN I define a property with [Computed] attribute, THE Source_Generator SHALL generate code to compute the property value from source properties
+2. WHEN I define a property with [Extracted] attribute, THE Source_Generator SHALL generate code to extract the property value from a composite key
+3. WHEN I use composite key patterns like "{TenantId}#{CustomerId}", THE Source_Generator SHALL handle bidirectional mapping between composite keys and component properties
+4. WHEN I save an entity with computed keys, THE Generated_Code SHALL compute key values before mapping to DynamoDB
+5. WHEN I load an entity with extracted properties, THE Generated_Code SHALL extract component values from composite keys after mapping from DynamoDB
+
+### Requirement 15: Error Handling and Diagnostics
 
 **User Story:** As a developer, I want clear error messages and diagnostics so that I can troubleshoot source generation issues easily.
 

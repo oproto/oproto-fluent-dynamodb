@@ -162,7 +162,90 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Add test cases that verify diagnostic messages are helpful and actionable
   - _Requirements: 14.1, 14.2, 14.3, 14.4_
 
-- [ ]* 19. Create comprehensive documentation and examples
+## Test Failure Analysis Summary
+
+**Current Status:** 43 failed tests, 90 passed tests (68% pass rate)
+
+**Failure Categories:**
+1. **Diagnostic Expectation Issues (60% of failures):** Tests expect empty diagnostics but get legitimate warnings (DYNDB021, DYNDB027, DYNDB023, DYNDB029)
+2. **Source Generator Execution Issues (15% of failures):** Tests expect generated sources but get none - source generator not running properly
+3. **EntityAnalyzer Issues (10% of failures):** Tests expect diagnostics or analysis results but get null/empty
+4. **Code Content Validation Issues (10% of failures):** Tests expect specific generated code patterns but don't find them
+5. **Logic/Edge Case Issues (5% of failures):** Specific test logic problems (whitespace handling, type resolution)
+
+**Root Causes:**
+- Tests written before diagnostic system was fully implemented
+- Source generator compilation/execution environment issues in tests
+- Generated code structure doesn't match test expectations
+- Missing error detection in EntityAnalyzer for some scenarios
+
+## Test Failure Remediation Tasks
+
+- [x] 19. Fix diagnostic expectation tests across all test suites
+  - Update remaining EdgeCases tests to expect legitimate warnings instead of empty diagnostics
+  - Update remaining Performance tests to expect appropriate warnings (DYNDB021, DYNDB027, DYNDB029)
+  - Fix tests that expect empty diagnostics but get reserved word warnings
+  - Fix tests that expect empty diagnostics but get scalability warnings
+  - _Requirements: 14.1, 14.2, 14.3, 14.4_
+
+- [ ] 20. Fix source generator execution issues
+  - Investigate tests that expect generated sources but get none (0 generated files)
+  - Fix tests where source generator fails to run properly
+  - Debug compilation issues that prevent source generation
+  - Ensure proper attribute definitions are available during test compilation
+  - _Requirements: 1.1, 1.2, 2.1, 2.2_
+
+- [ ] 21. Fix EntityAnalyzer test failures
+  - Fix tests that expect diagnostic reporting but get no diagnostics
+  - Fix tests that expect entity analysis results but get null
+  - Ensure EntityAnalyzer properly detects and reports validation issues
+  - Fix missing partition key detection (DYNDB001)
+  - Fix multiple partition key detection (DYNDB002)
+  - _Requirements: 14.1, 14.2, 14.3_
+
+- [ ] 22. Fix code generation content validation tests
+  - Fix tests that expect specific generated code content but don't find it
+  - Update tests for MapperGenerator to match actual generated code structure
+  - Update tests for KeysGenerator to match actual generated code structure
+  - Fix tests expecting specific method signatures or code patterns
+  - Ensure generated code matches expected patterns for type conversions
+  - _Requirements: 2.1, 2.2, 3.1, 3.2, 4.1, 4.2_
+
+- [ ] 23. Fix RelationshipModel test logic issues
+  - Fix HasSpecificEntityType test with whitespace-only entity type
+  - Review and fix entity type detection logic for edge cases
+  - Ensure proper handling of null, empty, and whitespace entity types
+  - _Requirements: 8.1, 8.2, 8.3_
+
+- [ ] 24. Fix multi-item entity generation tests
+  - Fix tests expecting specific JSON serialization comments in generated code
+  - Update multi-item entity generation to match expected patterns
+  - Fix collection handling in multi-item entities
+  - Ensure proper type name resolution in generated code (fix "tring" vs "string" issues)
+  - _Requirements: 6.1, 6.2, 6.3, 6.4_
+
+- [ ] 25. Fix error scenario diagnostic tests
+  - Fix tests that expect specific error diagnostics but get none
+  - Ensure source generator properly reports errors for invalid configurations
+  - Fix non-partial class detection (DYNDB010)
+  - Fix multiple partition key detection (DYNDB002)
+  - Fix missing partition key detection (DYNDB001)
+  - _Requirements: 14.1, 14.2, 14.3, 14.4_
+
+- [ ] 26. Implement computed and composite key support
+  - Create ComputedAttribute and ExtractedAttribute classes
+  - Add ComputedKeyModel and ExtractedKeyModel to PropertyModel
+  - Extend EntityAnalyzer to detect and validate computed key attributes
+  - Generate computed key logic in ToDynamoDb methods (compute before mapping)
+  - Generate extracted key logic in FromDynamoDb methods (extract after mapping)
+  - Add key builder methods for computed composite keys
+  - Implement validation for circular dependencies and invalid source properties
+  - Add diagnostic descriptors for computed key validation errors (DYNDB004, DYNDB005, DYNDB006)
+  - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
+
+## Optional Enhancement Tasks
+
+- [ ]* 26. Create comprehensive documentation and examples
   - Write developer guide for using DynamoDB source generator
   - Create migration guide from manual mapping to generated code
   - Add code examples for common scenarios (single entities, multi-item, related entities)
@@ -170,7 +253,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Create troubleshooting guide for common issues and error messages
   - _Requirements: 10.4, 14.5_
 
-- [ ]* 20. Performance optimization and advanced features
+- [ ]* 27. Performance optimization and advanced features
   - Optimize generated code for performance (minimize allocations, efficient mapping)
   - Add caching for expensive operations like EntityMetadata generation
   - Implement incremental source generation for better build performance

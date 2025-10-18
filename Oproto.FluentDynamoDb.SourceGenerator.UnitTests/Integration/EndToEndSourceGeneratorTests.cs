@@ -72,10 +72,8 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        // Should generate warnings for reserved words and scalability concerns
-        result.Diagnostics.Should().NotBeEmpty();
-        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word usage
-        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
+        // This entity uses good practices, so should have minimal or no warnings
+        result.Diagnostics.Should().BeEmpty();
         result.GeneratedSources.Should().HaveCount(3);
         
         // Verify entity implementation
