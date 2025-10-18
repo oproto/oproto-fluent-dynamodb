@@ -91,4 +91,9 @@ public class PropertyModel
     /// Gets a value indicating whether this property is extracted from another property.
     /// </summary>
     public bool IsExtracted => ExtractedKey != null;
+
+    /// <summary>
+    /// Gets a value indicating whether this property is read-only (computed or extracted).
+    /// </summary>
+    public bool IsReadOnly => IsComputed || IsExtracted;
 }

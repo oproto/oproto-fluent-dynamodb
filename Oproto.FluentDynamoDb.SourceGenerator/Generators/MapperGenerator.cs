@@ -61,8 +61,8 @@ public static class MapperGenerator
 
     private static void GenerateToDynamoDbMethod(StringBuilder sb, EntityModel entity)
     {
-        // Always generate single-item entity with JSON serialization for collections
-        GenerateSingleItemToDynamoDbMethod(sb, entity);
+        // Use optimized code generation for better performance
+        Performance.OptimizedCodeGenerator.GenerateOptimizedToDynamoDbMethod(sb, entity);
     }
 
     private static void GenerateSingleItemToDynamoDbMethod(StringBuilder sb, EntityModel entity)

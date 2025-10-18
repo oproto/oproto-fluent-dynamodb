@@ -3,27 +3,24 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Oproto.FluentDynamoDb.SourceGenerator.Analysis;
 using Oproto.FluentDynamoDb.SourceGenerator.Generators;
 using Oproto.FluentDynamoDb.SourceGenerator.Models;
+using Oproto.FluentDynamoDb.SourceGenerator.Performance;
+using Oproto.FluentDynamoDb.SourceGenerator.Advanced;
 using System.Collections.Immutable;
 
 namespace Oproto.FluentDynamoDb.SourceGenerator;
 
 /// <summary>
-/// Source generator for DynamoDB entity mapping code, field constants, and key builders.
+/// High-performance DynamoDB source generator with advanced optimizations and features.
+/// Uses incremental generation, caching, and performance optimizations for fast builds.
 /// </summary>
 [Generator]
 public class DynamoDbSourceGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Register syntax receiver for classes with DynamoDbTable attribute
-        var entityClasses = context.SyntaxProvider
-            .CreateSyntaxProvider(
-                predicate: static (s, _) => IsDynamoDbEntity(s),
-                transform: static (ctx, _) => GetEntityModel(ctx))
-            .Where(static m => m.Model is not null);
-
-        // Register code generation
-        context.RegisterSourceOutput(entityClasses.Collect(), Execute);
+        // Use the high-performance incremental generator for better build performance
+        var incrementalGenerator = new IncrementalSourceGenerator();
+        incrementalGenerator.Initialize(context);
     }
 
     private static bool IsDynamoDbEntity(SyntaxNode node)
@@ -79,11 +76,27 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
             var keysCode = KeysGenerator.GenerateKeysClass(entity);
             context.AddSource($"{entity.ClassName}Keys.g.cs", keysCode);
 
-            // Generate entity implementation with mapping methods
-            var sourceCode = MapperGenerator.GenerateEntityImplementation(entity);
+            // Generate optimized entity implementation with mapping methods
+            var sourceCode = GenerateOptimizedEntityImplementation(entity);
             context.AddSource($"{entity.ClassName}.g.cs", sourceCode);
         }
     }
 
+    /// <summary>
+    /// Generates optimized entity implementation using advanced performance optimizations.
+    /// </summary>
+    private static string GenerateOptimizedEntityImplementation(EntityModel entity)
+    {
+        // Create default compilation settings for the legacy generator
+        var settings = new CompilationSettings
+        {
+            TargetFramework = "net8.0",
+            OptimizationLevel = Microsoft.CodeAnalysis.OptimizationLevel.Release,
+            NullableContextOptions = Microsoft.CodeAnalysis.NullableContextOptions.Enable,
+            AssemblyName = "Generated"
+        };
 
+        // Use the advanced performance optimization system
+        return AdvancedPerformanceOptimizations.GenerateOptimizedEntityCode(entity, settings);
+    }
 }
