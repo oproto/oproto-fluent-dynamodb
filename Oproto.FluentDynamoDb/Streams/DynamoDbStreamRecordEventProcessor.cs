@@ -8,11 +8,19 @@ namespace Oproto.FluentDynamoDb.Streams;
 /// </summary>
 public class DynamoDbStreamRecordEventProcessor
 {
+    /// <summary>
+    /// Initializes a new instance of the DynamoDbStreamRecordEventProcessor class.
+    /// </summary>
+    /// <param name="record">The DynamoDB stream record being processed.</param>
+    public DynamoDbStreamRecordEventProcessor(DynamoDBEvent.DynamodbStreamRecord record)
+    {
+        Record = record;
+    }
     
     /// <summary>
     /// Gets the DynamoDB stream record being processed.
     /// </summary>
-    public required DynamoDBEvent.DynamodbStreamRecord Record { get; init; }
+    public DynamoDBEvent.DynamodbStreamRecord Record { get; init; }
 
     public async Task<DynamoDbStreamRecordEventProcessor> Awaitable()
     {

@@ -314,7 +314,7 @@ public static class MapperGenerator
         // Generate property mappings from AttributeValue
         foreach (var property in entity.Properties.Where(p => p.HasAttributeMapping))
         {
-            GeneratePropertyFromAttributeValue(sb, property);
+            GeneratePropertyFromAttributeValue(sb, property, entity);
         }
 
         // For single-item entities with relationships, related entities would be null
@@ -338,14 +338,14 @@ public static class MapperGenerator
         sb.AppendLine("        }");
     }
 
-    private static void GeneratePropertyFromAttributeValue(StringBuilder sb, PropertyModel property)
+    private static void GeneratePropertyFromAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
         
         if (property.IsCollection)
         {
-            GenerateCollectionPropertyFromAttributeValue(sb, property);
+            GenerateCollectionPropertyFromAttributeValue(sb, property, entity);
             return;
         }
         
@@ -358,7 +358,7 @@ public static class MapperGenerator
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
         sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
-        sb.AppendLine($"                        typeof({property.PropertyName.Split('.').First()}),");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
         sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
@@ -367,7 +367,7 @@ public static class MapperGenerator
         sb.AppendLine("            }");
     }
 
-    private static void GenerateCollectionPropertyFromAttributeValue(StringBuilder sb, PropertyModel property)
+    private static void GenerateCollectionPropertyFromAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
@@ -382,7 +382,7 @@ public static class MapperGenerator
         sb.AppendLine("                catch (System.Text.Json.JsonException ex)");
         sb.AppendLine("                {");
         sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
-        sb.AppendLine($"                        typeof({property.PropertyName.Split('.').First()}),");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
         sb.AppendLine($"                        typeof({property.PropertyType}),");
@@ -393,7 +393,7 @@ public static class MapperGenerator
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
         sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
-        sb.AppendLine($"                        typeof({property.PropertyName.Split('.').First()}),");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
         sb.AppendLine($"                        typeof({property.PropertyType}),");

@@ -33,7 +33,7 @@ public static class DynamoDbStreamProcessorExtensions
 {
     private static async Task InternalProcess(this Task<DynamoDbStreamRecordProcessor> recordProcessor, Func<Task<DynamoDbStreamRecordEventProcessor>,Task> processFunc)
     {
-        DynamoDbStreamRecordEventProcessor eventProcessor = new() { Record = recordProcessor.Result.Record };
+        DynamoDbStreamRecordEventProcessor eventProcessor = new(recordProcessor.Result.Record);
         await processFunc(eventProcessor.Awaitable());
     }
     
