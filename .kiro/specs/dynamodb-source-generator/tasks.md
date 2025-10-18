@@ -30,7 +30,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Implement diagnostic reporting for configuration errors
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 14.1, 14.4_
 
-- [ ] 4. Generate field name constants classes
+- [x] 4. Generate field name constants classes
   - Create FieldsGenerator to produce static field name constant classes
   - Generate main field constants for entity properties mapped to DynamoDB attributes
   - Generate nested GSI field classes for Global Secondary Index attributes

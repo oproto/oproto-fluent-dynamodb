@@ -19,7 +19,11 @@ namespace TestNamespace
     [DynamoDbTable(""test-table"")]
     public partial class TestEntity
     {
+        [PartitionKey]
+        [DynamoDbAttribute(""pk"")]
         public string Id { get; set; } = string.Empty;
+        
+        [DynamoDbAttribute(""name"")]
         public string Name { get; set; } = string.Empty;
     }
 }";
@@ -29,11 +33,18 @@ namespace TestNamespace
 
         // Assert
         result.Diagnostics.Should().BeEmpty();
-        result.GeneratedSources.Should().HaveCount(1);
+        result.GeneratedSources.Should().HaveCount(2); // Entity + Fields
         
-        var generatedCode = result.GeneratedSources[0].SourceText.ToString();
-        generatedCode.Should().Contain("public partial class TestEntity");
-        generatedCode.Should().Contain("namespace TestNamespace");
+        // Check entity implementation
+        var entityCode = result.GeneratedSources.First(s => s.FileName.Contains("TestEntity.g.cs")).SourceText.ToString();
+        entityCode.Should().Contain("public partial class TestEntity");
+        entityCode.Should().Contain("namespace TestNamespace");
+        
+        // Check fields class
+        var fieldsCode = result.GeneratedSources.First(s => s.FileName.Contains("TestEntityFields.g.cs")).SourceText.ToString();
+        fieldsCode.Should().Contain("public static partial class TestEntityFields");
+        fieldsCode.Should().Contain("public const string Id = \"pk\";");
+        fieldsCode.Should().Contain("public const string Name = \"name\";");
     }
 
     [Fact]
@@ -55,6 +66,49 @@ namespace TestNamespace
         // Assert
         result.Diagnostics.Should().BeEmpty();
         result.GeneratedSources.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Generator_WithGsiEntity_GeneratesFieldsWithGsiClasses()
+    {
+        // Arrange
+        var source = @"
+using System;
+
+namespace TestNamespace
+{
+    [DynamoDbTable(""test-table"")]
+    public partial class TestEntity
+    {
+        [PartitionKey]
+        [DynamoDbAttribute(""pk"")]
+        public string Id { get; set; } = string.Empty;
+        
+        [GlobalSecondaryIndex(""TestGSI"", IsPartitionKey = true)]
+        [DynamoDbAttribute(""gsi_pk"")]
+        public string GsiKey { get; set; } = string.Empty;
+        
+        [GlobalSecondaryIndex(""TestGSI"", IsSortKey = true)]
+        [DynamoDbAttribute(""gsi_sk"")]
+        public string GsiSort { get; set; } = string.Empty;
+    }
+}";
+
+        // Act
+        var result = GenerateCode(source);
+
+        // Assert
+        result.Diagnostics.Should().BeEmpty();
+        result.GeneratedSources.Should().HaveCount(2);
+        
+        var fieldsCode = result.GeneratedSources.First(s => s.FileName.Contains("TestEntityFields.g.cs")).SourceText.ToString();
+        fieldsCode.Should().Contain("public static partial class TestEntityFields");
+        fieldsCode.Should().Contain("public const string Id = \"pk\";");
+        fieldsCode.Should().Contain("public const string GsiKey = \"gsi_pk\";");
+        fieldsCode.Should().Contain("public const string GsiSort = \"gsi_sk\";");
+        fieldsCode.Should().Contain("public static partial class TestGSIFields");
+        fieldsCode.Should().Contain("public const string PartitionKey = \"gsi_pk\";");
+        fieldsCode.Should().Contain("public const string SortKey = \"gsi_sk\";");
     }
 
     private static GeneratorTestResult GenerateCode(string source)

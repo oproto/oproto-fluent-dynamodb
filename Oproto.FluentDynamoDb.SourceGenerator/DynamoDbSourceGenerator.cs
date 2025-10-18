@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Oproto.FluentDynamoDb.SourceGenerator.Analysis;
+using Oproto.FluentDynamoDb.SourceGenerator.Generators;
 using Oproto.FluentDynamoDb.SourceGenerator.Models;
 using System.Collections.Immutable;
 
@@ -55,6 +56,10 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
             }
 
             if (entity == null) continue;
+
+            // Generate Fields class with field name constants
+            var fieldsCode = FieldsGenerator.GenerateFieldsClass(entity);
+            context.AddSource($"{entity.ClassName}Fields.g.cs", fieldsCode);
 
             // Generate placeholder implementation - will be expanded in later tasks
             var sourceCode = GenerateEntityImplementation(entity);
