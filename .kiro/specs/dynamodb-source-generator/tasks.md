@@ -54,7 +54,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Generate basic EntityMetadata for future LINQ support
   - _Requirements: 1.1, 1.2, 1.4, 5.3, 5.4, 13.1, 13.2_
 
-- [ ] 7. Add enhanced ExecuteAsync method extensions
+- [x] 7. Add enhanced ExecuteAsync method extensions
   - Create EnhancedExecuteAsyncExtensions class in main library
   - Implement generic ExecuteAsync<T> for GetItemRequestBuilder with entity mapping
   - Implement generic ExecuteAsync<T> for QueryRequestBuilder with entity mapping
