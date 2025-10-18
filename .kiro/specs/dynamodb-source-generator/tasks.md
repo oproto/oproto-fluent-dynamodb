@@ -86,7 +86,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Add integration tests with scoped client scenarios
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
 
-- [ ] 11. Create FluentResults extension package
+- [x] 11. Create FluentResults extension package
   - Create Oproto.FluentDynamoDb.FluentResults project targeting .NET 8
   - Implement FluentResults wrapper extensions for all enhanced ExecuteAsync methods
   - Convert exceptions to Result.Fail with appropriate error messages

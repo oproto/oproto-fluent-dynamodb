@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <Version>0.2.0</Version>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <IsTrimmable>true</IsTrimmable>
+        <IsAotCompatible>true</IsAotCompatible>
+        <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+        <IsPackable>true</IsPackable>
+        <StripSymbols>false</StripSymbols>
+        <Description>FluentResults extensions for Oproto.FluentDynamoDb providing Result&lt;T&gt; return patterns instead of exceptions.</Description>
+        <PackageTags>dynamodb;fluentresults;aws;dotnet;aot</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FluentResults" Version="[3.15.2,4.0.0)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Oproto.FluentDynamoDb\Oproto.FluentDynamoDb.csproj" />
+    </ItemGroup>
+
+</Project>
