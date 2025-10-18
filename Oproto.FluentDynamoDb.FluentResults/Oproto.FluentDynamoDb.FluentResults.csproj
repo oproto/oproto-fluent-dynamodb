@@ -21,6 +21,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Oproto.FluentDynamoDb\Oproto.FluentDynamoDb.csproj" />
+        <ProjectReference Include="..\Oproto.FluentDynamoDb.Attributes\Oproto.FluentDynamoDb.Attributes.csproj" />
     </ItemGroup>
 
 </Project>

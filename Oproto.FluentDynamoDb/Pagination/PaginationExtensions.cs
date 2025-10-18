@@ -15,7 +15,6 @@ namespace Oproto.FluentDynamoDb.Pagination;
 /// </summary>
 public static class PaginationExtensions
 {
-#if NET8_0_OR_GREATER
     /// <summary>
     /// Provides access to the private _null field in AttributeValue to fix a deserialization bug in the AWS SDK.
     /// This is required for AOT compatibility as we cannot use reflection.
@@ -23,17 +22,6 @@ public static class PaginationExtensions
     /// </summary>
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_null")]
     static extern ref bool? GetAttributeValueNullField(AttributeValue @this);
-#else
-    /// <summary>
-    /// Fallback method for .NET 6/7 that uses reflection to access the private _null field.
-    /// This is less efficient but maintains compatibility with older .NET versions.
-    /// </summary>
-    private static void SetAttributeValueNullField(AttributeValue attributeValue)
-    {
-        var nullField = typeof(AttributeValue).GetField("_null", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        nullField?.SetValue(attributeValue, null);
-    }
-#endif
     
     /// <summary>
     /// Configures a QueryRequestBuilder with pagination parameters.
@@ -65,11 +53,7 @@ public static class PaginationExtensions
                 foreach (var key in startAt!.Keys)
                 {
                     // Bug fix for deserialization of AttributeValue from DynamoDb
-#if NET8_0_OR_GREATER
                     GetAttributeValueNullField(startAt[key]) = null;
-#else
-                    SetAttributeValueNullField(startAt[key]);
-#endif
                 }
             }
             catch (Exception e)

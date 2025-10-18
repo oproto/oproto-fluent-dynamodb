@@ -8,7 +8,7 @@ namespace Oproto.FluentDynamoDb.Requests;
 /// This class handles the collection and type conversion of expression attribute values
 /// that are used to parameterize DynamoDB expressions safely.
 /// </summary>
-public class AttributeValueInternal()
+public class AttributeValueInternal
 {
     public Dictionary<string, AttributeValue> AttributeValues { get; init; } = new Dictionary<string, AttributeValue>();
     private readonly ParameterGenerator _parameterGenerator = new();

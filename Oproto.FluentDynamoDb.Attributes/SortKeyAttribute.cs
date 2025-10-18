@@ -1,13 +1,15 @@
+using System;
+
 namespace Oproto.FluentDynamoDb.Attributes;
 
 /// <summary>
-/// Marks a property as the partition key for a DynamoDB table.
+/// Marks a property as the sort key for a DynamoDB table.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
-public class PartitionKeyAttribute : Attribute
+public class SortKeyAttribute : Attribute
 {
     /// <summary>
-    /// Gets or sets an optional prefix for the partition key value.
+    /// Gets or sets an optional prefix for the sort key value.
     /// </summary>
     public string? Prefix { get; set; }
 

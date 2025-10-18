@@ -1,3 +1,5 @@
+using System;
+
 namespace Oproto.FluentDynamoDb.Attributes;
 
 /// <summary>
