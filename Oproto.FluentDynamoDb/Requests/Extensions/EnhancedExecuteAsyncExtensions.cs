@@ -44,15 +44,51 @@ public static class EnhancedExecuteAsyncExtensions
     }
 
     /// <summary>
-    /// Executes a Query operation and maps the results to strongly-typed entities.
-    /// For multi-item entities, items with the same partition key are automatically grouped.
+    /// Executes a Query operation and maps each DynamoDB item to a separate entity instance (1:1 mapping).
+    /// Each DynamoDB item becomes a separate T instance in the returned list.
+    /// Use this method when you want to work with individual items as separate entities.
     /// </summary>
     /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
     /// <param name="builder">The QueryRequestBuilder instance.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A QueryResponse containing the mapped entities.</returns>
+    /// <returns>A list of mapped entities, one per DynamoDB item.</returns>
     /// <exception cref="DynamoDbMappingException">Thrown when entity mapping fails.</exception>
-    public static async Task<QueryResponse<T>> ExecuteAsync<T>(
+    public static async Task<List<T>> ToListAsync<T>(
+        this QueryRequestBuilder builder,
+        CancellationToken cancellationToken = default)
+        where T : class, IDynamoDbEntity
+    {
+        try
+        {
+            var response = await builder.ExecuteAsync(cancellationToken);
+            
+            // Each DynamoDB item becomes a separate T instance (1:1 mapping)
+            var entityItems = response.Items
+                .Where(T.MatchesEntity)
+                .Select(item => T.FromDynamoDb<T>(item))
+                .ToList();
+            
+            return entityItems;
+        }
+        catch (Exception ex) when (!(ex is OperationCanceledException))
+        {
+            throw new DynamoDbMappingException(
+                $"Failed to execute Query operation and map to {typeof(T).Name}. Error: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Executes a Query operation and combines multiple DynamoDB items into composite entities (N:1 mapping).
+    /// Multiple DynamoDB items with the same partition key are combined into single T instances.
+    /// Primary entity is identified by sort key patterns, related entities populate properties using [RelatedEntity] attributes.
+    /// Use this method when you want to work with composite entities that span multiple DynamoDB items.
+    /// </summary>
+    /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
+    /// <param name="builder">The QueryRequestBuilder instance.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A list of composite entities, where each entity may be constructed from multiple DynamoDB items.</returns>
+    /// <exception cref="DynamoDbMappingException">Thrown when entity mapping fails.</exception>
+    public static async Task<List<T>> ToCompositeEntityListAsync<T>(
         this QueryRequestBuilder builder,
         CancellationToken cancellationToken = default)
         where T : class, IDynamoDbEntity
@@ -72,15 +108,43 @@ public static class EnhancedExecuteAsyncExtensions
                     : T.FromDynamoDb<T>(group.ToList()))
                 .ToList();
             
-            return new QueryResponse<T>
-            {
-                Items = entityItems,
-                LastEvaluatedKey = response.LastEvaluatedKey,
-                ConsumedCapacity = response.ConsumedCapacity,
-                Count = entityItems.Count,
-                ScannedCount = response.ScannedCount ?? 0,
-                ResponseMetadata = response.ResponseMetadata
-            };
+            return entityItems;
+        }
+        catch (Exception ex) when (!(ex is OperationCanceledException))
+        {
+            throw new DynamoDbMappingException(
+                $"Failed to execute Query operation and map to {typeof(T).Name}. Error: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Executes a Query operation and returns a single composite entity (N:1 mapping).
+    /// Multiple DynamoDB items with the same partition key are combined into a single T instance.
+    /// Primary entity is identified by sort key patterns, related entities populate properties using [RelatedEntity] attributes.
+    /// Use this method when you expect to get a single composite entity from the query.
+    /// </summary>
+    /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
+    /// <param name="builder">The QueryRequestBuilder instance.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A single composite entity constructed from multiple DynamoDB items, or null if no matching items found.</returns>
+    /// <exception cref="DynamoDbMappingException">Thrown when entity mapping fails.</exception>
+    public static async Task<T?> ToCompositeEntityAsync<T>(
+        this QueryRequestBuilder builder,
+        CancellationToken cancellationToken = default)
+        where T : class, IDynamoDbEntity
+    {
+        try
+        {
+            var response = await builder.ExecuteAsync(cancellationToken);
+            
+            // Filter items that match the entity type
+            var matchingItems = response.Items.Where(T.MatchesEntity).ToList();
+            
+            if (matchingItems.Count == 0)
+                return null;
+            
+            // Use multi-item FromDynamoDb to combine all items into single entity
+            return T.FromDynamoDb<T>(matchingItems);
         }
         catch (Exception ex) when (!(ex is OperationCanceledException))
         {
@@ -117,16 +181,50 @@ public static class EnhancedExecuteAsyncExtensions
     }
 
     /// <summary>
-    /// Executes a Scan operation and maps the results to strongly-typed entities.
-    /// For multi-item entities, items with the same partition key are automatically grouped.
+    /// Executes a Scan operation and maps each DynamoDB item to a separate entity instance (1:1 mapping).
+    /// Each DynamoDB item becomes a separate T instance in the returned list.
     /// Warning: Scan operations can be expensive on large tables. Use Query operations when possible.
     /// </summary>
     /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
     /// <param name="builder">The ScanRequestBuilder instance.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A ScanResponse containing the mapped entities.</returns>
+    /// <returns>A list of mapped entities, one per DynamoDB item.</returns>
     /// <exception cref="DynamoDbMappingException">Thrown when entity mapping fails.</exception>
-    public static async Task<ScanResponse<T>> ExecuteAsync<T>(
+    public static async Task<List<T>> ToListAsync<T>(
+        this ScanRequestBuilder builder,
+        CancellationToken cancellationToken = default)
+        where T : class, IDynamoDbEntity
+    {
+        try
+        {
+            var response = await builder.ExecuteAsync(cancellationToken);
+            
+            // Each DynamoDB item becomes a separate T instance (1:1 mapping)
+            var entityItems = response.Items
+                .Where(T.MatchesEntity)
+                .Select(item => T.FromDynamoDb<T>(item))
+                .ToList();
+            
+            return entityItems;
+        }
+        catch (Exception ex) when (!(ex is OperationCanceledException))
+        {
+            throw new DynamoDbMappingException(
+                $"Failed to execute Scan operation and map to {typeof(T).Name}. Error: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Executes a Scan operation and combines multiple DynamoDB items into composite entities (N:1 mapping).
+    /// Multiple DynamoDB items with the same partition key are combined into single T instances.
+    /// Warning: Scan operations can be expensive on large tables. Use Query operations when possible.
+    /// </summary>
+    /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
+    /// <param name="builder">The ScanRequestBuilder instance.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A list of composite entities, where each entity may be constructed from multiple DynamoDB items.</returns>
+    /// <exception cref="DynamoDbMappingException">Thrown when entity mapping fails.</exception>
+    public static async Task<List<T>> ToCompositeEntityListAsync<T>(
         this ScanRequestBuilder builder,
         CancellationToken cancellationToken = default)
         where T : class, IDynamoDbEntity
@@ -146,15 +244,7 @@ public static class EnhancedExecuteAsyncExtensions
                     : T.FromDynamoDb<T>(group.ToList()))
                 .ToList();
             
-            return new ScanResponse<T>
-            {
-                Items = entityItems,
-                LastEvaluatedKey = response.LastEvaluatedKey,
-                ConsumedCapacity = response.ConsumedCapacity,
-                Count = entityItems.Count,
-                ScannedCount = response.ScannedCount ?? 0,
-                ResponseMetadata = response.ResponseMetadata
-            };
+            return entityItems;
         }
         catch (Exception ex) when (!(ex is OperationCanceledException))
         {
@@ -163,25 +253,5 @@ public static class EnhancedExecuteAsyncExtensions
         }
     }
 
-    /// <summary>
-    /// Gets all DynamoDB items for a multi-item entity.
-    /// This is useful for batch operations or when you need to work with individual items.
-    /// </summary>
-    /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
-    /// <param name="entity">The entity instance to convert.</param>
-    /// <returns>A list of DynamoDB items representing the entity.</returns>
-    /// <exception cref="DynamoDbMappingException">Thrown when entity conversion fails.</exception>
-    public static List<Dictionary<string, AttributeValue>> GetDynamoDbItems<T>(T entity) 
-        where T : class, IDynamoDbEntity
-    {
-        try
-        {
-            return T.ToDynamoDbMultiple(entity);
-        }
-        catch (Exception ex)
-        {
-            throw new DynamoDbMappingException(
-                $"Failed to convert {typeof(T).Name} entity to multiple DynamoDB items. Error: {ex.Message}", ex);
-        }
-    }
+
 }

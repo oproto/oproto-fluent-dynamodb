@@ -211,7 +211,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Ensure generated code matches expected patterns for type conversions
   - _Requirements: 2.1, 2.2, 3.1, 3.2, 4.1, 4.2_
 
-- [ ] 23. **PRIORITY: Fix Query operation architecture and introduce EF-style methods**
+- [x] 23. **PRIORITY: Fix Query operation architecture and introduce EF-style methods**
   - **ARCHITECTURAL ISSUE:** Current Query operation behavior doesn't match intended design
   - **Problem:** Single `ExecuteAsync<T>()` method can't return both `List<T>` and `T` - compile-time incompatible
   - **Root Cause:** Confusion about when to return lists vs single entities with related entities

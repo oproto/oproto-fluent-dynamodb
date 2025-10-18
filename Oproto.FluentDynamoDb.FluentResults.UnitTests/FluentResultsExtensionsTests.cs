@@ -62,7 +62,7 @@ public class FluentResultsExtensionsTests
     }
 
     [Fact]
-    public async Task ExecuteAsyncResult_Query_Success_ReturnsOkResult()
+    public async Task ToListAsyncResult_Query_Success_ReturnsOkResult()
     {
         // Arrange
         var builder = new QueryRequestBuilder(_mockClient).ForTable("test-table");
@@ -83,16 +83,16 @@ public class FluentResultsExtensionsTests
             .Returns(Task.FromResult(mockResponse));
 
         // Act
-        var result = await builder.ExecuteAsyncResult<TestEntity>();
+        var result = await builder.ToListAsyncResult<TestEntity>();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        result.Value.Items.Should().HaveCount(1);
+        result.Value.Should().HaveCount(1);
     }
 
     [Fact]
-    public async Task ExecuteAsyncResult_Query_Exception_ReturnsFailResult()
+    public async Task ToListAsyncResult_Query_Exception_ReturnsFailResult()
     {
         // Arrange
         var builder = new QueryRequestBuilder(_mockClient).ForTable("test-table");
@@ -102,7 +102,7 @@ public class FluentResultsExtensionsTests
             .Returns(Task.FromException<QueryResponse>(exception));
 
         // Act
-        var result = await builder.ExecuteAsyncResult<TestEntity>();
+        var result = await builder.ToListAsyncResult<TestEntity>();
 
         // Assert
         result.IsFailed.Should().BeTrue();
@@ -111,7 +111,7 @@ public class FluentResultsExtensionsTests
     }
 
     [Fact]
-    public async Task ExecuteAsyncResult_Scan_Success_ReturnsOkResult()
+    public async Task ToListAsyncResult_Scan_Success_ReturnsOkResult()
     {
         // Arrange
         var builder = new ScanRequestBuilder(_mockClient).ForTable("test-table");
@@ -132,16 +132,16 @@ public class FluentResultsExtensionsTests
             .Returns(Task.FromResult(mockResponse));
 
         // Act
-        var result = await builder.ExecuteAsyncResult<TestEntity>();
+        var result = await builder.ToListAsyncResult<TestEntity>();
 
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        result.Value.Items.Should().HaveCount(1);
+        result.Value.Should().HaveCount(1);
     }
 
     [Fact]
-    public async Task ExecuteAsyncResult_Scan_Exception_ReturnsFailResult()
+    public async Task ToListAsyncResult_Scan_Exception_ReturnsFailResult()
     {
         // Arrange
         var builder = new ScanRequestBuilder(_mockClient).ForTable("test-table");
@@ -151,7 +151,7 @@ public class FluentResultsExtensionsTests
             .Returns(Task.FromException<ScanResponse>(exception));
 
         // Act
-        var result = await builder.ExecuteAsyncResult<TestEntity>();
+        var result = await builder.ToListAsyncResult<TestEntity>();
 
         // Assert
         result.IsFailed.Should().BeTrue();

@@ -41,21 +41,21 @@ public static class FluentResultsExtensions
     }
 
     /// <summary>
-    /// Executes a Query operation and maps the results to strongly-typed entities, returning a Result&lt;T&gt;.
-    /// For multi-item entities, items with the same partition key are automatically grouped.
+    /// Executes a Query operation and maps each DynamoDB item to a separate entity instance (1:1 mapping), returning a Result&lt;T&gt;.
+    /// Each DynamoDB item becomes a separate T instance in the returned list.
     /// </summary>
     /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
     /// <param name="builder">The QueryRequestBuilder instance.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A Result containing the QueryResponse with mapped entities or error details.</returns>
-    public static async Task<Result<QueryResponse<T>>> ExecuteAsyncResult<T>(
+    /// <returns>A Result containing the list of mapped entities or error details.</returns>
+    public static async Task<Result<List<T>>> ToListAsyncResult<T>(
         this QueryRequestBuilder builder,
         CancellationToken cancellationToken = default)
         where T : class, IDynamoDbEntity
     {
         try
         {
-            var response = await EnhancedExecuteAsyncExtensions.ExecuteAsync<T>(builder, cancellationToken);
+            var response = await EnhancedExecuteAsyncExtensions.ToListAsync<T>(builder, cancellationToken);
             return Result.Ok(response);
         }
         catch (OperationCanceledException)
@@ -71,22 +71,113 @@ public static class FluentResultsExtensions
     }
 
     /// <summary>
-    /// Executes a Scan operation and maps the results to strongly-typed entities, returning a Result&lt;T&gt;.
-    /// For multi-item entities, items with the same partition key are automatically grouped.
+    /// Executes a Query operation and combines multiple DynamoDB items into composite entities (N:1 mapping), returning a Result&lt;T&gt;.
+    /// Multiple DynamoDB items with the same partition key are combined into single T instances.
+    /// </summary>
+    /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
+    /// <param name="builder">The QueryRequestBuilder instance.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A Result containing the list of composite entities or error details.</returns>
+    public static async Task<Result<List<T>>> ToCompositeEntityListAsyncResult<T>(
+        this QueryRequestBuilder builder,
+        CancellationToken cancellationToken = default)
+        where T : class, IDynamoDbEntity
+    {
+        try
+        {
+            var response = await EnhancedExecuteAsyncExtensions.ToCompositeEntityListAsync<T>(builder, cancellationToken);
+            return Result.Ok(response);
+        }
+        catch (OperationCanceledException)
+        {
+            // Re-throw cancellation exceptions as they should not be wrapped
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"Failed to execute Query operation for {typeof(T).Name}: {ex.Message}")
+                .WithError(new ExceptionalError(ex));
+        }
+    }
+
+    /// <summary>
+    /// Executes a Query operation and returns a single composite entity (N:1 mapping), returning a Result&lt;T&gt;.
+    /// Multiple DynamoDB items with the same partition key are combined into a single T instance.
+    /// </summary>
+    /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
+    /// <param name="builder">The QueryRequestBuilder instance.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A Result containing the single composite entity or error details.</returns>
+    public static async Task<Result<T?>> ToCompositeEntityAsyncResult<T>(
+        this QueryRequestBuilder builder,
+        CancellationToken cancellationToken = default)
+        where T : class, IDynamoDbEntity
+    {
+        try
+        {
+            var response = await EnhancedExecuteAsyncExtensions.ToCompositeEntityAsync<T>(builder, cancellationToken);
+            return Result.Ok(response);
+        }
+        catch (OperationCanceledException)
+        {
+            // Re-throw cancellation exceptions as they should not be wrapped
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"Failed to execute Query operation for {typeof(T).Name}: {ex.Message}")
+                .WithError(new ExceptionalError(ex));
+        }
+    }
+
+    /// <summary>
+    /// Executes a Scan operation and maps each DynamoDB item to a separate entity instance (1:1 mapping), returning a Result&lt;T&gt;.
+    /// Each DynamoDB item becomes a separate T instance in the returned list.
     /// Warning: Scan operations can be expensive on large tables. Use Query operations when possible.
     /// </summary>
     /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
     /// <param name="builder">The ScanRequestBuilder instance.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A Result containing the ScanResponse with mapped entities or error details.</returns>
-    public static async Task<Result<ScanResponse<T>>> ExecuteAsyncResult<T>(
+    /// <returns>A Result containing the list of mapped entities or error details.</returns>
+    public static async Task<Result<List<T>>> ToListAsyncResult<T>(
         this ScanRequestBuilder builder,
         CancellationToken cancellationToken = default)
         where T : class, IDynamoDbEntity
     {
         try
         {
-            var response = await EnhancedExecuteAsyncExtensions.ExecuteAsync<T>(builder, cancellationToken);
+            var response = await EnhancedExecuteAsyncExtensions.ToListAsync<T>(builder, cancellationToken);
+            return Result.Ok(response);
+        }
+        catch (OperationCanceledException)
+        {
+            // Re-throw cancellation exceptions as they should not be wrapped
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail($"Failed to execute Scan operation for {typeof(T).Name}: {ex.Message}")
+                .WithError(new ExceptionalError(ex));
+        }
+    }
+
+    /// <summary>
+    /// Executes a Scan operation and combines multiple DynamoDB items into composite entities (N:1 mapping), returning a Result&lt;T&gt;.
+    /// Multiple DynamoDB items with the same partition key are combined into single T instances.
+    /// Warning: Scan operations can be expensive on large tables. Use Query operations when possible.
+    /// </summary>
+    /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
+    /// <param name="builder">The ScanRequestBuilder instance.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A Result containing the list of composite entities or error details.</returns>
+    public static async Task<Result<List<T>>> ToCompositeEntityListAsyncResult<T>(
+        this ScanRequestBuilder builder,
+        CancellationToken cancellationToken = default)
+        where T : class, IDynamoDbEntity
+    {
+        try
+        {
+            var response = await EnhancedExecuteAsyncExtensions.ToCompositeEntityListAsync<T>(builder, cancellationToken);
             return Result.Ok(response);
         }
         catch (OperationCanceledException)
