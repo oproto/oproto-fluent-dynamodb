@@ -174,4 +174,40 @@ internal static class DiagnosticDescriptors
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "Multi-item entities should use consistent partition key formats to ensure related items are properly grouped.");
+
+    /// <summary>
+    /// Error when a related entity references an unknown type.
+    /// </summary>
+    public static readonly DiagnosticDescriptor InvalidRelatedEntityType = new(
+        "DYNDB015",
+        "Invalid related entity type",
+        "Related entity property '{0}' references unknown type '{1}'",
+        "DynamoDb",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Related entity types must be valid DynamoDB entity classes.");
+
+    /// <summary>
+    /// Warning when related entities are defined but no sort key exists.
+    /// </summary>
+    public static readonly DiagnosticDescriptor RelatedEntitiesRequireSortKey = new(
+        "DYNDB016",
+        "Related entities require sort key",
+        "Entity '{0}' has related entity properties but no sort key for pattern matching",
+        "DynamoDb",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Related entity mapping requires a sort key to match patterns and discriminate entity types.");
+
+    /// <summary>
+    /// Warning when multiple related entities have conflicting patterns.
+    /// </summary>
+    public static readonly DiagnosticDescriptor ConflictingRelatedEntityPatterns = new(
+        "DYNDB017",
+        "Conflicting related entity patterns",
+        "Related entity patterns '{0}' and '{1}' in entity '{2}' may conflict",
+        "DynamoDb",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Related entity patterns should be distinct to avoid mapping conflicts.");
 }

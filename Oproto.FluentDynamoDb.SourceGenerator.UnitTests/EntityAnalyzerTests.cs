@@ -288,6 +288,127 @@ namespace TestNamespace
         analyzer.Diagnostics.Should().BeEmpty();
     }
 
+    [Fact]
+    public void AnalyzeEntity_WithRelatedEntitiesButNoSortKey_ReportsWarning()
+    {
+        // Arrange
+        var source = @"
+using Oproto.FluentDynamoDb.Attributes;
+using System.Collections.Generic;
+
+namespace TestNamespace
+{
+    [DynamoDbTable(""test-table"")]
+    public partial class TestEntity
+    {
+        [PartitionKey]
+        [DynamoDbAttribute(""pk"")]
+        public string Id { get; set; } = string.Empty;
+        
+        [RelatedEntity(""audit#*"")]
+        public List<AuditEntry>? AuditEntries { get; set; }
+    }
+    
+    public class AuditEntry { }
+}";
+
+        var (classDecl, semanticModel) = ParseSource(source);
+        var analyzer = new EntityAnalyzer();
+
+        // Act
+        var result = analyzer.AnalyzeEntity(classDecl, semanticModel);
+
+        // Assert
+        result.Should().NotBeNull();
+        analyzer.Diagnostics.Should().HaveCount(1);
+        analyzer.Diagnostics[0].Id.Should().Be("DYNDB016");
+        analyzer.Diagnostics[0].Severity.Should().Be(DiagnosticSeverity.Warning);
+    }
+
+    [Fact]
+    public void AnalyzeEntity_WithConflictingRelatedEntityPatterns_ReportsWarning()
+    {
+        // Arrange
+        var source = @"
+using Oproto.FluentDynamoDb.Attributes;
+using System.Collections.Generic;
+
+namespace TestNamespace
+{
+    [DynamoDbTable(""test-table"")]
+    public partial class TestEntity
+    {
+        [PartitionKey]
+        [DynamoDbAttribute(""pk"")]
+        public string Id { get; set; } = string.Empty;
+        
+        [SortKey]
+        [DynamoDbAttribute(""sk"")]
+        public string SortKey { get; set; } = string.Empty;
+        
+        [RelatedEntity(""audit#*"")]
+        public List<AuditEntry>? AuditEntries { get; set; }
+        
+        [RelatedEntity(""audit"")]
+        public AuditSummary? AuditSummary { get; set; }
+    }
+    
+    public class AuditEntry { }
+    public class AuditSummary { }
+}";
+
+        var (classDecl, semanticModel) = ParseSource(source);
+        var analyzer = new EntityAnalyzer();
+
+        // Act
+        var result = analyzer.AnalyzeEntity(classDecl, semanticModel);
+
+        // Assert
+        result.Should().NotBeNull();
+        analyzer.Diagnostics.Should().HaveCount(1);
+        analyzer.Diagnostics[0].Id.Should().Be("DYNDB017");
+        analyzer.Diagnostics[0].Severity.Should().Be(DiagnosticSeverity.Warning);
+    }
+
+    [Fact]
+    public void AnalyzeEntity_WithAmbiguousRelatedEntityPattern_ReportsWarning()
+    {
+        // Arrange
+        var source = @"
+using Oproto.FluentDynamoDb.Attributes;
+using System.Collections.Generic;
+
+namespace TestNamespace
+{
+    [DynamoDbTable(""test-table"")]
+    public partial class TestEntity
+    {
+        [PartitionKey]
+        [DynamoDbAttribute(""pk"")]
+        public string Id { get; set; } = string.Empty;
+        
+        [SortKey]
+        [DynamoDbAttribute(""sk"")]
+        public string SortKey { get; set; } = string.Empty;
+        
+        [RelatedEntity(""*"")]
+        public List<object>? AllEntities { get; set; }
+    }
+}";
+
+        var (classDecl, semanticModel) = ParseSource(source);
+        var analyzer = new EntityAnalyzer();
+
+        // Act
+        var result = analyzer.AnalyzeEntity(classDecl, semanticModel);
+
+        // Assert
+        result.Should().NotBeNull();
+        analyzer.Diagnostics.Should().HaveCount(1);
+        analyzer.Diagnostics[0].Id.Should().Be("DYNDB008");
+        analyzer.Diagnostics[0].Severity.Should().Be(DiagnosticSeverity.Warning);
+    }
+
     private static (ClassDeclarationSyntax ClassDecl, SemanticModel SemanticModel) ParseSource(string source)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source);

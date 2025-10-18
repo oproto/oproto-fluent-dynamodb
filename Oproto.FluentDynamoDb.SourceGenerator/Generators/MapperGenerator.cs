@@ -299,6 +299,22 @@ public static class MapperGenerator
             GeneratePropertyFromAttributeValue(sb, property);
         }
 
+        // For single-item entities with relationships, related entities would be null
+        // since we only have one item. This is expected behavior.
+        if (entity.Relationships.Length > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("            // Related entity properties remain null for single-item mapping");
+            foreach (var relationship in entity.Relationships)
+            {
+                if (relationship.IsCollection)
+                {
+                    sb.AppendLine($"            entity.{relationship.PropertyName} = new {relationship.PropertyType}();");
+                }
+                // Single related entities remain null by default
+            }
+        }
+
         sb.AppendLine();
         sb.AppendLine("            return (TSelf)(object)entity;");
         sb.AppendLine("        }");
@@ -427,6 +443,12 @@ public static class MapperGenerator
             GenerateCollectionPropertyFromItems(sb, entity, collectionProperty);
         }
         
+        // Finally, populate related entity properties based on sort key patterns
+        if (entity.Relationships.Length > 0)
+        {
+            GenerateRelatedEntityMapping(sb, entity);
+        }
+        
         sb.AppendLine("            return (TSelf)(object)entity;");
     }
 
@@ -503,7 +525,44 @@ public static class MapperGenerator
         sb.AppendLine("        public static bool MatchesEntity(Dictionary<string, AttributeValue> item)");
         sb.AppendLine("        {");
         
-        // For basic implementation, check if required attributes exist
+        // Check entity discriminator first if present
+        if (!string.IsNullOrEmpty(entity.EntityDiscriminator))
+        {
+            sb.AppendLine($"            // Check entity discriminator");
+            sb.AppendLine($"            if (item.TryGetValue(\"EntityType\", out var entityTypeValue))");
+            sb.AppendLine("            {");
+            sb.AppendLine($"                return entityTypeValue.S == \"{entity.EntityDiscriminator}\";");
+            sb.AppendLine("            }");
+            sb.AppendLine();
+        }
+        
+        // Use sort key pattern matching for entity type discrimination
+        var sortKeyProperty = entity.SortKeyProperty;
+        if (sortKeyProperty != null && !string.IsNullOrEmpty(entity.EntityDiscriminator))
+        {
+            sb.AppendLine("            // Check sort key pattern for entity type discrimination");
+            sb.AppendLine($"            if (item.TryGetValue(\"{sortKeyProperty.AttributeName}\", out var sortKeyValue))");
+            sb.AppendLine("            {");
+            sb.AppendLine("                var sortKey = sortKeyValue.S ?? string.Empty;");
+            
+            // Generate pattern matching based on entity discriminator
+            if (entity.EntityDiscriminator.Contains("*"))
+            {
+                // Wildcard pattern matching
+                var pattern = entity.EntityDiscriminator.Replace("*", "");
+                sb.AppendLine($"                return sortKey.StartsWith(\"{pattern}\");");
+            }
+            else
+            {
+                // Exact pattern matching
+                sb.AppendLine($"                return sortKey == \"{entity.EntityDiscriminator}\" || sortKey.StartsWith(\"{entity.EntityDiscriminator}#\");");
+            }
+            
+            sb.AppendLine("            }");
+            sb.AppendLine();
+        }
+        
+        // Check if required attributes exist
         var requiredAttributes = entity.Properties
             .Where(p => p.HasAttributeMapping && (p.IsPartitionKey || !p.IsNullable))
             .ToArray();
@@ -516,17 +575,6 @@ public static class MapperGenerator
                 sb.AppendLine($"            if (!item.ContainsKey(\"{property.AttributeName}\"))");
                 sb.AppendLine("                return false;");
             }
-            sb.AppendLine();
-        }
-        
-        // Check entity discriminator if present
-        if (!string.IsNullOrEmpty(entity.EntityDiscriminator))
-        {
-            sb.AppendLine($"            // Check entity discriminator");
-            sb.AppendLine($"            if (item.TryGetValue(\"EntityType\", out var entityTypeValue))");
-            sb.AppendLine("            {");
-            sb.AppendLine($"                return entityTypeValue.S == \"{entity.EntityDiscriminator}\";");
-            sb.AppendLine("            }");
             sb.AppendLine();
         }
         
@@ -777,5 +825,127 @@ public static class MapperGenerator
         };
         
         return !primitiveTypes.Contains(baseType);
+    }
+
+    private static void GenerateRelatedEntityMapping(StringBuilder sb, EntityModel entity)
+    {
+        sb.AppendLine("            // Populate related entity properties based on sort key patterns");
+        
+        var sortKeyProperty = entity.SortKeyProperty;
+        if (sortKeyProperty == null)
+        {
+            sb.AppendLine("            // No sort key defined - cannot map related entities");
+            return;
+        }
+        
+        foreach (var relationship in entity.Relationships)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"            // Map related entity: {relationship.PropertyName}");
+            
+            if (relationship.IsCollection)
+            {
+                GenerateRelatedEntityCollectionMapping(sb, entity, relationship, sortKeyProperty);
+            }
+            else
+            {
+                GenerateRelatedEntitySingleMapping(sb, entity, relationship, sortKeyProperty);
+            }
+        }
+    }
+
+    private static void GenerateRelatedEntityCollectionMapping(StringBuilder sb, EntityModel entity, RelationshipModel relationship, PropertyModel sortKeyProperty)
+    {
+        var elementType = GetCollectionElementType(relationship.PropertyType);
+        
+        sb.AppendLine($"            var {relationship.PropertyName.ToLowerInvariant()}Items = new List<{elementType}>();");
+        sb.AppendLine("            foreach (var item in items)");
+        sb.AppendLine("            {");
+        sb.AppendLine($"                if (item.TryGetValue(\"{sortKeyProperty.AttributeName}\", out var sortKeyValue))");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    var sortKey = sortKeyValue.S ?? string.Empty;");
+        
+        // Generate pattern matching logic
+        GenerateSortKeyPatternMatching(sb, relationship.SortKeyPattern);
+        
+        sb.AppendLine("                    {");
+        
+        if (!string.IsNullOrEmpty(relationship.EntityType))
+        {
+            // Use specific entity type for mapping
+            sb.AppendLine($"                        // Map to specific entity type: {relationship.EntityType}");
+            sb.AppendLine($"                        if ({relationship.EntityType}.MatchesEntity(item))");
+            sb.AppendLine("                        {");
+            sb.AppendLine($"                            var relatedEntity = {relationship.EntityType}.FromDynamoDb<{relationship.EntityType}>(item);");
+            sb.AppendLine($"                            {relationship.PropertyName.ToLowerInvariant()}Items.Add(relatedEntity);");
+            sb.AppendLine("                        }");
+        }
+        else
+        {
+            // Generic mapping - create instance of element type
+            sb.AppendLine($"                        // Generic mapping to {elementType}");
+            sb.AppendLine($"                        var relatedEntity = new {elementType}();");
+            sb.AppendLine($"                        // TODO: Implement generic property mapping for {elementType}");
+            sb.AppendLine($"                        {relationship.PropertyName.ToLowerInvariant()}Items.Add(relatedEntity);");
+        }
+        
+        sb.AppendLine("                    }");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+        sb.AppendLine($"            entity.{relationship.PropertyName} = {relationship.PropertyName.ToLowerInvariant()}Items;");
+    }
+
+    private static void GenerateRelatedEntitySingleMapping(StringBuilder sb, EntityModel entity, RelationshipModel relationship, PropertyModel sortKeyProperty)
+    {
+        var propertyType = relationship.EntityType ?? GetBaseType(relationship.PropertyType);
+        
+        sb.AppendLine("            foreach (var item in items)");
+        sb.AppendLine("            {");
+        sb.AppendLine($"                if (item.TryGetValue(\"{sortKeyProperty.AttributeName}\", out var sortKeyValue))");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    var sortKey = sortKeyValue.S ?? string.Empty;");
+        
+        // Generate pattern matching logic
+        GenerateSortKeyPatternMatching(sb, relationship.SortKeyPattern);
+        
+        sb.AppendLine("                    {");
+        
+        if (!string.IsNullOrEmpty(relationship.EntityType))
+        {
+            // Use specific entity type for mapping
+            sb.AppendLine($"                        // Map to specific entity type: {relationship.EntityType}");
+            sb.AppendLine($"                        if ({relationship.EntityType}.MatchesEntity(item))");
+            sb.AppendLine("                        {");
+            sb.AppendLine($"                            entity.{relationship.PropertyName} = {relationship.EntityType}.FromDynamoDb<{relationship.EntityType}>(item);");
+            sb.AppendLine("                            break; // Found the related entity");
+            sb.AppendLine("                        }");
+        }
+        else
+        {
+            // Generic mapping - create instance of property type
+            sb.AppendLine($"                        // Generic mapping to {propertyType}");
+            sb.AppendLine($"                        entity.{relationship.PropertyName} = new {propertyType}();");
+            sb.AppendLine($"                        // TODO: Implement generic property mapping for {propertyType}");
+            sb.AppendLine("                        break; // Found the related entity");
+        }
+        
+        sb.AppendLine("                    }");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+    }
+
+    private static void GenerateSortKeyPatternMatching(StringBuilder sb, string sortKeyPattern)
+    {
+        if (sortKeyPattern.Contains("*"))
+        {
+            // Wildcard pattern matching
+            var prefix = sortKeyPattern.Replace("*", "");
+            sb.AppendLine($"                    if (sortKey.StartsWith(\"{prefix}\"))");
+        }
+        else
+        {
+            // Exact pattern matching
+            sb.AppendLine($"                    if (sortKey == \"{sortKeyPattern}\" || sortKey.StartsWith(\"{sortKeyPattern}#\"))");
+        }
     }
 }

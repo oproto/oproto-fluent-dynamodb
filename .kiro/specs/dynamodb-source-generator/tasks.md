@@ -70,7 +70,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Add validation for multi-item entity consistency and partition key generation
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 9. Add related entity and multi-type query support
+- [x] 9. Add related entity and multi-type query support
   - Implement RelatedEntity attribute processing in EntityAnalyzer
   - Generate mapping logic for related entities based on sort key patterns
   - Extend FromDynamoDb methods to populate related entity properties automatically

@@ -377,6 +377,12 @@ public class EntityAnalyzer
         {
             ValidateMultiItemEntityConsistency(entityModel);
         }
+
+        // Validate related entity configurations
+        if (entityModel.Relationships.Length > 0)
+        {
+            ValidateRelatedEntityConfiguration(entityModel);
+        }
     }
 
     private void ValidatePropertyModel(PropertyModel propertyModel)
@@ -528,6 +534,82 @@ public class EntityAnalyzer
                     partitionKeyProperty.PropertyName, entityModel.ClassName);
             }
         }
+    }
+
+    private void ValidateRelatedEntityConfiguration(EntityModel entityModel)
+    {
+        // Check if entity has sort key for pattern matching
+        if (entityModel.SortKeyProperty == null)
+        {
+            ReportDiagnostic(DiagnosticDescriptors.RelatedEntitiesRequireSortKey,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                entityModel.ClassName);
+        }
+
+        // Check for conflicting patterns
+        var patterns = entityModel.Relationships.Select(r => r.SortKeyPattern).ToArray();
+        for (int i = 0; i < patterns.Length; i++)
+        {
+            for (int j = i + 1; j < patterns.Length; j++)
+            {
+                if (PatternsConflict(patterns[i], patterns[j]))
+                {
+                    ReportDiagnostic(DiagnosticDescriptors.ConflictingRelatedEntityPatterns,
+                        entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                        patterns[i], patterns[j], entityModel.ClassName);
+                }
+            }
+        }
+
+        // Validate each relationship
+        foreach (var relationship in entityModel.Relationships)
+        {
+            ValidateRelationshipModel(relationship, entityModel);
+        }
+    }
+
+    private void ValidateRelationshipModel(RelationshipModel relationship, EntityModel entityModel)
+    {
+        // Check for ambiguous patterns
+        if (relationship.SortKeyPattern == "*" || string.IsNullOrWhiteSpace(relationship.SortKeyPattern))
+        {
+            ReportDiagnostic(DiagnosticDescriptors.AmbiguousRelatedEntityPattern,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                relationship.SortKeyPattern, relationship.PropertyName);
+        }
+
+        // Validate entity type if specified
+        if (!string.IsNullOrEmpty(relationship.EntityType))
+        {
+            // Basic validation - in a real implementation, we'd check if the type exists
+            if (!IsValidEntityType(relationship.EntityType))
+            {
+                ReportDiagnostic(DiagnosticDescriptors.InvalidRelatedEntityType,
+                    entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                    relationship.PropertyName, relationship.EntityType);
+            }
+        }
+    }
+
+    private bool PatternsConflict(string pattern1, string pattern2)
+    {
+        // Simple conflict detection - patterns conflict if one is a prefix of another
+        if (pattern1 == pattern2)
+            return true;
+
+        // Handle wildcard patterns
+        var prefix1 = pattern1.Replace("*", "");
+        var prefix2 = pattern2.Replace("*", "");
+
+        return prefix1.StartsWith(prefix2) || prefix2.StartsWith(prefix1);
+    }
+
+    private bool IsValidEntityType(string entityType)
+    {
+        // Basic validation - check if it looks like a valid type name
+        return !string.IsNullOrWhiteSpace(entityType) && 
+               !entityType.Contains(" ") && 
+               char.IsUpper(entityType[0]);
     }
 
     private void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, params object[] messageArgs)
