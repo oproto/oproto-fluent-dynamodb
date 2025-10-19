@@ -1,375 +1,221 @@
-using Microsoft.CodeAnalysis;
 using Oproto.FluentDynamoDb.SourceGenerator.Models;
 using System.Text;
 
 namespace Oproto.FluentDynamoDb.SourceGenerator.Advanced;
 
 /// <summary>
-/// Provides support for custom type converters in DynamoDB entity mapping.
-/// Enables advanced mapping scenarios beyond the built-in type conversions.
+/// Provides support for custom type converters in generated entity mapping code.
+/// Enables extensible type conversion for complex or custom types.
 /// </summary>
 public static class CustomTypeConverterSupport
 {
     /// <summary>
-    /// Generates code that supports custom type converters for complex property types.
+    /// Generates custom type converter support code for entities with complex types.
     /// </summary>
     public static void GenerateCustomConverterSupport(StringBuilder sb, EntityModel entity)
     {
-        var customProperties = entity.Properties
-            .Where(p => RequiresCustomConverter(p))
+        var customTypeProperties = entity.Properties
+            .Where(p => RequiresCustomConverter(p.PropertyType))
             .ToArray();
 
-        if (customProperties.Length == 0)
+        if (customTypeProperties.Length == 0)
             return;
 
         sb.AppendLine();
         sb.AppendLine("        #region Custom Type Converter Support");
         sb.AppendLine();
 
+        // Generate converter interface
+        GenerateConverterInterface(sb);
+
         // Generate converter registry
-        GenerateConverterRegistry(sb, entity, customProperties);
+        GenerateConverterRegistry(sb, customTypeProperties);
 
         // Generate converter methods
-        foreach (var property in customProperties)
-        {
-            GeneratePropertyConverter(sb, property);
-        }
+        GenerateConverterMethods(sb, customTypeProperties);
 
         sb.AppendLine("        #endregion");
     }
 
     /// <summary>
-    /// Generates a converter registry for managing custom type converters.
+    /// Generates the custom type converter interface.
     /// </summary>
-    private static void GenerateConverterRegistry(StringBuilder sb, EntityModel entity, PropertyModel[] customProperties)
+    private static void GenerateConverterInterface(StringBuilder sb)
     {
         sb.AppendLine("        /// <summary>");
-        sb.AppendLine("        /// Registry for custom type converters used by this entity.");
+        sb.AppendLine("        /// Interface for custom type converters that handle complex type conversions.");
         sb.AppendLine("        /// </summary>");
-        sb.AppendLine("        private static readonly Dictionary<Type, ICustomTypeConverter> _customConverters = new()");
+        sb.AppendLine("        public interface ICustomTypeConverter<T>");
+        sb.AppendLine("        {");
+        sb.AppendLine("            AttributeValue ToAttributeValue(T value);");
+        sb.AppendLine("            T FromAttributeValue(AttributeValue attributeValue);");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+    }
+
+    /// <summary>
+    /// Generates the converter registry for managing custom converters.
+    /// </summary>
+    private static void GenerateConverterRegistry(StringBuilder sb, PropertyModel[] customTypeProperties)
+    {
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// Registry for custom type converters.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine("        private static readonly Dictionary<Type, object> _customConverters = new()");
         sb.AppendLine("        {");
 
-        foreach (var property in customProperties)
+        foreach (var property in customTypeProperties)
         {
-            var converterType = GetConverterTypeName(property);
-            sb.AppendLine($"            {{ typeof({GetPropertyTypeName(property)}), new {converterType}() }},");
+            var converterType = GetDefaultConverterType(property.PropertyType);
+            if (converterType != null)
+            {
+                sb.AppendLine($"            {{ typeof({GetBaseType(property.PropertyType)}), new {converterType}() }},");
+            }
         }
 
         sb.AppendLine("        };");
         sb.AppendLine();
 
-        // Generate converter lookup method
+        // Generate converter registration method
         sb.AppendLine("        /// <summary>");
-        sb.AppendLine("        /// Gets a custom converter for the specified type, if available.");
+        sb.AppendLine("        /// Registers a custom converter for a specific type.");
         sb.AppendLine("        /// </summary>");
-        sb.AppendLine("        private static ICustomTypeConverter? GetCustomConverter(Type type)");
+        sb.AppendLine("        public static void RegisterConverter<T>(ICustomTypeConverter<T> converter)");
         sb.AppendLine("        {");
-        sb.AppendLine("            _customConverters.TryGetValue(type, out var converter);");
-        sb.AppendLine("            return converter;");
+        sb.AppendLine("            _customConverters[typeof(T)] = converter;");
         sb.AppendLine("        }");
         sb.AppendLine();
+    }
+
+    /// <summary>
+    /// Generates converter methods for custom types.
+    /// </summary>
+    private static void GenerateConverterMethods(StringBuilder sb, PropertyModel[] customTypeProperties)
+    {
+        foreach (var property in customTypeProperties)
+        {
+            GenerateConverterMethodsForType(sb, property);
+        }
     }
 
     /// <summary>
     /// Generates converter methods for a specific property type.
     /// </summary>
-    private static void GeneratePropertyConverter(StringBuilder sb, PropertyModel property)
+    private static void GenerateConverterMethodsForType(StringBuilder sb, PropertyModel property)
     {
-        var propertyTypeName = GetPropertyTypeName(property);
-        var converterMethodName = $"Convert{property.PropertyName}";
+        var baseType = GetBaseType(property.PropertyType);
+        var methodSuffix = baseType.Replace(".", "").Replace("<", "").Replace(">", "").Replace(",", "");
 
-        // Generate ToAttributeValue converter
+        // To AttributeValue converter
         sb.AppendLine($"        /// <summary>");
-        sb.AppendLine($"        /// Converts {property.PropertyName} to DynamoDB AttributeValue using custom converter.");
+        sb.AppendLine($"        /// Converts {baseType} to AttributeValue using custom converter.");
         sb.AppendLine($"        /// </summary>");
-        sb.AppendLine($"        private static AttributeValue {converterMethodName}ToAttributeValue({propertyTypeName} value)");
+        sb.AppendLine($"        private static AttributeValue Convert{methodSuffix}ToAttributeValue({baseType} value)");
         sb.AppendLine("        {");
-        sb.AppendLine($"            var converter = GetCustomConverter(typeof({propertyTypeName}));");
-        sb.AppendLine("            if (converter != null)");
+        sb.AppendLine($"            if (_customConverters.TryGetValue(typeof({baseType}), out var converter))");
         sb.AppendLine("            {");
-        sb.AppendLine("                return converter.ToAttributeValue(value);");
+        sb.AppendLine($"                return ((ICustomTypeConverter<{baseType}>)converter).ToAttributeValue(value);");
         sb.AppendLine("            }");
         sb.AppendLine();
-        sb.AppendLine("            // Fallback to default conversion");
-        sb.AppendLine($"            return {GetFallbackToAttributeValueExpression(property, "value")};");
+        sb.AppendLine($"            // Fallback to default conversion");
+        sb.AppendLine($"            return {GetDefaultToAttributeValueConversion(property, "value")};");
         sb.AppendLine("        }");
         sb.AppendLine();
 
-        // Generate FromAttributeValue converter
+        // From AttributeValue converter
         sb.AppendLine($"        /// <summary>");
-        sb.AppendLine($"        /// Converts DynamoDB AttributeValue to {property.PropertyName} using custom converter.");
+        sb.AppendLine($"        /// Converts AttributeValue to {baseType} using custom converter.");
         sb.AppendLine($"        /// </summary>");
-        sb.AppendLine($"        private static {propertyTypeName} {converterMethodName}FromAttributeValue(AttributeValue attributeValue)");
+        sb.AppendLine($"        private static {baseType} Convert{methodSuffix}FromAttributeValue(AttributeValue attributeValue)");
         sb.AppendLine("        {");
-        sb.AppendLine($"            var converter = GetCustomConverter(typeof({propertyTypeName}));");
-        sb.AppendLine("            if (converter != null)");
+        sb.AppendLine($"            if (_customConverters.TryGetValue(typeof({baseType}), out var converter))");
         sb.AppendLine("            {");
-        sb.AppendLine($"                return ({propertyTypeName})converter.FromAttributeValue(attributeValue, typeof({propertyTypeName}));");
+        sb.AppendLine($"                return ((ICustomTypeConverter<{baseType}>)converter).FromAttributeValue(attributeValue);");
         sb.AppendLine("            }");
         sb.AppendLine();
-        sb.AppendLine("            // Fallback to default conversion");
-        sb.AppendLine($"            return {GetFallbackFromAttributeValueExpression(property, "attributeValue")};");
+        sb.AppendLine($"            // Fallback to default conversion");
+        sb.AppendLine($"            return {GetDefaultFromAttributeValueConversion(property, "attributeValue")};");
         sb.AppendLine("        }");
         sb.AppendLine();
     }
 
     /// <summary>
-    /// Generates the interface definition for custom type converters.
+    /// Determines if a property type requires a custom converter.
     /// </summary>
-    public static string GenerateCustomTypeConverterInterface()
+    private static bool RequiresCustomConverter(string propertyType)
     {
-        return @"
-/// <summary>
-/// Interface for custom type converters that handle complex type mappings to/from DynamoDB.
-/// </summary>
-public interface ICustomTypeConverter
-{
-    /// <summary>
-    /// Converts a .NET object to a DynamoDB AttributeValue.
-    /// </summary>
-    /// <param name=""value"">The .NET object to convert.</param>
-    /// <returns>The corresponding DynamoDB AttributeValue.</returns>
-    AttributeValue ToAttributeValue(object? value);
-
-    /// <summary>
-    /// Converts a DynamoDB AttributeValue to a .NET object.
-    /// </summary>
-    /// <param name=""attributeValue"">The DynamoDB AttributeValue to convert.</param>
-    /// <param name=""targetType"">The target .NET type.</param>
-    /// <returns>The converted .NET object.</returns>
-    object? FromAttributeValue(AttributeValue attributeValue, Type targetType);
-
-    /// <summary>
-    /// Gets the supported .NET types for this converter.
-    /// </summary>
-    Type[] SupportedTypes { get; }
-}";
-    }
-
-    /// <summary>
-    /// Generates built-in converter implementations for common complex types.
-    /// </summary>
-    public static string GenerateBuiltInConverters()
-    {
-        var sb = new StringBuilder();
-
-        // URI converter
-        sb.AppendLine(GenerateUriConverter());
-        sb.AppendLine();
-
-        // TimeSpan converter
-        sb.AppendLine(GenerateTimeSpanConverter());
-        sb.AppendLine();
-
-        // Dictionary converter
-        sb.AppendLine(GenerateDictionaryConverter());
-
-        return sb.ToString();
-    }
-
-
-
-    private static string GenerateUriConverter()
-    {
-        return @"/// <summary>
-/// High-performance converter for Uri objects.
-/// </summary>
-public class UriTypeConverter : ICustomTypeConverter
-{
-    public Type[] SupportedTypes => new[] { typeof(Uri) };
-
-    public AttributeValue ToAttributeValue(object? value)
-    {
-        if (value is not Uri uri)
-            return new AttributeValue { NULL = true };
-
-        return new AttributeValue { S = uri.ToString() };
-    }
-
-    public object? FromAttributeValue(AttributeValue attributeValue, Type targetType)
-    {
-        if (attributeValue.NULL || string.IsNullOrEmpty(attributeValue.S))
-            return null;
-
-        if (Uri.TryCreate(attributeValue.S, UriKind.RelativeOrAbsolute, out var uri))
-            return uri;
-
-        throw new InvalidOperationException($""Invalid URI format: {attributeValue.S}"");
-    }
-}";
-    }
-
-    private static string GenerateTimeSpanConverter()
-    {
-        return @"/// <summary>
-/// High-performance converter for TimeSpan objects using ticks for precision.
-/// </summary>
-public class TimeSpanTypeConverter : ICustomTypeConverter
-{
-    public Type[] SupportedTypes => new[] { typeof(TimeSpan) };
-
-    public AttributeValue ToAttributeValue(object? value)
-    {
-        if (value is not TimeSpan timeSpan)
-            return new AttributeValue { NULL = true };
-
-        // Store as ticks for maximum precision and efficient sorting
-        return new AttributeValue { N = timeSpan.Ticks.ToString() };
-    }
-
-    public object? FromAttributeValue(AttributeValue attributeValue, Type targetType)
-    {
-        if (attributeValue.NULL || string.IsNullOrEmpty(attributeValue.N))
-            return null;
-
-        if (long.TryParse(attributeValue.N, out var ticks))
-            return new TimeSpan(ticks);
-
-        throw new InvalidOperationException($""Invalid TimeSpan ticks format: {attributeValue.N}"");
-    }
-}";
-    }
-
-    private static string GenerateDictionaryConverter()
-    {
-        return @"/// <summary>
-/// High-performance converter for Dictionary objects using DynamoDB Map type.
-/// </summary>
-public class DictionaryTypeConverter : ICustomTypeConverter
-{
-    public Type[] SupportedTypes => new[] { typeof(Dictionary<string, object>), typeof(IDictionary<string, object>) };
-
-    public AttributeValue ToAttributeValue(object? value)
-    {
-        if (value is not IDictionary<string, object> dictionary)
-            return new AttributeValue { NULL = true };
-
-        var map = new Dictionary<string, AttributeValue>();
+        var baseType = GetBaseType(propertyType);
         
-        foreach (var kvp in dictionary)
+        return baseType switch
         {
-            if (kvp.Value == null)
-            {
-                map[kvp.Key] = new AttributeValue { NULL = true };
-            }
-            else
-            {
-                // Convert common types to appropriate AttributeValue
-                map[kvp.Key] = kvp.Value switch
-                {
-                    string s => new AttributeValue { S = s },
-                    int i => new AttributeValue { N = i.ToString() },
-                    long l => new AttributeValue { N = l.ToString() },
-                    double d => new AttributeValue { N = d.ToString(""G17"") },
-                    bool b => new AttributeValue { BOOL = b },
-                    _ => new AttributeValue { S = kvp.Value.ToString() ?? """" }
-                };
-            }
-        }
-
-        return new AttributeValue { M = map };
-    }
-
-    public object? FromAttributeValue(AttributeValue attributeValue, Type targetType)
-    {
-        if (attributeValue.NULL || attributeValue.M == null)
-            return null;
-
-        var dictionary = new Dictionary<string, object>();
-        
-        foreach (var kvp in attributeValue.M)
-        {
-            var value = kvp.Value;
-            
-            if (value.NULL)
-            {
-                dictionary[kvp.Key] = null!;
-            }
-            else if (!string.IsNullOrEmpty(value.S))
-            {
-                dictionary[kvp.Key] = value.S;
-            }
-            else if (!string.IsNullOrEmpty(value.N))
-            {
-                // Try to parse as different numeric types
-                if (int.TryParse(value.N, out var intVal))
-                    dictionary[kvp.Key] = intVal;
-                else if (long.TryParse(value.N, out var longVal))
-                    dictionary[kvp.Key] = longVal;
-                else if (double.TryParse(value.N, out var doubleVal))
-                    dictionary[kvp.Key] = doubleVal;
-                else
-                    dictionary[kvp.Key] = value.N;
-            }
-            else if (value.BOOL.HasValue)
-            {
-                dictionary[kvp.Key] = value.BOOL.Value;
-            }
-            else
-            {
-                dictionary[kvp.Key] = value.ToString() ?? """";
-            }
-        }
-
-        return dictionary;
-    }
-}";
+            "Uri" or "System.Uri" => true,
+            "TimeSpan" or "System.TimeSpan" => true,
+            "Version" or "System.Version" => true,
+            _ when baseType.StartsWith("Dictionary<") => true,
+            _ when baseType.StartsWith("HashSet<") => true,
+            _ when baseType.StartsWith("SortedSet<") => true,
+            _ when baseType.Contains("JsonElement") => true,
+            _ when baseType.Contains("JsonDocument") => true,
+            _ => false
+        };
     }
 
     /// <summary>
-    /// Determines if a property requires a custom converter.
-    /// Only generates converters for specific well-known types that we have implementations for.
+    /// Gets the default converter type for a property type.
     /// </summary>
-    private static bool RequiresCustomConverter(PropertyModel property)
+    private static string? GetDefaultConverterType(string propertyType)
     {
-        var propertyType = property.PropertyType;
+        var baseType = GetBaseType(propertyType);
         
-        // Only generate converters for specific types we have implementations for
-        if (propertyType.Contains("Uri") || 
-            propertyType.Contains("TimeSpan") ||
-            propertyType.Contains("Dictionary") ||
-            propertyType.Contains("IDictionary"))
-            return true;
-
-        return false;
+        return baseType switch
+        {
+            "Uri" or "System.Uri" => "UriConverter",
+            "TimeSpan" or "System.TimeSpan" => "TimeSpanConverter",
+            "Version" or "System.Version" => "VersionConverter",
+            _ when baseType.StartsWith("Dictionary<") => "DictionaryConverter",
+            _ => null
+        };
     }
 
-
-
-    private static string GetPropertyTypeName(PropertyModel property)
+    /// <summary>
+    /// Gets the default to AttributeValue conversion for fallback scenarios.
+    /// </summary>
+    private static string GetDefaultToAttributeValueConversion(PropertyModel property, string valueExpression)
     {
-        return property.PropertyType;
+        var baseType = GetBaseType(property.PropertyType);
+        
+        return baseType switch
+        {
+            "Uri" or "System.Uri" => $"new AttributeValue {{ S = {valueExpression}?.ToString() ?? string.Empty }}",
+            "TimeSpan" or "System.TimeSpan" => $"new AttributeValue {{ S = {valueExpression}.ToString() }}",
+            "Version" or "System.Version" => $"new AttributeValue {{ S = {valueExpression}?.ToString() ?? string.Empty }}",
+            _ when baseType.StartsWith("Dictionary<") => $"new AttributeValue {{ S = System.Text.Json.JsonSerializer.Serialize({valueExpression}) }}",
+            _ => $"new AttributeValue {{ S = {valueExpression}?.ToString() ?? string.Empty }}"
+        };
     }
 
-    private static string GetConverterTypeName(PropertyModel property)
+    /// <summary>
+    /// Gets the default from AttributeValue conversion for fallback scenarios.
+    /// </summary>
+    private static string GetDefaultFromAttributeValueConversion(PropertyModel property, string valueExpression)
     {
-        var propertyType = property.PropertyType;
+        var baseType = GetBaseType(property.PropertyType);
         
-        if (propertyType.Contains("Uri"))
-            return "UriTypeConverter";
-        if (propertyType.Contains("TimeSpan"))
-            return "TimeSpanTypeConverter";
-        if (propertyType.Contains("Dictionary") || propertyType.Contains("IDictionary"))
-            return "DictionaryTypeConverter";
-        
-        // For other complex types, we shouldn't generate a converter - let them handle it manually
-        return ""; // This will prevent generating a converter for unsupported types
+        return baseType switch
+        {
+            "Uri" or "System.Uri" => $"new Uri({valueExpression}.S)",
+            "TimeSpan" or "System.TimeSpan" => $"TimeSpan.Parse({valueExpression}.S)",
+            "Version" or "System.Version" => $"new Version({valueExpression}.S)",
+            _ when baseType.StartsWith("Dictionary<") => $"System.Text.Json.JsonSerializer.Deserialize<{baseType}>({valueExpression}.S) ?? new {baseType}()",
+            _ => $"{valueExpression}.S"
+        };
     }
 
-    private static string GetFallbackToAttributeValueExpression(PropertyModel property, string valueExpression)
+    /// <summary>
+    /// Gets the base type without nullable annotation.
+    /// </summary>
+    private static string GetBaseType(string typeName)
     {
-        // Provide fallback conversion for when custom converter is not available
-        return $"new AttributeValue {{ S = {valueExpression}?.ToString() ?? \"\" }}";
-    }
-
-    private static string GetFallbackFromAttributeValueExpression(PropertyModel property, string valueExpression)
-    {
-        // Provide fallback conversion for when custom converter is not available
-        var propertyType = GetPropertyTypeName(property);
-        
-        if (propertyType == "string")
-            return $"{valueExpression}.S";
-        
-        return $"({propertyType})Convert.ChangeType({valueExpression}.S, typeof({propertyType}))";
+        return typeName.TrimEnd('?');
     }
 }

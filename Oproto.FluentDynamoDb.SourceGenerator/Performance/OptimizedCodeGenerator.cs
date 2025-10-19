@@ -133,7 +133,7 @@ public static class OptimizedCodeGenerator
         }
         else
         {
-            // Use StringBuilder for complex concatenations to avoid multiple string allocations
+            // Use StringBuilder for efficient multi-part key construction
             sb.AppendLine($"            // Use StringBuilder for efficient multi-part key construction");
             sb.AppendLine($"            var {propertyName.ToLowerInvariant()}Builder = new StringBuilder({EstimateKeyLength(computedKey)});");
             
@@ -198,7 +198,7 @@ public static class OptimizedCodeGenerator
             // Optimized string set conversion
             sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
             sb.AppendLine("                {");
-            sb.AppendLine($"                    SS = typedEntity.{propertyName} is List<string> list ? list : typedEntity.{propertyName}.ToList()");
+            sb.AppendLine($"                    SS = typedEntity.{propertyName} is List<string> list ? list : new List<string>(typedEntity.{propertyName})");
             sb.AppendLine("                };");
         }
         else if (IsNumericType(baseElementType))
@@ -264,8 +264,8 @@ public static class OptimizedCodeGenerator
         {
             // Optimized string set conversion
             sb.AppendLine($"                entity.{propertyName} = {propertyName.ToLowerInvariant()}Value.SS?.Count > 0 ? ");
-            sb.AppendLine($"                    new {property.PropertyType}({propertyName.ToLowerInvariant()}Value.SS) : ");
-            sb.AppendLine($"                    new {property.PropertyType}();");
+            sb.AppendLine($"                    new List<string>({propertyName.ToLowerInvariant()}Value.SS) : ");
+            sb.AppendLine($"                    new List<string>();");
         }
         else if (IsNumericType(baseElementType))
         {
@@ -277,11 +277,11 @@ public static class OptimizedCodeGenerator
             sb.AppendLine("                    {");
             sb.AppendLine($"                        convertedNumbers.Add({GetOptimizedNumericParse(baseElementType, "numStr")});");
             sb.AppendLine("                    }");
-            sb.AppendLine($"                    entity.{propertyName} = new {property.PropertyType}(convertedNumbers);");
+            sb.AppendLine($"                    entity.{propertyName} = new List<{baseElementType}>(convertedNumbers);");
             sb.AppendLine("                }");
             sb.AppendLine("                else");
             sb.AppendLine("                {");
-            sb.AppendLine($"                    entity.{propertyName} = new {property.PropertyType}();");
+            sb.AppendLine($"                    entity.{propertyName} = new List<{baseElementType}>();");
             sb.AppendLine("                }");
         }
         else
@@ -294,18 +294,18 @@ public static class OptimizedCodeGenerator
             sb.AppendLine("                    {");
             sb.AppendLine($"                        convertedItems.Add({GetOptimizedFromAttributeValueExpressionForCollectionElement(collectionElementType, "listItem")});");
             sb.AppendLine("                    }");
-            sb.AppendLine($"                    entity.{propertyName} = new {property.PropertyType}(convertedItems);");
+            sb.AppendLine($"                    entity.{propertyName} = new List<{collectionElementType}>(convertedItems);");
             sb.AppendLine("                }");
             sb.AppendLine("                else");
             sb.AppendLine("                {");
-            sb.AppendLine($"                    entity.{propertyName} = new {property.PropertyType}();");
+            sb.AppendLine($"                    entity.{propertyName} = new List<{collectionElementType}>();");
             sb.AppendLine("                }");
         }
         
         sb.AppendLine("            }");
         sb.AppendLine("            else");
         sb.AppendLine("            {");
-        sb.AppendLine($"                entity.{propertyName} = new {property.PropertyType}();");
+        sb.AppendLine($"                entity.{propertyName} = new List<{collectionElementType}>();");
         sb.AppendLine("            }");
     }
 

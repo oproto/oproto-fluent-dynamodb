@@ -297,3 +297,61 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Verify all source generator unit tests compile and execute successfully
   - This fix will enable ~120 blocked source generator tests to run
   - _Requirements: Source generator test infrastructure integrity_
+
+## Test Failure Remediation Tasks (Phase 2)
+
+- [x] 32. Fix performance optimization code generation tests
+  - Fix `OptimizedCodeGenerator_ShouldProduceEfficientCode` test expecting "StringBuilder" in generated code
+  - Fix `OptimizedCodeGenerator_ShouldMinimizeAllocations` test expecting "new List<" patterns
+  - Fix `AdvancedPerformanceOptimizations_ShouldGenerateOptimizedCode` test expecting "ArrayPool" usage
+  - Update `OptimizedCodeGenerator` and `AdvancedPerformanceOptimizations` classes to generate expected optimization patterns
+  - Ensure generated code includes performance optimizations like StringBuilder usage, pre-allocated collections, and ArrayPool
+  - _Requirements: Performance optimization code generation integrity_
+
+- [ ] 33. Fix mapper generator content validation tests
+  - Fix `GenerateEntityImplementation_WithMultiItemEntity_GeneratesMultiItemMethods` test expecting specific multi-item method signatures
+  - Fix `GenerateEntityImplementation_WithCollectionProperties_GeneratesJsonSerialization` test expecting JSON serialization code
+  - Fix `GenerateEntityImplementation_WithDifferentPropertyTypes_GeneratesCorrectConversions` test expecting type conversion patterns
+  - Update `MapperGenerator` to generate expected method signatures and code patterns
+  - Ensure generated code matches test expectations for multi-item entities and collection handling
+  - _Requirements: Entity mapping code generation accuracy_
+
+- [ ] 34. Fix diagnostic expectation mismatches in integration tests
+  - Fix `SourceGenerator_WithRelatedEntitiesButNoSortKey_GeneratesWarning` expecting DYNDB016 diagnostic but getting DYNDB023/DYNDB027
+  - Fix `SourceGenerator_WithRelatedEntities_GeneratesRelationshipMapping` expecting DYNDB016 diagnostic but getting other warnings
+  - Fix `SourceGenerator_WithCompleteEntity_GeneratesAllExpectedFiles` expecting no diagnostics but getting legitimate warnings
+  - Fix `SourceGenerator_WithScalabilityIssues_GeneratesHelpfulWarnings` expecting scalability warnings but getting none
+  - Update diagnostic generation logic to produce expected diagnostic IDs for specific scenarios
+  - Update test expectations to match actual diagnostic behavior
+  - _Requirements: Diagnostic system accuracy and test alignment_
+
+- [ ] 35. Fix missing diagnostic generation for error scenarios
+  - Fix `SourceGenerator_WithMultiplePartitionKeys_GeneratesDiagnostics` expecting diagnostics but getting none
+  - Fix `SourceGenerator_WithNonPartialClass_GeneratesDiagnostics` expecting diagnostics but getting none
+  - Fix `SourceGenerator_WithErrorScenarios_GeneratesDiagnostics` expecting diagnostics but getting none
+  - Implement missing validation logic in `EntityAnalyzer` to detect multiple partition keys, non-partial classes, and other error scenarios
+  - Add diagnostic descriptors for missing error cases (DYNDB002 for multiple partition keys, DYNDB010 for non-partial classes)
+  - _Requirements: Comprehensive error detection and reporting_
+
+- [ ] 36. Fix edge case handling in source generator
+  - Fix `SourceGenerator_WithEmptyAttributeNames_HandlesGracefully` expecting specific error handling behavior
+  - Fix `SourceGenerator_WithGenericTypeConstraints_HandlesCorrectly` expecting no diagnostics but getting warnings
+  - Fix `SourceGenerator_WithCircularReferences_HandlesGracefully` expecting specific generated code structure
+  - Implement proper edge case handling for empty attribute names, generic constraints, and circular references
+  - Update generated code structure to match test expectations for edge cases
+  - _Requirements: Robust edge case handling_
+
+- [ ] 37. Fix complex entity and performance test expectations
+  - Fix `SourceGenerator_WithVeryComplexRelationshipPatterns_HandlesCorrectly` expecting specific generated code format
+  - Fix `SourceGenerator_WithManyRelatedEntities_HandlesEfficiently` expecting specific entity code structure
+  - Fix `SourceGenerator_WithComplexEntity_CompletesReasonably` expecting DYNDB027 diagnostic but getting other warnings
+  - Fix `SourceGenerator_WithComplexTypes_GeneratesCorrectConversions` expecting specific generated code format
+  - Update code generation to produce expected output format and diagnostic behavior for complex scenarios
+  - _Requirements: Complex entity handling and performance characteristics_
+
+- [ ] 38. Fix keys generator and field generator test expectations
+  - Fix `SourceGenerator_WithComplexKeyFormats_ParsesCorrectly` expecting specific keys code structure
+  - Fix `SourceGenerator_WithMultiItemEntity_GeneratesMultiItemSupport` expecting specific entity code format
+  - Update `KeysGenerator` and `FieldsGenerator` to produce expected code structure and method signatures
+  - Ensure generated keys and fields classes match test expectations for complex scenarios
+  - _Requirements: Key and field generation accuracy_

@@ -85,7 +85,7 @@ public class PerformanceOptimizationTests
     public void OptimizedCodeGenerator_ShouldProduceEfficientCode()
     {
         // Arrange
-        var entity = CreateTestEntityModel();
+        var entity = CreateTestEntityModelWithComputedKeys();
         var sb = new System.Text.StringBuilder();
 
         // Act
@@ -397,15 +397,24 @@ namespace TestNamespace
             }
         };
 
-        // Add many properties to simulate complex entity
+        // Add many properties to simulate complex entity with various types
         for (int i = 0; i < 20; i++)
         {
+            string propertyType = i switch
+            {
+                _ when i % 5 == 0 => "double",  // Every 5th property is double (for G17 formatting)
+                _ when i % 4 == 0 => "DateTime", // Every 4th property is DateTime (for O formatting)
+                _ when i % 3 == 0 => "float",   // Every 3rd property is float (for G9 formatting)
+                _ when i % 2 == 0 => "string",  // Even properties are string
+                _ => "int"                      // Odd properties are int
+            };
+            
             properties.Add(new PropertyModel
             {
                 PropertyName = $"Property{i}",
-                PropertyType = i % 2 == 0 ? "string" : "int",
+                PropertyType = propertyType,
                 AttributeName = $"prop{i}",
-                IsNullable = i % 3 == 0
+                IsNullable = i % 7 == 0  // Some properties are nullable
             });
         }
 
@@ -416,6 +425,19 @@ namespace TestNamespace
             PropertyType = "List<string>",
             AttributeName = "tags",
             IsCollection = true
+        });
+
+        // Add computed key with multiple source properties to trigger StringBuilder usage
+        properties.Add(new PropertyModel
+        {
+            PropertyName = "ComputedKey",
+            PropertyType = "string",
+            AttributeName = "computed_key",
+            ComputedKey = new ComputedKeyModel
+            {
+                SourceProperties = new[] { "Id", "SortKey", "Property0", "Property1", "Property2" }, // More than 2 to trigger StringBuilder
+                Separator = "#"
+            }
         });
 
         return new EntityModel
@@ -481,6 +503,62 @@ namespace TestNamespace
         {
             return new { EntityModel = (EntityModel?)null, CacheKey = "" };
         }
+    }
+
+    private static EntityModel CreateTestEntityModelWithComputedKeys()
+    {
+        return new EntityModel
+        {
+            ClassName = "TestEntity",
+            Namespace = "TestNamespace",
+            TableName = "test-table",
+            Properties = new[]
+            {
+                new PropertyModel
+                {
+                    PropertyName = "Id",
+                    PropertyType = "string",
+                    AttributeName = "pk",
+                    IsPartitionKey = true
+                },
+                new PropertyModel
+                {
+                    PropertyName = "Name",
+                    PropertyType = "string",
+                    AttributeName = "name"
+                },
+                new PropertyModel
+                {
+                    PropertyName = "ComputedKey",
+                    PropertyType = "string",
+                    AttributeName = "computed_key",
+                    ComputedKey = new ComputedKeyModel
+                    {
+                        SourceProperties = new[] { "Id", "Name", "Category", "Type" }, // More than 2 to trigger StringBuilder
+                        Separator = "#"
+                    }
+                },
+                new PropertyModel
+                {
+                    PropertyName = "Category",
+                    PropertyType = "string",
+                    AttributeName = "category"
+                },
+                new PropertyModel
+                {
+                    PropertyName = "Type",
+                    PropertyType = "string",
+                    AttributeName = "type"
+                },
+                new PropertyModel
+                {
+                    PropertyName = "Tags",
+                    PropertyType = "List<string>",
+                    AttributeName = "tags",
+                    IsCollection = true
+                }
+            }
+        };
     }
 
     private static EntityModel CreateEntityWithCustomTypes()

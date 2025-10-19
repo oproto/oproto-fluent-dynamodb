@@ -18,9 +18,15 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Use the high-performance incremental generator for better build performance
-        var incrementalGenerator = new IncrementalSourceGenerator();
-        incrementalGenerator.Initialize(context);
+        // Register syntax receiver for classes with DynamoDbTable attribute
+        var entityClasses = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (s, _) => IsDynamoDbEntity(s),
+                transform: static (ctx, _) => GetEntityModel(ctx))
+            .Where(static m => m.Model is not null);
+
+        // Register code generation
+        context.RegisterSourceOutput(entityClasses.Collect(), Execute);
     }
 
     private static bool IsDynamoDbEntity(SyntaxNode node)
