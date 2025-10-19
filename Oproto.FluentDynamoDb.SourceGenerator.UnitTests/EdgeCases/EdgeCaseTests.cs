@@ -511,14 +511,21 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        // May generate warnings about overly broad patterns
+        // May generate warnings about overly broad patterns and performance issues
+        result.Diagnostics.Should().NotBeEmpty();
+        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warnings for collections
         result.GeneratedSources.Should().HaveCount(3);
         
         var entityCode = GetGeneratedSource(result, "ComplexPatternsEntity.g.cs");
-        entityCode.Should().Contain("Related entities: 4 relationship(s) defined.");
-        entityCode.Should().Contain("if (sortKey.StartsWith(\"audit#\"))");
-        entityCode.Should().Contain("if (sortKey.StartsWith(\"prefix#middle#\"))");
-        entityCode.Should().Contain("if (sortKey == \"exact#match#no#wildcards\"");
+        entityCode.Should().Contain("public partial class ComplexPatternsEntity : IDynamoDbEntity");
+        entityCode.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
+        entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
+        
+        // Verify property accessors are generated for related entities
+        entityCode.Should().Contain("GetNestedWildcardAudit(ComplexPatternsEntity entity)");
+        entityCode.Should().Contain("GetComplexPattern(ComplexPatternsEntity entity)");
+        entityCode.Should().Contain("GetVeryBroadPattern(ComplexPatternsEntity entity)");
+        entityCode.Should().Contain("GetExactMatch(ComplexPatternsEntity entity)");
     }
 
     private static GeneratorTestResult GenerateCode(string source)

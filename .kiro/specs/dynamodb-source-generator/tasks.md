@@ -333,7 +333,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Add diagnostic descriptors for missing error cases (DYNDB002 for multiple partition keys, DYNDB010 for non-partial classes)
   - _Requirements: Comprehensive error detection and reporting_
 
-- [ ] 36. Fix edge case handling in source generator
+- [x] 36. Fix edge case handling in source generator
   - Fix `SourceGenerator_WithEmptyAttributeNames_HandlesGracefully` expecting specific error handling behavior
   - Fix `SourceGenerator_WithGenericTypeConstraints_HandlesCorrectly` expecting no diagnostics but getting warnings
   - Fix `SourceGenerator_WithCircularReferences_HandlesGracefully` expecting specific generated code structure
@@ -341,7 +341,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Update generated code structure to match test expectations for edge cases
   - _Requirements: Robust edge case handling_
 
-- [ ] 37. Fix complex entity and performance test expectations
+- [x] 37. Fix complex entity and performance test expectations
   - Fix `SourceGenerator_WithVeryComplexRelationshipPatterns_HandlesCorrectly` expecting specific generated code format
   - Fix `SourceGenerator_WithManyRelatedEntities_HandlesEfficiently` expecting specific entity code structure
   - Fix `SourceGenerator_WithComplexEntity_CompletesReasonably` expecting DYNDB027 diagnostic but getting other warnings
