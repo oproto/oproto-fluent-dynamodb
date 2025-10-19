@@ -68,6 +68,12 @@ public class EntityAnalyzer
         // Extract relationship information
         ExtractRelationships(classDecl, semanticModel, entityModel);
 
+        // Validate related entity configurations (must be after ExtractRelationships)
+        if (entityModel.Relationships.Length > 0)
+        {
+            ValidateRelatedEntityConfiguration(entityModel);
+        }
+
         // Only return null if there are critical errors that prevent code generation
         var criticalErrors = _diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && IsCriticalError(d.Id)).ToArray();
         return criticalErrors.Length > 0 ? null : entityModel;
@@ -485,12 +491,6 @@ public class EntityAnalyzer
         if (entityModel.IsMultiItemEntity)
         {
             ValidateMultiItemEntityConsistency(entityModel);
-        }
-
-        // Validate related entity configurations
-        if (entityModel.Relationships.Length > 0)
-        {
-            ValidateRelatedEntityConfiguration(entityModel);
         }
 
         // Validate computed and extracted keys

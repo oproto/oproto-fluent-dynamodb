@@ -316,7 +316,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Ensure generated code matches test expectations for multi-item entities and collection handling
   - _Requirements: Entity mapping code generation accuracy_
 
-- [ ] 34. Fix diagnostic expectation mismatches in integration tests
+- [x] 34. Fix diagnostic expectation mismatches in integration tests
   - Fix `SourceGenerator_WithRelatedEntitiesButNoSortKey_GeneratesWarning` expecting DYNDB016 diagnostic but getting DYNDB023/DYNDB027
   - Fix `SourceGenerator_WithRelatedEntities_GeneratesRelationshipMapping` expecting DYNDB016 diagnostic but getting other warnings
   - Fix `SourceGenerator_WithCompleteEntity_GeneratesAllExpectedFiles` expecting no diagnostics but getting legitimate warnings
@@ -355,3 +355,12 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Update `KeysGenerator` and `FieldsGenerator` to produce expected code structure and method signatures
   - Ensure generated keys and fields classes match test expectations for complex scenarios
   - _Requirements: Key and field generation accuracy_
+
+- [ ] 39. Remove flawed scalability detection logic
+  - Remove DYNDB027 scalability warning generation from EntityAnalyzer
+  - Remove sequential ID pattern detection logic (lines ~1230-1260 in EntityAnalyzer.cs)
+  - Keep only the GSI overuse check (>5 GSIs) as it's actually valid
+  - Update or remove `SourceGenerator_WithScalabilityIssues_GeneratesHelpfulWarnings` test
+  - Update other tests that expect DYNDB027 warnings to not expect them
+  - Remove ScalabilityWarning diagnostic descriptor if no longer used
+  - _Requirements: Remove false positive scalability warnings that can't be accurately detected at compile time_
