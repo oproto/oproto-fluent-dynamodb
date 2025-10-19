@@ -11,7 +11,7 @@ public class TransactGetItemBuilder : IWithKey<TransactGetItemBuilder>, IWithAtt
         _req.Get = new Get();
         _req.Get.TableName = tableName;
     }
-    
+
     private TransactGetItem _req = new TransactGetItem();
     private readonly IAmazonDynamoDB _dynamoDbClient;
     private readonly AttributeNameInternal _attrN = new AttributeNameInternal();
@@ -38,7 +38,7 @@ public class TransactGetItemBuilder : IWithKey<TransactGetItemBuilder>, IWithAtt
     /// Gets the builder instance for method chaining.
     /// </summary>
     public TransactGetItemBuilder Self => this;
-    
+
     public TransactGetItemBuilder ForTable(string tableName)
     {
         _req.Get.TableName = tableName;
@@ -46,19 +46,19 @@ public class TransactGetItemBuilder : IWithKey<TransactGetItemBuilder>, IWithAtt
     }
 
 
-    
 
-    
+
+
     public TransactGetItemBuilder WithProjection(string projectionExpression)
     {
         _req.Get.ProjectionExpression = projectionExpression;
         return this;
     }
-    
+
     public TransactGetItem ToGetItem()
     {
         _req.Get.ExpressionAttributeNames = _attrN.AttributeNames;
         return _req;
     }
-    
+
 }

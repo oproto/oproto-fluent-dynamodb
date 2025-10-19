@@ -41,7 +41,7 @@ public class MapperGeneratorBugFixTests
         result.Should().Contain("typeof(TestEntity)");
         result.Should().NotContain("typeof(Id)");
         result.Should().NotContain("typeof(Data)");
-        
+
         // Verify the specific error handling code is correct
         result.Should().Contain("throw DynamoDbMappingException.PropertyConversionFailed(");
         result.Should().Contain("typeof(TestEntity),");

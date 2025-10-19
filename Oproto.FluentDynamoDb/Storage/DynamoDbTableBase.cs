@@ -13,36 +13,36 @@ public abstract class DynamoDbTableBase : IDynamoDbTable
         DynamoDbClient = client;
         Name = tableName;
     }
-    
+
     public IAmazonDynamoDB DynamoDbClient { get; private init; }
     public string Name { get; private init; }
-    
+
     /// <summary>
     /// Gets a builder for GetItem operations on this table.
     /// </summary>
     public GetItemRequestBuilder Get => new GetItemRequestBuilder(DynamoDbClient).ForTable(Name);
-    
+
     /// <summary>
     /// Gets a builder for UpdateItem operations on this table.
     /// </summary>
     public UpdateItemRequestBuilder Update => new UpdateItemRequestBuilder(DynamoDbClient).ForTable(Name);
-    
+
     /// <summary>
     /// Gets a builder for Query operations on this table.
     /// </summary>
     public QueryRequestBuilder Query => new QueryRequestBuilder(DynamoDbClient).ForTable(Name);
-    
+
     /// <summary>
     /// Gets a builder for PutItem operations on this table.
     /// </summary>
     public PutItemRequestBuilder Put => new PutItemRequestBuilder(DynamoDbClient).ForTable(Name);
-    
+
     /// <summary>
     /// Gets a builder for DeleteItem operations on this table.
     /// Use this to delete individual items by their primary key, with optional condition expressions.
     /// </summary>
     public DeleteItemRequestBuilder Delete => new DeleteItemRequestBuilder(DynamoDbClient).ForTable(Name);
-    
+
     /// <summary>
     /// Returns a scannable interface that provides access to scan operations.
     /// 

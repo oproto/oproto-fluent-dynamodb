@@ -93,7 +93,7 @@ public class SourceGeneratorPerformanceTests
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB029"); // Too many attributes warning
         result.GeneratedSources.Should().HaveCount(3);
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(3000, "Entity with many properties should complete within 3 seconds");
-        
+
         // Verify all properties are included
         var fieldsCode = GetGeneratedSource(result, "ManyPropertiesEntity.g.cs");
         fieldsCode.Should().Contain("Property0");
@@ -112,16 +112,19 @@ public class SourceGeneratorPerformanceTests
         stopwatch.Stop();
 
         // Assert
-        // Should generate scalability warning for partition key
-        result.Diagnostics.Should().NotBeEmpty();
-        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
+        // Note: DYNDB027 scalability warnings were removed in Task 39 as they cannot be
+        // accurately detected at compile time. This test now focuses on performance only.
         result.GeneratedSources.Should().HaveCount(3);
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(3000, "Entity with many GSIs should complete within 3 seconds");
-        
-        // Verify all GSIs are included
+
+        // Verify all GSIs are included in generated code
         var fieldsCode = GetGeneratedSource(result, "ManyGSIsEntityFields.g.cs");
         fieldsCode.Should().Contain("GSI0Fields");
         fieldsCode.Should().Contain("GSI9Fields");
+
+        // No scalability warnings expected - removed in Task 39
+        var scalabilityWarnings = result.Diagnostics.Where(d => d.Id == "DYNDB027").ToList();
+        scalabilityWarnings.Should().BeEmpty("DYNDB027 scalability warnings were removed in Task 39");
     }
 
     [Fact]
@@ -141,7 +144,7 @@ public class SourceGeneratorPerformanceTests
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warnings for collections
         result.GeneratedSources.Should().HaveCount(3);
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(4000, "Entity with many related entities should complete within 4 seconds");
-        
+
         // Verify related entities are included in generated code structure
         var entityCode = GetGeneratedSource(result, "ManyRelatedEntitiesEntity.g.cs");
         entityCode.Should().Contain("public partial class ManyRelatedEntitiesEntity : IDynamoDbEntity");
@@ -162,7 +165,7 @@ public class SourceGeneratorPerformanceTests
             var stopwatch = Stopwatch.StartNew();
             var result = GenerateCode(source);
             stopwatch.Stop();
-            
+
             // Should generate warnings for reserved words and scalability
             result.Diagnostics.Should().NotBeEmpty();
             result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warnings
@@ -173,10 +176,10 @@ public class SourceGeneratorPerformanceTests
         var averageTime = times.Average();
         var maxTime = times.Max();
         var minTime = times.Min();
-        
+
         averageTime.Should().BeLessThan(1000, "Average generation time should be under 1 second");
         maxTime.Should().BeLessThan(2000, "Maximum generation time should be under 2 seconds");
-        
+
         // Performance should be relatively consistent (max shouldn't be more than 3x min)
         (maxTime / Math.Max(minTime, 1)).Should().BeLessThan(3, "Performance should be relatively consistent");
     }
@@ -359,13 +362,13 @@ namespace TestNamespace
     {
         var properties = new List<string>();
         var relatedClasses = new List<string>();
-        
+
         for (int i = 0; i < relatedEntityCount; i++)
         {
             properties.Add($@"
         [RelatedEntity(""related{i}#*"")]
         public List<RelatedEntity{i}>? RelatedEntity{i} {{ get; set; }}");
-            
+
             relatedClasses.Add($@"
     public class RelatedEntity{i}
     {{
@@ -399,7 +402,7 @@ namespace TestNamespace
     private static string CreateLargeSourceFile()
     {
         var largeComments = string.Join("\n", Enumerable.Range(1, 100).Select(i => $"    // This is comment line {i} to make the file larger"));
-        
+
         return $@"
 using System;
 using System.Collections.Generic;
@@ -497,11 +500,11 @@ namespace Oproto.FluentDynamoDb.Attributes
 
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
-            new[] { 
+            new[] {
                 CSharpSyntaxTree.ParseText(source),
                 CSharpSyntaxTree.ParseText(attributeSource)
             },
-            new[] { 
+            new[] {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
                 // Add AWS SDK references for generated code
@@ -517,7 +520,7 @@ namespace Oproto.FluentDynamoDb.Attributes
 
         var generator = new DynamoDbSourceGenerator();
         var driver = CSharpGeneratorDriver.Create(generator);
-        
+
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
         var generatedSources = outputCompilation.SyntaxTrees

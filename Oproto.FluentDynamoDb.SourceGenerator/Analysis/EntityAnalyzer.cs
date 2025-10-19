@@ -100,7 +100,7 @@ public class EntityAnalyzer
         // Extract entity discriminator from named argument
         var discriminatorArg = tableAttribute.ArgumentList?.Arguments
             .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.ValueText == "EntityDiscriminator");
-        
+
         if (discriminatorArg?.Expression is LiteralExpressionSyntax discriminatorLiteral)
         {
             entityModel.EntityDiscriminator = discriminatorLiteral.Token.ValueText;
@@ -201,12 +201,12 @@ public class EntityAnalyzer
         {
             foreach (var arg in keyAttribute.ArgumentList.Arguments)
             {
-                if (arg.NameEquals?.Name.Identifier.ValueText == "Prefix" && 
+                if (arg.NameEquals?.Name.Identifier.ValueText == "Prefix" &&
                     arg.Expression is LiteralExpressionSyntax prefixLiteral)
                 {
                     keyFormat.Prefix = prefixLiteral.Token.ValueText;
                 }
-                else if (arg.NameEquals?.Name.Identifier.ValueText == "Separator" && 
+                else if (arg.NameEquals?.Name.Identifier.ValueText == "Separator" &&
                          arg.Expression is LiteralExpressionSyntax separatorLiteral)
                 {
                     keyFormat.Separator = separatorLiteral.Token.ValueText;
@@ -298,7 +298,7 @@ public class EntityAnalyzer
         if (computedAttr.ArgumentList?.Arguments != null)
         {
             var sourceProperties = new List<string>();
-            
+
             foreach (var arg in computedAttr.ArgumentList.Arguments)
             {
                 // Skip named arguments for now, handle positional arguments (source properties)
@@ -343,7 +343,7 @@ public class EntityAnalyzer
         if (extractedAttr.ArgumentList?.Arguments != null && extractedAttr.ArgumentList.Arguments.Count >= 2)
         {
             var args = extractedAttr.ArgumentList.Arguments;
-            
+
             // First argument: source property
             if (args[0].Expression is LiteralExpressionSyntax sourcePropertyLiteral)
             {
@@ -351,7 +351,7 @@ public class EntityAnalyzer
             }
 
             // Second argument: index
-            if (args[1].Expression is LiteralExpressionSyntax indexLiteral && 
+            if (args[1].Expression is LiteralExpressionSyntax indexLiteral &&
                 int.TryParse(indexLiteral.Token.ValueText, out var index))
             {
                 extractedModel.Index = index;
@@ -435,7 +435,7 @@ public class EntityAnalyzer
             // Extract entity type from named argument
             var entityTypeArg = relatedEntityAttr.ArgumentList?.Arguments
                 .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.ValueText == "EntityType");
-            
+
             if (entityTypeArg?.Expression is TypeOfExpressionSyntax typeOfExpr)
             {
                 relationshipModel.EntityType = typeOfExpr.Type.ToString();
@@ -455,22 +455,22 @@ public class EntityAnalyzer
         // Validate partition key - this is critical for DynamoDB entities
         if (partitionKeyProperties.Length == 0)
         {
-            ReportDiagnostic(DiagnosticDescriptors.MissingPartitionKey, 
-                entityModel.ClassDeclaration?.Identifier.GetLocation(), 
+            ReportDiagnostic(DiagnosticDescriptors.MissingPartitionKey,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
                 entityModel.ClassName);
         }
         else if (partitionKeyProperties.Length > 1)
         {
-            ReportDiagnostic(DiagnosticDescriptors.MultiplePartitionKeys, 
-                entityModel.ClassDeclaration?.Identifier.GetLocation(), 
+            ReportDiagnostic(DiagnosticDescriptors.MultiplePartitionKeys,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
                 entityModel.ClassName);
         }
 
         // Validate sort key
         if (sortKeyProperties.Length > 1)
         {
-            ReportDiagnostic(DiagnosticDescriptors.MultipleSortKeys, 
-                entityModel.ClassDeclaration?.Identifier.GetLocation(), 
+            ReportDiagnostic(DiagnosticDescriptors.MultipleSortKeys,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
                 entityModel.ClassName);
         }
 
@@ -479,15 +479,15 @@ public class EntityAnalyzer
         {
             if (string.IsNullOrEmpty(index.PartitionKeyProperty))
             {
-                ReportDiagnostic(DiagnosticDescriptors.InvalidGsiConfiguration, 
-                    entityModel.ClassDeclaration?.Identifier.GetLocation(), 
+                ReportDiagnostic(DiagnosticDescriptors.InvalidGsiConfiguration,
+                    entityModel.ClassDeclaration?.Identifier.GetLocation(),
                     index.IndexName, entityModel.ClassName);
             }
         }
 
         // Check if entity is multi-item (has collection properties with DynamoDB attributes)
         entityModel.IsMultiItemEntity = entityModel.Properties.Any(p => p.IsCollection && p.HasAttributeMapping);
-        
+
         // Validate multi-item entity consistency
         if (entityModel.IsMultiItemEntity)
         {
@@ -506,19 +506,19 @@ public class EntityAnalyzer
     private void ValidatePropertyModel(PropertyModel propertyModel)
     {
         // Check if property has key attributes but missing DynamoDbAttribute
-        if ((propertyModel.IsPartitionKey || propertyModel.IsSortKey || propertyModel.IsPartOfGsi) && 
+        if ((propertyModel.IsPartitionKey || propertyModel.IsSortKey || propertyModel.IsPartOfGsi) &&
             string.IsNullOrEmpty(propertyModel.AttributeName))
         {
-            ReportDiagnostic(DiagnosticDescriptors.MissingDynamoDbAttribute, 
-                propertyModel.PropertyDeclaration?.Identifier.GetLocation(), 
+            ReportDiagnostic(DiagnosticDescriptors.MissingDynamoDbAttribute,
+                propertyModel.PropertyDeclaration?.Identifier.GetLocation(),
                 propertyModel.PropertyName);
         }
 
         // Validate property type support
         if (!IsSupportedPropertyType(propertyModel.PropertyType))
         {
-            ReportDiagnostic(DiagnosticDescriptors.UnsupportedPropertyType, 
-                propertyModel.PropertyDeclaration?.Identifier.GetLocation(), 
+            ReportDiagnostic(DiagnosticDescriptors.UnsupportedPropertyType,
+                propertyModel.PropertyDeclaration?.Identifier.GetLocation(),
                 propertyModel.PropertyName, propertyModel.PropertyType);
         }
 
@@ -549,7 +549,7 @@ public class EntityAnalyzer
     private void ValidateAttributeName(PropertyModel propertyModel)
     {
         var attributeName = propertyModel.AttributeName;
-        
+
         // Check for invalid characters
         if (attributeName.Contains('\0') || attributeName.Contains('\n') || attributeName.Contains('\r'))
         {
@@ -713,7 +713,7 @@ public class EntityAnalyzer
         }
 
         // Warn about nested complex objects
-        if (!propertyModel.IsCollection && !IsPrimitiveType(propertyModel.PropertyType) && 
+        if (!propertyModel.IsCollection && !IsPrimitiveType(propertyModel.PropertyType) &&
             propertyModel.PropertyType != "object" && !propertyModel.PropertyType.EndsWith("?"))
         {
             // Check if it's a complex nested object (not a simple value type)
@@ -731,13 +731,13 @@ public class EntityAnalyzer
     {
         // Check if collection contains complex types
         var elementType = GetCollectionElementType(collectionType);
-        
+
         // Dictionary<string, object> and similar complex types are performance concerns
         if (elementType.StartsWith("Dictionary<") || elementType.StartsWith("System.Collections.Generic.Dictionary<"))
         {
             return true;
         }
-        
+
         // Collections of complex objects (not primitive types)
         return !IsPrimitiveType(elementType) && elementType != "object";
     }
@@ -746,7 +746,7 @@ public class EntityAnalyzer
     {
         // Handle nullable collections like List<T>?
         var baseType = collectionType.TrimEnd('?');
-        
+
         // Extract element type from generic collections
         // Examples: List<string> -> string, IEnumerable<ChildEntity> -> ChildEntity
         if (baseType.Contains('<') && baseType.Contains('>'))
@@ -758,13 +758,13 @@ public class EntityAnalyzer
                 return baseType.Substring(startIndex, endIndex - startIndex).Trim();
             }
         }
-        
+
         // Handle array types like string[] -> string
         if (baseType.EndsWith("[]"))
         {
             return baseType.Substring(0, baseType.Length - 2);
         }
-        
+
         // If we can't determine the element type, return the original type
         return baseType;
     }
@@ -773,22 +773,22 @@ public class EntityAnalyzer
     {
         // Skip nullable annotations
         var baseType = typeName.TrimEnd('?');
-        
+
         // These are complex types that may cause performance issues
         if (baseType.StartsWith("Dictionary<") || baseType.StartsWith("System.Collections.Generic.Dictionary<"))
         {
             return true;
         }
-        
+
         // Custom classes/structs that aren't primitive types
-        if (!IsPrimitiveType(baseType) && 
-            baseType != "object" && 
-            !baseType.StartsWith("System.") && 
+        if (!IsPrimitiveType(baseType) &&
+            baseType != "object" &&
+            !baseType.StartsWith("System.") &&
             !baseType.Contains("[]"))
         {
             return true;
         }
-        
+
         return false;
     }
 
@@ -816,8 +816,8 @@ public class EntityAnalyzer
         if (type.SpecialType == SpecialType.System_String)
             return false;
 
-        return type.AllInterfaces.Any(i => 
-            i.IsGenericType && 
+        return type.AllInterfaces.Any(i =>
+            i.IsGenericType &&
             i.ConstructedFrom.ToDisplayString() == "System.Collections.Generic.IEnumerable<T>");
     }
 
@@ -827,14 +827,14 @@ public class EntityAnalyzer
         var supportedTypes = new[]
         {
             "string", "int", "long", "double", "float", "decimal", "bool", "DateTime", "DateTimeOffset",
-            "Guid", "byte[]", "System.String", "System.Int32", "System.Int64", "System.Double", 
+            "Guid", "byte[]", "System.String", "System.Int32", "System.Int64", "System.Double",
             "System.Single", "System.Decimal", "System.Boolean", "System.DateTime", "System.DateTimeOffset",
             "System.Guid", "System.Byte[]", "Ulid", "System.Ulid"
         };
 
         // Remove nullable annotations for checking
         var baseType = typeName.TrimEnd('?');
-        
+
         // Check for nullable value types
         if (baseType.StartsWith("System.Nullable<") || baseType.Contains("?"))
         {
@@ -873,14 +873,14 @@ public class EntityAnalyzer
 
         return attributeLists
             .SelectMany(al => al.Attributes)
-            .Where(attr => 
+            .Where(attr =>
             {
                 // First try semantic model resolution
                 var symbolInfo = semanticModel.GetSymbolInfo(attr);
                 if (symbolInfo.Symbol is IMethodSymbol method)
                 {
                     var containingType = method.ContainingType.ToDisplayString();
-                    if (containingType.EndsWith(attributeName) || 
+                    if (containingType.EndsWith(attributeName) ||
                         containingType.EndsWith(attributeName.Replace("Attribute", "")))
                     {
                         return true;
@@ -890,7 +890,7 @@ public class EntityAnalyzer
                 // Fallback to syntax-based matching for cases where semantic model can't resolve
                 var attributeNameText = attr.Name.ToString();
                 var targetName = attributeName.Replace("Attribute", "");
-                
+
                 // More comprehensive matching for attribute names
                 return attributeNameText == attributeName ||
                        attributeNameText == targetName ||
@@ -911,8 +911,8 @@ public class EntityAnalyzer
         // Multi-item entities must have a partition key for grouping
         if (entityModel.PartitionKeyProperty == null)
         {
-            ReportDiagnostic(DiagnosticDescriptors.MultiItemEntityMissingPartitionKey, 
-                entityModel.ClassDeclaration?.Identifier.GetLocation(), 
+            ReportDiagnostic(DiagnosticDescriptors.MultiItemEntityMissingPartitionKey,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
                 entityModel.ClassName);
             return;
         }
@@ -920,21 +920,21 @@ public class EntityAnalyzer
         // Multi-item entities should have a sort key for item ordering
         if (entityModel.SortKeyProperty == null)
         {
-            ReportDiagnostic(DiagnosticDescriptors.MultiItemEntityMissingSortKey, 
-                entityModel.ClassDeclaration?.Identifier.GetLocation(), 
+            ReportDiagnostic(DiagnosticDescriptors.MultiItemEntityMissingSortKey,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
                 entityModel.ClassName);
         }
 
         // Validate that collection properties have appropriate attribute mappings
         var collectionProperties = entityModel.Properties.Where(p => p.IsCollection && p.HasAttributeMapping).ToArray();
-        
+
         foreach (var collectionProperty in collectionProperties)
         {
             // Collection properties in multi-item entities should not conflict with key attributes
             if (collectionProperty.IsPartitionKey || collectionProperty.IsSortKey)
             {
-                ReportDiagnostic(DiagnosticDescriptors.CollectionPropertyCannotBeKey, 
-                    collectionProperty.PropertyDeclaration?.Identifier.GetLocation(), 
+                ReportDiagnostic(DiagnosticDescriptors.CollectionPropertyCannotBeKey,
+                    collectionProperty.PropertyDeclaration?.Identifier.GetLocation(),
                     collectionProperty.PropertyName, entityModel.ClassName);
             }
         }
@@ -950,12 +950,12 @@ public class EntityAnalyzer
         {
             // If partition key has a format, ensure it's suitable for multi-item entities
             var keyFormat = partitionKeyProperty.KeyFormat;
-            
+
             // Warn if partition key format might not be suitable for grouping
             if (string.IsNullOrEmpty(keyFormat.Prefix) && string.IsNullOrEmpty(keyFormat.Separator))
             {
-                ReportDiagnostic(DiagnosticDescriptors.MultiItemEntityPartitionKeyFormat, 
-                    partitionKeyProperty.PropertyDeclaration?.Identifier.GetLocation(), 
+                ReportDiagnostic(DiagnosticDescriptors.MultiItemEntityPartitionKeyFormat,
+                    partitionKeyProperty.PropertyDeclaration?.Identifier.GetLocation(),
                     partitionKeyProperty.PropertyName, entityModel.ClassName);
             }
         }
@@ -1022,7 +1022,7 @@ public class EntityAnalyzer
     private void ValidateRelationshipComplexity(EntityModel entityModel)
     {
         var relationships = entityModel.Relationships;
-        
+
         // Check for complex relationship patterns that may impact scalability
         if (relationships.Length >= 3)
         {
@@ -1070,8 +1070,8 @@ public class EntityAnalyzer
     private bool IsValidEntityType(string entityType)
     {
         // Basic validation - check if it looks like a valid type name
-        return !string.IsNullOrWhiteSpace(entityType) && 
-               !entityType.Contains(" ") && 
+        return !string.IsNullOrWhiteSpace(entityType) &&
+               !entityType.Contains(" ") &&
                char.IsUpper(entityType[0]);
     }
 
@@ -1208,7 +1208,7 @@ public class EntityAnalyzer
             {
                 ReportDiagnostic(DiagnosticDescriptors.InvalidComputedKeyFormat,
                     computedProperty.PropertyDeclaration?.Identifier.GetLocation(),
-                    computedProperty.PropertyName, format, 
+                    computedProperty.PropertyName, format,
                     $"Format requires {placeholderCount} parameters but only {computedKey.SourceProperties.Length} source properties provided");
             }
         }
@@ -1251,7 +1251,7 @@ public class EntityAnalyzer
         }
     }
 
-    private bool HasCircularDependency(string propertyName, Dictionary<string, HashSet<string>> dependencyGraph, 
+    private bool HasCircularDependency(string propertyName, Dictionary<string, HashSet<string>> dependencyGraph,
         HashSet<string> visited, HashSet<string> recursionStack, out string cycle)
     {
         cycle = string.Empty;
@@ -1319,9 +1319,9 @@ public class EntityAnalyzer
         // Check for multi-item entities with complex collections (scalability concern)
         if (entityModel.IsMultiItemEntity)
         {
-            var complexCollectionCount = entityModel.Properties.Count(p => 
+            var complexCollectionCount = entityModel.Properties.Count(p =>
                 p.IsCollection && p.HasAttributeMapping && IsComplexCollectionType(p.PropertyType));
-            
+
             if (complexCollectionCount > 2)
             {
                 ReportDiagnostic(DiagnosticDescriptors.ScalabilityWarning,
@@ -1332,9 +1332,9 @@ public class EntityAnalyzer
         }
 
         // Check for entities with many complex properties (potential scalability issue)
-        var complexPropertyCount = entityModel.Properties.Count(p => 
+        var complexPropertyCount = entityModel.Properties.Count(p =>
             p.HasAttributeMapping && (IsComplexCollectionType(p.PropertyType) || IsComplexNestedType(p.PropertyType)));
-        
+
         if (complexPropertyCount >= 3)
         {
             ReportDiagnostic(DiagnosticDescriptors.ScalabilityWarning,
@@ -1348,7 +1348,7 @@ public class EntityAnalyzer
     {
         // Basic circular reference detection for related entities
         var entityTypeName = entityModel.ClassName;
-        
+
         foreach (var relationship in entityModel.Relationships)
         {
             if (!string.IsNullOrEmpty(relationship.EntityType))

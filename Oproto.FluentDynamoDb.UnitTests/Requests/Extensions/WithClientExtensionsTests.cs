@@ -29,7 +29,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToGetItemRequest();
         newRequest.TableName.Should().Be("TestTable");
         newRequest.Key.Should().ContainKey("pk");
@@ -62,7 +62,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToQueryRequest();
         newRequest.TableName.Should().Be("TestTable");
         newRequest.KeyConditionExpression.Should().Be("pk = :pk AND begins_with(sk, :prefix)");
@@ -99,7 +99,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToPutItemRequest();
         newRequest.TableName.Should().Be("TestTable");
         newRequest.Item.Should().ContainKeys("pk", "name");
@@ -129,7 +129,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToUpdateItemRequest();
         newRequest.TableName.Should().Be("TestTable");
         newRequest.Key.Should().ContainKey("pk");
@@ -161,7 +161,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToDeleteItemRequest();
         newRequest.TableName.Should().Be("TestTable");
         newRequest.Key.Should().ContainKeys("pk", "sk");
@@ -194,7 +194,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToScanRequest();
         newRequest.TableName.Should().Be("TestTable");
         newRequest.FilterExpression.Should().Be("#status = :status AND #count > :minCount");
@@ -232,7 +232,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToBatchGetItemRequest();
         newRequest.RequestItems.Should().ContainKeys("Users", "Orders");
         newRequest.RequestItems["Users"].Keys.Should().HaveCount(2);
@@ -262,7 +262,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToBatchWriteItemRequest();
         newRequest.RequestItems.Should().ContainKey("Users");
         newRequest.RequestItems["Users"].Should().HaveCount(2);
@@ -290,7 +290,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToTransactWriteItemsRequest();
         newRequest.ClientRequestToken.Should().Be("test-token-123");
         newRequest.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
@@ -309,7 +309,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToTransactGetItemsRequest();
         newRequest.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.INDEXES);
     }
@@ -325,7 +325,7 @@ public class WithClientExtensionsTests
 
         // Assert
         newBuilder.Should().NotBeSameAs(originalBuilder);
-        
+
         var newRequest = newBuilder.ToGetItemRequest();
         newRequest.Should().NotBeNull();
         newRequest.ExpressionAttributeNames.Should().BeEmpty();

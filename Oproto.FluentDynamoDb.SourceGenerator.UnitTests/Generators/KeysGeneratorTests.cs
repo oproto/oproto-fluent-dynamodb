@@ -74,15 +74,15 @@ public class KeysGeneratorTests
 
         // Assert
         result.Should().Contain("public static partial class TestEntityKeys");
-        
+
         // Partition key builder
         result.Should().Contain("public static string Pk(string tenantId)");
         result.Should().Contain("var keyValue = \"tenant#\" + tenantId;");
-        
+
         // Sort key builder
         result.Should().Contain("public static string Sk(System.Guid transactionId)");
         result.Should().Contain("var keyValue = \"txn#\" + transactionId.ToString();");
-        
+
         // Composite key builder
         result.Should().Contain("public static (string PartitionKey, string SortKey) Key(string tenantId, System.Guid transactionId)");
         result.Should().Contain("return (Pk(tenantId), Sk(transactionId));");
@@ -151,10 +151,10 @@ public class KeysGeneratorTests
 
         // Assert
         result.Should().Contain("public static partial class TestEntityKeys");
-        
+
         // Main table key builders
         result.Should().Contain("public static string Pk(string id)");
-        
+
         // GSI key builders
         result.Should().Contain("public static partial class StatusIndexKeys");
         result.Should().Contain("/// Key builder methods for StatusIndex Global Secondary Index.");

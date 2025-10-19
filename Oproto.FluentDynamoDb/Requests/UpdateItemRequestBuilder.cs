@@ -31,14 +31,14 @@ namespace Oproto.FluentDynamoDb.Requests;
 ///     .ExecuteAsync();
 /// </code>
 /// </example>
-public class UpdateItemRequestBuilder : 
+public class UpdateItemRequestBuilder :
     IWithKey<UpdateItemRequestBuilder>, IWithConditionExpression<UpdateItemRequestBuilder>, IWithAttributeNames<UpdateItemRequestBuilder>, IWithAttributeValues<UpdateItemRequestBuilder>, IWithUpdateExpression<UpdateItemRequestBuilder>
 {
     public UpdateItemRequestBuilder(IAmazonDynamoDB dynamoDbClient)
     {
         _dynamoDbClient = dynamoDbClient;
     }
-    
+
     private UpdateItemRequest _req = new();
     private readonly IAmazonDynamoDB _dynamoDbClient;
     private readonly AttributeValueInternal _attrV = new AttributeValueInternal();
@@ -83,17 +83,17 @@ public class UpdateItemRequestBuilder :
     /// Gets the builder instance for method chaining.
     /// </summary>
     public UpdateItemRequestBuilder Self => this;
-    
+
     public UpdateItemRequestBuilder ForTable(string tableName)
     {
         _req.TableName = tableName;
         return this;
     }
-    
 
-    
 
-    
+
+
+
     /// <summary>
     /// Sets the update expression on the builder.
     /// </summary>
@@ -104,8 +104,8 @@ public class UpdateItemRequestBuilder :
         _req.UpdateExpression = expression;
         return this;
     }
-    
-    
+
+
 
 
 
@@ -115,37 +115,37 @@ public class UpdateItemRequestBuilder :
         _req.ReturnValues = ReturnValue.UPDATED_NEW;
         return this;
     }
-    
+
     public UpdateItemRequestBuilder ReturnUpdatedOldValues()
     {
         _req.ReturnValues = ReturnValue.UPDATED_OLD;
         return this;
     }
-    
+
     public UpdateItemRequestBuilder ReturnAllNewValues()
     {
         _req.ReturnValues = ReturnValue.ALL_NEW;
         return this;
     }
-    
+
     public UpdateItemRequestBuilder ReturnAllOldValues()
     {
         _req.ReturnValues = ReturnValue.ALL_OLD;
         return this;
     }
-    
+
     public UpdateItemRequestBuilder ReturnNone()
     {
         _req.ReturnValues = ReturnValue.NONE;
         return this;
     }
-    
+
     public UpdateItemRequestBuilder ReturnTotalConsumedCapacity()
     {
         _req.ReturnConsumedCapacity = Amazon.DynamoDBv2.ReturnConsumedCapacity.TOTAL;
         return this;
     }
-    
+
     public UpdateItemRequestBuilder ReturnConsumedCapacity(ReturnConsumedCapacity consumedCapacity)
     {
         _req.ReturnConsumedCapacity = consumedCapacity;
@@ -163,7 +163,7 @@ public class UpdateItemRequestBuilder :
         _req.ReturnValuesOnConditionCheckFailure = Amazon.DynamoDBv2.ReturnValuesOnConditionCheckFailure.ALL_OLD;
         return this;
     }
-    
+
     public UpdateItemRequest ToUpdateItemRequest()
     {
         _req.ExpressionAttributeNames = _attrN.AttributeNames;

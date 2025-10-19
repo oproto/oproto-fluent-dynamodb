@@ -53,7 +53,7 @@ public class ParameterGeneratorTests
         paramNames[0].Should().Be(":p0");
         paramNames[50].Should().Be(":p50");
         paramNames[99].Should().Be(":p99");
-        
+
         // Verify all names are unique
         paramNames.Should().OnlyHaveUniqueItems();
     }
@@ -84,10 +84,10 @@ public class ParameterGeneratorTests
         // Act & Assert
         generator.GenerateParameterName().Should().Be(":p0");
         generator.GenerateParameterName().Should().Be(":p1");
-        
+
         generator.Reset();
         generator.GenerateParameterName().Should().Be(":p0");
-        
+
         generator.Reset();
         generator.GenerateParameterName().Should().Be(":p0");
         generator.GenerateParameterName().Should().Be(":p1");
@@ -98,7 +98,7 @@ public class ParameterGeneratorTests
     {
         // Arrange
         var generator = new ParameterGenerator();
-        
+
         // Generate many parameter names
         for (int i = 0; i < 1000; i++)
         {
@@ -164,7 +164,7 @@ public class ParameterGeneratorTests
         // Assert
         foreach (var paramName in paramNames)
         {
-            paramName.Should().MatchRegex(@"^:p\d+$", 
+            paramName.Should().MatchRegex(@"^:p\d+$",
                 "parameter names should only contain digits after the ':p' prefix");
         }
     }

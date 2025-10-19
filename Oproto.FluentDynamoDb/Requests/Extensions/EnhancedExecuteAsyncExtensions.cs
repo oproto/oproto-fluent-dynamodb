@@ -19,18 +19,18 @@ public static class EnhancedExecuteAsyncExtensions
     /// <returns>A GetItemResponse containing the mapped entity or null if not found.</returns>
     /// <exception cref="DynamoDbMappingException">Thrown when entity mapping fails.</exception>
     public static async Task<GetItemResponse<T>> ExecuteAsync<T>(
-        this GetItemRequestBuilder builder, 
-        CancellationToken cancellationToken = default) 
+        this GetItemRequestBuilder builder,
+        CancellationToken cancellationToken = default)
         where T : class, IDynamoDbEntity
     {
         try
         {
             var response = await builder.ExecuteAsync(cancellationToken);
-            
+
             return new GetItemResponse<T>
             {
-                Item = response.Item != null && T.MatchesEntity(response.Item) 
-                    ? T.FromDynamoDb<T>(response.Item) 
+                Item = response.Item != null && T.MatchesEntity(response.Item)
+                    ? T.FromDynamoDb<T>(response.Item)
                     : null,
                 ConsumedCapacity = response.ConsumedCapacity,
                 ResponseMetadata = response.ResponseMetadata
@@ -61,13 +61,13 @@ public static class EnhancedExecuteAsyncExtensions
         try
         {
             var response = await builder.ExecuteAsync(cancellationToken);
-            
+
             // Each DynamoDB item becomes a separate T instance (1:1 mapping)
             var entityItems = response.Items
                 .Where(T.MatchesEntity)
                 .Select(item => T.FromDynamoDb<T>(item))
                 .ToList();
-            
+
             return entityItems;
         }
         catch (Exception ex) when (!(ex is OperationCanceledException))
@@ -96,18 +96,18 @@ public static class EnhancedExecuteAsyncExtensions
         try
         {
             var response = await builder.ExecuteAsync(cancellationToken);
-            
+
             // Filter items that match the entity type
             var matchingItems = response.Items.Where(T.MatchesEntity).ToList();
-            
+
             // Group items by partition key for multi-item entities
             var entityItems = matchingItems
                 .GroupBy(T.GetPartitionKey)
-                .Select(group => group.Count() == 1 
-                    ? T.FromDynamoDb<T>(group.First()) 
+                .Select(group => group.Count() == 1
+                    ? T.FromDynamoDb<T>(group.First())
                     : T.FromDynamoDb<T>(group.ToList()))
                 .ToList();
-            
+
             return entityItems;
         }
         catch (Exception ex) when (!(ex is OperationCanceledException))
@@ -136,13 +136,13 @@ public static class EnhancedExecuteAsyncExtensions
         try
         {
             var response = await builder.ExecuteAsync(cancellationToken);
-            
+
             // Filter items that match the entity type
             var matchingItems = response.Items.Where(T.MatchesEntity).ToList();
-            
+
             if (matchingItems.Count == 0)
                 return null;
-            
+
             // Use multi-item FromDynamoDb to combine all items into single entity
             return T.FromDynamoDb<T>(matchingItems);
         }
@@ -164,8 +164,8 @@ public static class EnhancedExecuteAsyncExtensions
     /// <returns>The builder instance for method chaining.</returns>
     /// <exception cref="DynamoDbMappingException">Thrown when entity conversion fails.</exception>
     public static PutItemRequestBuilder WithItem<T>(
-        this PutItemRequestBuilder builder, 
-        T item) 
+        this PutItemRequestBuilder builder,
+        T item)
         where T : class, IDynamoDbEntity
     {
         try
@@ -198,13 +198,13 @@ public static class EnhancedExecuteAsyncExtensions
         try
         {
             var response = await builder.ExecuteAsync(cancellationToken);
-            
+
             // Each DynamoDB item becomes a separate T instance (1:1 mapping)
             var entityItems = response.Items
                 .Where(T.MatchesEntity)
                 .Select(item => T.FromDynamoDb<T>(item))
                 .ToList();
-            
+
             return entityItems;
         }
         catch (Exception ex) when (!(ex is OperationCanceledException))
@@ -232,18 +232,18 @@ public static class EnhancedExecuteAsyncExtensions
         try
         {
             var response = await builder.ExecuteAsync(cancellationToken);
-            
+
             // Filter items that match the entity type
             var matchingItems = response.Items.Where(T.MatchesEntity).ToList();
-            
+
             // Group items by partition key for multi-item entities
             var entityItems = matchingItems
                 .GroupBy(T.GetPartitionKey)
-                .Select(group => group.Count() == 1 
-                    ? T.FromDynamoDb<T>(group.First()) 
+                .Select(group => group.Count() == 1
+                    ? T.FromDynamoDb<T>(group.First())
                     : T.FromDynamoDb<T>(group.ToList()))
                 .ToList();
-            
+
             return entityItems;
         }
         catch (Exception ex) when (!(ex is OperationCanceledException))

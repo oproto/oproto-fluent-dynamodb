@@ -22,7 +22,7 @@ public static class PaginationExtensions
     /// </summary>
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_null")]
     static extern ref bool? GetAttributeValueNullField(AttributeValue @this);
-    
+
     /// <summary>
     /// Configures a QueryRequestBuilder with pagination parameters.
     /// Automatically handles pagination token decoding and applies the appropriate StartAt and Take settings.
@@ -98,14 +98,14 @@ public static class PaginationExtensions
         // Override defaults to have the smallest serialization possible
         var options = new JsonSerializerOptions(JsonSerializerDefaults.General);
         options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
-        
+
         // Use Serialization Context for AOT compatibility
         options.TypeInfoResolver = SerializationContext.Default.DictionaryStringAttributeValue
             .OriginatingResolver;
-        
+
         var lastEvaluationKey = JsonSerializer.Serialize(queryResponse.LastEvaluatedKey, options);
         var lastEvaluationKeyBytes = Encoding.UTF8.GetBytes(lastEvaluationKey);
-        
+
         return System.Convert.ToBase64String(lastEvaluationKeyBytes);
     }
 }

@@ -15,12 +15,12 @@ public class PaginationRequest : IPaginationRequest
         PageSize = pageSize;
         PaginationToken = paginationToken;
     }
-    
+
     /// <summary>
     /// Gets the maximum number of items to return per page.
     /// </summary>
     public int PageSize { get; }
-    
+
     /// <summary>
     /// Gets the pagination token from the previous page response.
     /// </summary>

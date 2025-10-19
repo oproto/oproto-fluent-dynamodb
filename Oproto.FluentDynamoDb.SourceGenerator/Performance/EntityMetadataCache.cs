@@ -21,7 +21,7 @@ public static class EntityMetadataCache
     public static CachedEntityMetadata GetOrCreate(EntityModel entity)
     {
         var key = $"{entity.Namespace}.{entity.ClassName}";
-        
+
         // Try to get from cache first
         if (_cache.TryGetValue(key, out var weakRef) && weakRef.TryGetTarget(out var cachedMetadata))
         {
@@ -32,13 +32,13 @@ public static class EntityMetadataCache
         // Cache miss - create new metadata
         Interlocked.Increment(ref _misses);
         var metadata = CreateEntityMetadata(entity);
-        
+
         // Store in cache with weak reference
         _cache.AddOrUpdate(key, new WeakReference<CachedEntityMetadata>(metadata), (_, _) => new WeakReference<CachedEntityMetadata>(metadata));
-        
+
         // Periodic cleanup
         PerformPeriodicCleanup();
-        
+
         return metadata;
     }
 
@@ -84,10 +84,10 @@ public static class EntityMetadataCache
     {
         var totalRequests = _hits + _misses;
         var hitRate = totalRequests > 0 ? (double)_hits / totalRequests : 0.0;
-        
+
         var aliveEntries = 0;
         var deadEntries = 0;
-        
+
         foreach (var kvp in _cache)
         {
             if (kvp.Value.TryGetTarget(out _))
@@ -95,10 +95,10 @@ public static class EntityMetadataCache
             else
                 deadEntries++;
         }
-        
+
         var totalEntries = aliveEntries + deadEntries;
         var memoryEfficiency = totalEntries > 0 ? (double)aliveEntries / totalEntries : 1.0;
-        
+
         return new CacheStatistics
         {
             TotalEntries = totalEntries,
@@ -135,7 +135,7 @@ public static class EntityMetadataCache
                 return;
 
             var keysToRemove = new List<string>();
-            
+
             foreach (var kvp in _cache)
             {
                 if (!kvp.Value.TryGetTarget(out _))

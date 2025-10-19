@@ -41,7 +41,7 @@ public class QueryRequestBuilder :
     {
         _dynamoDbClient = dynamoDbClient;
     }
-    
+
     private QueryRequest _req = new QueryRequest() { ExclusiveStartKey = new Dictionary<string, AttributeValue>() };
     private readonly IAmazonDynamoDB _dynamoDbClient;
     private readonly AttributeValueInternal _attrV = new AttributeValueInternal();
@@ -85,7 +85,7 @@ public class QueryRequestBuilder :
     /// Gets the builder instance for method chaining.
     /// </summary>
     public QueryRequestBuilder Self => this;
-    
+
     /// <summary>
     /// Specifies the name of the table to query.
     /// </summary>
@@ -96,7 +96,7 @@ public class QueryRequestBuilder :
         _req.TableName = tableName;
         return this;
     }
-    
+
     /// <summary>
     /// Limits the number of items to evaluate (not necessarily the number of items returned).
     /// DynamoDB will stop evaluating items once this limit is reached, even if the filter expression
@@ -109,7 +109,7 @@ public class QueryRequestBuilder :
         _req.Limit = limit;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the query to return only the count of items that match the query conditions,
     /// rather than the items themselves. This is more efficient when you only need to know
@@ -121,7 +121,7 @@ public class QueryRequestBuilder :
         _req.Select = Select.COUNT;
         return this;
     }
-    
+
     /// <summary>
     /// Enables strongly consistent reads for this query operation.
     /// By default, DynamoDB uses eventually consistent reads which are faster and consume less capacity,
@@ -135,9 +135,9 @@ public class QueryRequestBuilder :
         _req.ConsistentRead = true;
         return this;
     }
-    
 
-    
+
+
     /// <summary>
     /// Specifies a Global Secondary Index (GSI) or Local Secondary Index (LSI) to query.
     /// When querying an index, the key condition must use the index's key schema.
@@ -149,7 +149,7 @@ public class QueryRequestBuilder :
         _req.IndexName = indexName;
         return this;
     }
-    
+
     /// <summary>
     /// Specifies which attributes to retrieve using a projection expression.
     /// This can significantly reduce the amount of data transferred and improve performance.
@@ -170,25 +170,25 @@ public class QueryRequestBuilder :
         _req.Select = Select.SPECIFIC_ATTRIBUTES;
         return this;
     }
-    
+
     /// <summary>
     /// Specifies the starting point for pagination by providing the last evaluated key from a previous query.
     /// This is used to continue querying from where the previous operation left off.
     /// </summary>
     /// <param name="exclusiveStartKey">The primary key of the item where the previous query stopped.</param>
     /// <returns>The builder instance for method chaining.</returns>
-    public QueryRequestBuilder StartAt(Dictionary<string,AttributeValue> exclusiveStartKey)
+    public QueryRequestBuilder StartAt(Dictionary<string, AttributeValue> exclusiveStartKey)
     {
         _req.ExclusiveStartKey = exclusiveStartKey;
         return this;
     }
-    
 
 
 
-    
 
-    
+
+
+
     /// <summary>
     /// Configures the response to include total consumed capacity information.
     /// This is useful for monitoring and optimizing read capacity usage across tables and indexes.
@@ -199,7 +199,7 @@ public class QueryRequestBuilder :
         _req.ReturnConsumedCapacity = Amazon.DynamoDBv2.ReturnConsumedCapacity.TOTAL;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the response to include consumed capacity information for indexes only.
     /// This is useful when querying indexes and you want to monitor index-specific capacity usage.
@@ -210,7 +210,7 @@ public class QueryRequestBuilder :
         _req.ReturnConsumedCapacity = Amazon.DynamoDBv2.ReturnConsumedCapacity.INDEXES;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the level of consumed capacity information to return in the response.
     /// </summary>

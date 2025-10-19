@@ -27,7 +27,7 @@ public interface IScannableDynamoDbTable : IDynamoDbTable
     /// - Consider using Query operations instead whenever possible
     /// </summary>
     ScanRequestBuilder Scan { get; }
-    
+
     /// <summary>
     /// Gets access to the underlying table instance, allowing access to custom properties and methods
     /// that may have been defined in your table class implementation.

@@ -33,7 +33,7 @@ public static class CustomTypeConverterSupport
 
         // Generate converter methods
         GenerateConverterMethods(sb, customTypeProperties);
-        
+
         // Generate dictionary conversion helpers
         GenerateDictionaryConversionHelpers(sb);
 
@@ -148,7 +148,7 @@ public static class CustomTypeConverterSupport
     private static bool RequiresCustomConverter(string propertyType)
     {
         var baseType = GetBaseType(propertyType);
-        
+
         return baseType switch
         {
             "Uri" or "System.Uri" => true,
@@ -168,7 +168,7 @@ public static class CustomTypeConverterSupport
     private static string? GetDefaultConverterType(string propertyType)
     {
         var baseType = GetBaseType(propertyType);
-        
+
         return baseType switch
         {
             "Uri" or "System.Uri" => "UriConverter",
@@ -185,7 +185,7 @@ public static class CustomTypeConverterSupport
     private static string GetDefaultToAttributeValueConversion(PropertyModel property, string valueExpression)
     {
         var baseType = GetBaseType(property.PropertyType);
-        
+
         return baseType switch
         {
             "Uri" or "System.Uri" => $"new AttributeValue {{ S = {valueExpression}?.ToString() ?? string.Empty }}",
@@ -202,7 +202,7 @@ public static class CustomTypeConverterSupport
     private static string GetDefaultFromAttributeValueConversion(PropertyModel property, string valueExpression)
     {
         var baseType = GetBaseType(property.PropertyType);
-        
+
         return baseType switch
         {
             "Uri" or "System.Uri" => $"new Uri({valueExpression}.S)",
@@ -236,7 +236,7 @@ public static class CustomTypeConverterSupport
         sb.AppendLine("            return new Dictionary<string, AttributeValue>();");
         sb.AppendLine("        }");
         sb.AppendLine();
-        
+
         sb.AppendLine("        /// <summary>");
         sb.AppendLine("        /// Converts a DynamoDB Map (M) type to Dictionary using native AttributeValue types.");
         sb.AppendLine("        /// </summary>");
@@ -254,7 +254,7 @@ public static class CustomTypeConverterSupport
         sb.AppendLine("            return Activator.CreateInstance<T>();");
         sb.AppendLine("        }");
         sb.AppendLine();
-        
+
         sb.AppendLine("        /// <summary>");
         sb.AppendLine("        /// Converts an object to AttributeValue using native DynamoDB types.");
         sb.AppendLine("        /// </summary>");
@@ -273,7 +273,7 @@ public static class CustomTypeConverterSupport
         sb.AppendLine("            };");
         sb.AppendLine("        }");
         sb.AppendLine();
-        
+
         sb.AppendLine("        /// <summary>");
         sb.AppendLine("        /// Converts an AttributeValue to object using native DynamoDB types.");
         sb.AppendLine("        /// </summary>");

@@ -10,7 +10,7 @@ public interface IPaginationRequest
     /// Gets the maximum number of items to return per page.
     /// </summary>
     public int PageSize { get; }
-    
+
     /// <summary>
     /// Gets the pagination token from the previous page response.
     /// Use an empty string or null for the first page.

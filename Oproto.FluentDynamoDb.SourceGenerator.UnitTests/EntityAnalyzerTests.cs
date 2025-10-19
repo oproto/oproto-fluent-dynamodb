@@ -40,13 +40,13 @@ namespace TestNamespace
         result.Namespace.Should().Be("TestNamespace");
         result.TableName.Should().Be("test-table");
         result.Properties.Should().HaveCount(2);
-        
+
         var partitionKeyProperty = result.PartitionKeyProperty;
         partitionKeyProperty.Should().NotBeNull();
         partitionKeyProperty!.PropertyName.Should().Be("Id");
         partitionKeyProperty.AttributeName.Should().Be("pk");
         partitionKeyProperty.IsPartitionKey.Should().BeTrue();
-        
+
         // Should generate warning for reserved word "name"
         analyzer.Diagnostics.Should().NotBeEmpty();
         analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warning
@@ -80,7 +80,7 @@ namespace TestNamespace
         analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB001");
         analyzer.Diagnostics.Where(d => d.Id == "DYNDB001").Should().HaveCount(1);
         analyzer.Diagnostics.First(d => d.Id == "DYNDB001").Severity.Should().Be(DiagnosticSeverity.Error);
-        
+
         // Should also report reserved word warning for "name"
         analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB021");
     }
@@ -186,13 +186,13 @@ namespace TestNamespace
         // Assert
         result.Should().NotBeNull();
         result!.Indexes.Should().HaveCount(1);
-        
+
         var gsi = result.Indexes[0];
         gsi.IndexName.Should().Be("GSI1");
         gsi.PartitionKeyProperty.Should().Be("GsiPartitionKey");
         gsi.SortKeyProperty.Should().Be("GsiSortKey");
         gsi.HasSortKey.Should().BeTrue();
-        
+
         // Should not generate any diagnostics for basic GSI configuration
         analyzer.Diagnostics.Should().BeEmpty();
     }
@@ -233,15 +233,15 @@ namespace TestNamespace
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // Note: Relationship extraction might not work in test environment due to semantic model limitations
         // The test focuses on the diagnostics that are actually generated
-        
+
         analyzer.Diagnostics.Should().NotBeEmpty();
-        
+
         // Should report unsupported type error for Summary
         analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB009");
-        
+
         // Should report performance warning for complex collection type
         analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB023");
     }
@@ -276,19 +276,19 @@ namespace TestNamespace
 
         // Assert
         result.Should().NotBeNull();
-        
+
         var partitionKey = result!.PartitionKeyProperty;
         partitionKey.Should().NotBeNull();
         partitionKey!.KeyFormat.Should().NotBeNull();
         partitionKey.KeyFormat!.Prefix.Should().Be("tenant");
         partitionKey.KeyFormat.Separator.Should().Be("#");
-        
+
         var sortKey = result.SortKeyProperty;
         sortKey.Should().NotBeNull();
         sortKey!.KeyFormat.Should().NotBeNull();
         sortKey.KeyFormat!.Prefix.Should().Be("item");
         sortKey.KeyFormat.Separator.Should().Be("#");
-        
+
         // This entity has proper composite key structure, so no scalability warnings expected
         analyzer.Diagnostics.Should().BeEmpty();
     }
@@ -325,12 +325,12 @@ namespace TestNamespace
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // The relationships might not be extracted due to semantic model limitations in tests
         // So we expect the diagnostics that are actually generated
         analyzer.Diagnostics.Should().NotBeEmpty();
         analyzer.Diagnostics.Should().OnlyContain(d => d.Severity == DiagnosticSeverity.Warning);
-        
+
         // Should report performance warning for complex collection type
         analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB023");
     }
@@ -375,14 +375,14 @@ namespace TestNamespace
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // The relationships might not be extracted due to semantic model limitations in tests
         // So we expect the diagnostics that are actually generated
         analyzer.Diagnostics.Should().NotBeEmpty();
-        
+
         // Should report performance warning for complex collection type
         analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB023");
-        
+
         // Should report unsupported type error for AuditSummary
         analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB009");
     }
@@ -421,14 +421,15 @@ namespace TestNamespace
 
         // Assert
         result.Should().NotBeNull();
-        
+
         // The relationships might not be extracted due to semantic model limitations in tests
         // So we expect the diagnostics that are actually generated
         analyzer.Diagnostics.Should().NotBeEmpty();
         analyzer.Diagnostics.Should().OnlyContain(d => d.Severity == DiagnosticSeverity.Warning);
-        
-        // Should report performance warning for complex collection type
-        analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB023");
+
+        // Should report ambiguous related entity pattern warning (DYNDB008)
+        // The wildcard pattern "*" matches all entity types, which is ambiguous
+        analyzer.Diagnostics.Should().Contain(d => d.Id == "DYNDB008");
     }
 
     private static (ClassDeclarationSyntax ClassDecl, SemanticModel SemanticModel) ParseSource(string source)
@@ -437,8 +438,8 @@ namespace TestNamespace
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
             new[] { syntaxTree },
-            new[] 
-            { 
+            new[]
+            {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Oproto.FluentDynamoDb.Attributes.DynamoDbTableAttribute).Assembly.Location)

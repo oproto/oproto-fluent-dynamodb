@@ -21,7 +21,7 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
             .CreateSyntaxProvider(
                 predicate: static (s, _) => IsDynamoDbEntity(s),
                 transform: static (ctx, _) => GetEntityModel(ctx));
-            // Note: We don't filter out null models here because we still need to report diagnostics
+        // Note: We don't filter out null models here because we still need to report diagnostics
 
         // Register code generation
         context.RegisterSourceOutput(entityClasses.Collect(), Execute);
@@ -67,7 +67,7 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
                 classDecl.Identifier.GetLocation(),
                 classDecl.Identifier.ValueText,
                 ex.Message);
-            
+
             return (null, new[] { diagnostic });
         }
     }

@@ -21,8 +21,8 @@ internal static class FormatStringProcessor
     /// <exception cref="ArgumentException">Thrown when format string is invalid or parameter count doesn't match.</exception>
     /// <exception cref="FormatException">Thrown when format specifiers are invalid or format string contains errors.</exception>
     public static (string processedExpression, int parameterCount) ProcessFormatString(
-        string format, 
-        object[] args, 
+        string format,
+        object[] args,
         AttributeValueInternal attributeValueHelper)
     {
         if (string.IsNullOrEmpty(format))
@@ -51,7 +51,7 @@ internal static class FormatStringProcessor
         // First check for any placeholders that look like format placeholders
         var allBracePattern = new Regex(@"\{[^}]*\}", RegexOptions.Compiled);
         var allBraceMatches = allBracePattern.Matches(format);
-        
+
         if (allBraceMatches.Count == 0)
         {
             // No placeholders found, return as-is
@@ -61,7 +61,7 @@ internal static class FormatStringProcessor
         // Regular expression to match valid format placeholders like {0}, {1:o}, {2:F2}, and also negative ones like {-1}
         var formatPattern = new Regex(@"\{(-?\d+)(?::([^}]+))?\}", RegexOptions.Compiled);
         var matches = formatPattern.Matches(format);
-        
+
         // Check for invalid placeholders by comparing all braces to valid ones
         if (allBraceMatches.Count > matches.Count)
         {
@@ -71,7 +71,7 @@ internal static class FormatStringProcessor
                 .Select(m => m.Value)
                 .Where(placeholder => !validPlaceholders.Contains(placeholder))
                 .ToList();
-            
+
             // Extract just the parameter indices from invalid placeholders for the error message
             var invalidIndices = new List<string>();
             foreach (var placeholder in invalidPlaceholders)
@@ -82,7 +82,7 @@ internal static class FormatStringProcessor
                 var indexPart = colonIndex >= 0 ? content.Substring(0, colonIndex) : content;
                 invalidIndices.Add(indexPart);
             }
-            
+
             throw new FormatException($"Format string contains invalid parameter indices: {string.Join(", ", invalidIndices)}. Parameter indices must be non-negative integers.");
         }
 
@@ -90,7 +90,7 @@ internal static class FormatStringProcessor
         var invalidNegativeIndices = new List<string>();
         var maxIndex = -1;
         var parameterIndices = new HashSet<int>();
-        
+
         foreach (Match match in matches)
         {
             var indexStr = match.Groups[1].Value;
@@ -123,23 +123,23 @@ internal static class FormatStringProcessor
         // Process each placeholder and build the result
         var result = format;
         var parameterCount = 0;
-        
+
         // First, generate parameters for all matches in left-to-right order
         var matchList = matches.Cast<Match>().OrderBy(m => m.Index).ToList();
         var parameterMap = new Dictionary<Match, string>();
-        
+
         foreach (var match in matchList)
         {
             var argIndex = int.Parse(match.Groups[1].Value);
             var formatSpec = match.Groups[2].Success ? match.Groups[2].Value : null;
-            
+
             try
             {
                 var value = args[argIndex];
                 var parameterName = attributeValueHelper.AddFormattedValue(value, formatSpec);
                 parameterMap[match] = parameterName;
             }
-            catch (FormatException ex) when (ex.Message.Contains("Boolean values do not support format strings") || 
+            catch (FormatException ex) when (ex.Message.Contains("Boolean values do not support format strings") ||
                                            ex.Message.Contains("Enum values do not support format strings"))
             {
                 // Re-throw with the expected message format for tests
@@ -161,13 +161,13 @@ internal static class FormatStringProcessor
                 throw new FormatException($"Failed to format parameter {argIndex} with format specifier '{formatSpec}': {ex.Message}", ex);
             }
         }
-        
+
         // Now replace placeholders in reverse order to avoid index shifting issues
         var orderedMatches = matches.Cast<Match>().OrderByDescending(m => m.Index).ToList();
         foreach (var match in orderedMatches)
         {
             var parameterName = parameterMap[match];
-            
+
             // Replace the placeholder with the generated parameter name
             result = result.Substring(0, match.Index) + parameterName + result.Substring(match.Index + match.Length);
             parameterCount++;

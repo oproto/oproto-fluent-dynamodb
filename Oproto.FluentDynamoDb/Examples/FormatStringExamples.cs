@@ -47,7 +47,7 @@ public class FormatStringExamples
         var endDate = DateTime.UtcNow;
 
         var result = await _table.Query
-            .Where("pk = {0} AND created BETWEEN {1:o} AND {2:o}", 
+            .Where("pk = {0} AND created BETWEEN {1:o} AND {2:o}",
                    "USER#123", startDate, endDate)
             .ExecuteAsync();
         // Results in: ":p1" = "2024-01-01T00:00:00.000Z", ":p2" = "2024-01-15T10:30:00.000Z"
@@ -115,7 +115,7 @@ public class FormatStringExamples
         var recentDate = DateTime.UtcNow.AddDays(-7);
 
         var result = await _table.Query
-            .Where("pk = {0} AND sk BETWEEN :startSk AND :endSk AND created > {1:o}", 
+            .Where("pk = {0} AND sk BETWEEN :startSk AND :endSk AND created > {1:o}",
                    userId, recentDate)
             .WithValue(":startSk", "ORDER#2024-01")
             .WithValue(":endSk", "ORDER#2024-12")
@@ -146,7 +146,7 @@ public class FormatStringExamples
         // Complex filter with multiple conditions and types
         var result2 = await _table.Query
             .Where("pk = {0}", userId)
-            .WithFilter("#status = {0} AND #amount BETWEEN {1:F2} AND {2:F2} AND #created > {3:o}", 
+            .WithFilter("#status = {0} AND #amount BETWEEN {1:F2} AND {2:F2} AND #created > {3:o}",
                        status, minAmount, maxAmount, createdAfter)
             .WithAttribute("#status", "status")
             .WithAttribute("#amount", "amount")
@@ -156,7 +156,7 @@ public class FormatStringExamples
         // Filter with DynamoDB functions
         var result3 = await _table.Query
             .Where("pk = {0}", userId)
-            .WithFilter("contains(#tags, {0}) AND size(#items) > {1} AND attribute_exists(#optional)", 
+            .WithFilter("contains(#tags, {0}) AND size(#items) > {1} AND attribute_exists(#optional)",
                        tag, 5)
             .WithAttribute("#tags", "tags")
             .WithAttribute("#items", "items")
@@ -166,7 +166,7 @@ public class FormatStringExamples
         // Filter with IN operator
         var result4 = await _table.Query
             .Where("pk = {0}", userId)
-            .WithFilter("#status IN ({0}, {1}, {2})", 
+            .WithFilter("#status IN ({0}, {1}, {2})",
                        OrderStatus.Processing, OrderStatus.Completed, OrderStatus.Pending)
             .WithAttribute("#status", "status")
             .ExecuteAsync();
@@ -205,7 +205,7 @@ public class FormatStringExamples
 
         // Complex scan filter with multiple conditions
         var result2 = await tableBase.AsScannable().Scan
-            .WithFilter("(#status = {0} OR #status = {1}) AND #created > {2:o} AND attribute_exists(#tags)", 
+            .WithFilter("(#status = {0} OR #status = {1}) AND #created > {2:o} AND attribute_exists(#tags)",
                        OrderStatus.Processing, OrderStatus.Completed, createdAfter)
             .WithAttribute("#status", "status")
             .WithAttribute("#created", "created_date")
@@ -216,7 +216,7 @@ public class FormatStringExamples
         // Scan with projection and filter
         var result3 = await tableBase.AsScannable().Scan
             .WithProjection("#id, #name, #status, #amount")
-            .WithFilter("#status = {0} AND #amount BETWEEN {1:F2} AND {2:F2}", 
+            .WithFilter("#status = {0} AND #amount BETWEEN {1:F2} AND {2:F2}",
                        status, 50.0m, 1000.0m)
             .WithAttribute("#id", "id")
             .WithAttribute("#name", "name")
@@ -256,7 +256,7 @@ public class FormatStringExamples
         // Complex update with multiple operations
         await _table.Update
             .WithKey("pk", userId, "sk", orderId)
-            .Set("SET #name = {0}, #updated = {1:o} ADD #count {2} REMOVE #oldField", 
+            .Set("SET #name = {0}, #updated = {1:o} ADD #count {2} REMOVE #oldField",
                 newName, updatedTime, incrementValue)
             .WithAttribute("#name", "name")
             .WithAttribute("#updated", "updated_time")

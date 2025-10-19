@@ -19,7 +19,7 @@ public class PaginationExtensionsTests
         request.Limit.Should().Be(10);
         request.ExclusiveStartKey.Should().BeEmpty();
     }
-    
+
     [Fact]
     public void Paginate_WithPageSizeAndToken_Success()
     {
@@ -30,7 +30,7 @@ public class PaginationExtensionsTests
         };
         var queryResponse = new QueryResponse { LastEvaluatedKey = lastKey };
         var token = queryResponse.GetEncodedPaginationToken();
-        
+
         var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
         builder.Paginate(new PaginationRequest(10, token));
         var request = builder.ToQueryRequest();

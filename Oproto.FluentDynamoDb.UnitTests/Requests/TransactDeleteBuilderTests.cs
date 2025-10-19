@@ -7,7 +7,7 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 
 public class TransactDeleteBuilderTests
 {
-     [Fact]
+    [Fact]
     public void ForTableSuccess()
     {
         var builder = new TransactDeleteBuilder("TestTable");
@@ -16,9 +16,9 @@ public class TransactDeleteBuilderTests
         req.Delete.Should().NotBeNull();
         req.Delete.TableName.Should().Be("TestTable");
     }
-    
+
     #region Keys
-    
+
     [Fact]
     public void WithKeyPkStringValueSuccess()
     {
@@ -32,7 +32,7 @@ public class TransactDeleteBuilderTests
         req.Delete.Key.Keys.Should().HaveCount(1);
         req.Delete.Key["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WithKeyPkSkStringValueSuccess()
     {
@@ -48,7 +48,7 @@ public class TransactDeleteBuilderTests
         req.Delete.Key["pk"].S.Should().Be("1");
         req.Delete.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     [Fact]
     public void WithKeyPkSkAttributeValueSuccess()
     {
@@ -64,11 +64,11 @@ public class TransactDeleteBuilderTests
         req.Delete.Key["pk"].S.Should().Be("1");
         req.Delete.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     #endregion Keys
-    
+
     #region Attributes
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
@@ -81,7 +81,7 @@ public class TransactDeleteBuilderTests
         req.Delete.ExpressionAttributeNames.Should().HaveCount(1);
         req.Delete.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
@@ -94,7 +94,7 @@ public class TransactDeleteBuilderTests
         req.Delete.ExpressionAttributeNames.Should().HaveCount(1);
         req.Delete.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNameSuccess()
     {
@@ -121,7 +121,7 @@ public class TransactDeleteBuilderTests
         req.Delete.ExpressionAttributeValues[":pk"].S.Should().Be("1");
 
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeValuesLambdaSuccess()
     {
@@ -148,7 +148,7 @@ public class TransactDeleteBuilderTests
         req.Delete.ExpressionAttributeValues.Should().HaveCount(1);
         req.Delete.ExpressionAttributeValues[":pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeBooleanValueSuccess()
     {
@@ -163,7 +163,7 @@ public class TransactDeleteBuilderTests
     }
 
     #endregion Attributes
-    
+
     [Fact]
     public void WhereSuccess()
     {
@@ -174,7 +174,7 @@ public class TransactDeleteBuilderTests
         req.Delete.Should().NotBeNull();
         req.Delete.ConditionExpression.Should().Be("#pk = :pk");
     }
-    
+
     [Fact]
     public void ReturnOldValuesOnConditionCheckFailureSuccess()
     {
@@ -185,7 +185,7 @@ public class TransactDeleteBuilderTests
         req.Delete.Should().NotBeNull();
         req.Delete.ReturnValuesOnConditionCheckFailure.Should().Be(Amazon.DynamoDBv2.ReturnValuesOnConditionCheckFailure.ALL_OLD);
     }
-    
+
     [Fact]
     public void ReturnNoValuesOnConditionCheckFailureSuccess()
     {

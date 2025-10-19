@@ -17,7 +17,7 @@ public class TransactGetItemBuilderTests
         req.Should().NotBeNull();
         req.Get.TableName.Should().Be("TestTable");
     }
-    
+
     [Fact]
     public void WithKeyPkStringValueSuccess()
     {
@@ -30,7 +30,7 @@ public class TransactGetItemBuilderTests
         req.Get.Key.Keys.Should().HaveCount(1);
         req.Get.Key["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WithKeyPkSkStringValueSuccess()
     {
@@ -45,7 +45,7 @@ public class TransactGetItemBuilderTests
         req.Get.Key["pk"].S.Should().Be("1");
         req.Get.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     [Fact]
     public void WithKeyPkSkAttributeValueSuccess()
     {
@@ -60,7 +60,7 @@ public class TransactGetItemBuilderTests
         req.Get.Key["pk"].S.Should().Be("1");
         req.Get.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
@@ -72,7 +72,7 @@ public class TransactGetItemBuilderTests
         req.Get.ExpressionAttributeNames.Should().HaveCount(1);
         req.Get.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
@@ -84,7 +84,7 @@ public class TransactGetItemBuilderTests
         req.Get.ExpressionAttributeNames.Should().HaveCount(1);
         req.Get.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNameSuccess()
     {

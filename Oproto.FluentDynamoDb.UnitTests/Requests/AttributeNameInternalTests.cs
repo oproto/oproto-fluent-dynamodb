@@ -161,13 +161,13 @@ public class AttributeNameInternalTests
         _helper.WithAttributes(attributes =>
         {
             attributes.Add("#pk", "partitionKey");
-            
+
             var shouldAddSortKey = true;
             if (shouldAddSortKey)
             {
                 attributes.Add("#sk", "sortKey");
             }
-            
+
             var shouldAddName = false;
             if (shouldAddName)
             {

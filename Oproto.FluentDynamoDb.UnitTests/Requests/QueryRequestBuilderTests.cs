@@ -18,7 +18,7 @@ public class QueryRequestBuilderTests
         req.Should().NotBeNull();
         req.TableName.Should().Be("TestTable");
     }
-    
+
     [Fact]
     public void UsingIndexSuccess()
     {
@@ -28,9 +28,9 @@ public class QueryRequestBuilderTests
         req.Should().NotBeNull();
         req.IndexName.Should().Be("gsi1");
     }
-    
+
     #region Attributes
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
@@ -42,7 +42,7 @@ public class QueryRequestBuilderTests
         req.ExpressionAttributeNames.Should().HaveCount(1);
         req.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
@@ -54,7 +54,7 @@ public class QueryRequestBuilderTests
         req.ExpressionAttributeNames.Should().HaveCount(1);
         req.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNameSuccess()
     {
@@ -79,7 +79,7 @@ public class QueryRequestBuilderTests
         req.ExpressionAttributeValues[":pk"].S.Should().Be("1");
 
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeValuesLambdaSuccess()
     {
@@ -104,7 +104,7 @@ public class QueryRequestBuilderTests
         req.ExpressionAttributeValues.Should().HaveCount(1);
         req.ExpressionAttributeValues[":pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeBooleanValueSuccess()
     {
@@ -118,7 +118,7 @@ public class QueryRequestBuilderTests
     }
 
     #endregion Attributes
-    
+
     [Fact]
     public void WhereSuccess()
     {
@@ -128,7 +128,7 @@ public class QueryRequestBuilderTests
         req.Should().NotBeNull();
         req.KeyConditionExpression.Should().Be("#pk = :pk");
     }
-    
+
     [Fact]
     public void WithFilterSuccess()
     {
@@ -138,7 +138,7 @@ public class QueryRequestBuilderTests
         req.Should().NotBeNull();
         req.FilterExpression.Should().Be("#v >= :num");
     }
-    
+
     [Fact]
     public void ProjectionExpressionSuccess()
     {
@@ -148,10 +148,10 @@ public class QueryRequestBuilderTests
         req.Should().NotBeNull();
         req.ProjectionExpression.Should().Be("description, price");
     }
-    
-    
+
+
     #region ConsumedCapacity
-    
+
     [Fact]
     public void ReturnConsumedCapacitySuccess()
     {
@@ -161,7 +161,7 @@ public class QueryRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
-    
+
     [Fact]
     public void ReturnTotalConsumedCapacitySuccess()
     {
@@ -171,7 +171,7 @@ public class QueryRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
-    
+
     [Fact]
     public void ReturnIndexConsumedCapacitySuccess()
     {
@@ -181,9 +181,9 @@ public class QueryRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.INDEXES);
     }
-    
+
     #endregion ConsumedCapacity
-    
+
     [Fact]
     public void UsingConsistentReadSuccess()
     {
@@ -193,7 +193,7 @@ public class QueryRequestBuilderTests
         req.Should().NotBeNull();
         req.ConsistentRead.Should().BeTrue();
     }
-    
+
     [Fact]
     public void StartAtSuccess()
     {
@@ -205,7 +205,7 @@ public class QueryRequestBuilderTests
         req.ExclusiveStartKey.Should().HaveCount(1);
         req.ExclusiveStartKey["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void TakeSuccess()
     {

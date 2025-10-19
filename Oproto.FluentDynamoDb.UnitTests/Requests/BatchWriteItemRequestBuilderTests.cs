@@ -20,7 +20,7 @@ public class BatchWriteItemRequestBuilderTests
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().NotBeNull();
         request.RequestItems.Should().BeEmpty();
@@ -35,11 +35,11 @@ public class BatchWriteItemRequestBuilderTests
             { "pk", new AttributeValue { S = "1" } },
             { "name", new AttributeValue { S = "Test Item" } }
         };
-        
+
         builder.WriteToTable("TestTable", b => b.PutItem(item));
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(1);
         request.RequestItems.Should().ContainKey("TestTable");
@@ -58,11 +58,11 @@ public class BatchWriteItemRequestBuilderTests
         {
             { "pk", new AttributeValue { S = "1" } }
         };
-        
+
         builder.WriteToTable("TestTable", b => b.DeleteItem(key));
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(1);
         request.RequestItems.Should().ContainKey("TestTable");
@@ -78,12 +78,12 @@ public class BatchWriteItemRequestBuilderTests
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         var item1 = new Dictionary<string, AttributeValue> { { "pk", new AttributeValue { S = "1" } } };
         var key2 = new Dictionary<string, AttributeValue> { { "id", new AttributeValue { S = "2" } } };
-        
+
         builder.WriteToTable("Table1", b => b.PutItem(item1))
                .WriteToTable("Table2", b => b.DeleteItem(key2));
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(2);
         request.RequestItems.Should().ContainKey("Table1");
@@ -98,13 +98,13 @@ public class BatchWriteItemRequestBuilderTests
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         var item = new Dictionary<string, AttributeValue> { { "pk", new AttributeValue { S = "1" } } };
         var key = new Dictionary<string, AttributeValue> { { "pk", new AttributeValue { S = "2" } } };
-        
-        builder.WriteToTable("TestTable", b => 
+
+        builder.WriteToTable("TestTable", b =>
             b.PutItem(item)
              .DeleteItem(key));
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(1);
         request.RequestItems["TestTable"].Should().HaveCount(2);
@@ -117,16 +117,16 @@ public class BatchWriteItemRequestBuilderTests
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         var testModel = new { Id = "123", Name = "Test" };
-        
-        builder.WriteToTable("TestTable", b => 
+
+        builder.WriteToTable("TestTable", b =>
             b.PutItem(testModel, model => new Dictionary<string, AttributeValue>
             {
                 { "id", new AttributeValue { S = model.Id } },
                 { "name", new AttributeValue { S = model.Name } }
             }));
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems["TestTable"][0].PutRequest.Item["id"].S.Should().Be("123");
         request.RequestItems["TestTable"][0].PutRequest.Item["name"].S.Should().Be("Test");
@@ -136,11 +136,11 @@ public class BatchWriteItemRequestBuilderTests
     public void WriteToTableWithStringKeyDeleteSuccess()
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
-        
+
         builder.WriteToTable("TestTable", b => b.DeleteItem("pk", "test-key"));
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems["TestTable"][0].DeleteRequest.Key["pk"].S.Should().Be("test-key");
     }
@@ -149,12 +149,12 @@ public class BatchWriteItemRequestBuilderTests
     public void WriteToTableWithCompositeKeyDeleteSuccess()
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
-        
-        builder.WriteToTable("TestTable", b => 
+
+        builder.WriteToTable("TestTable", b =>
             b.DeleteItem("pk", "partition-key", "sk", "sort-key"));
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems["TestTable"][0].DeleteRequest.Key["pk"].S.Should().Be("partition-key");
         request.RequestItems["TestTable"][0].DeleteRequest.Key["sk"].S.Should().Be("sort-key");
@@ -165,9 +165,9 @@ public class BatchWriteItemRequestBuilderTests
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         builder.ReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
@@ -177,9 +177,9 @@ public class BatchWriteItemRequestBuilderTests
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         builder.ReturnTotalConsumedCapacity();
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
@@ -189,9 +189,9 @@ public class BatchWriteItemRequestBuilderTests
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         builder.ReturnIndexesConsumedCapacity();
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.INDEXES);
     }
@@ -201,9 +201,9 @@ public class BatchWriteItemRequestBuilderTests
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         builder.ReturnItemCollectionMetrics();
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.ReturnItemCollectionMetrics.Should().Be(ReturnItemCollectionMetrics.SIZE);
     }
@@ -213,9 +213,9 @@ public class BatchWriteItemRequestBuilderTests
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         builder.ReturnItemCollectionMetrics(ReturnItemCollectionMetrics.NONE);
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.ReturnItemCollectionMetrics.Should().Be(ReturnItemCollectionMetrics.NONE);
     }
@@ -235,11 +235,11 @@ public class BatchWriteItemRequestBuilderTests
             { "orderId", new AttributeValue { S = "order1" } },
             { "userId", new AttributeValue { S = "user1" } }
         };
-        
-        builder.WriteToTable("Users", b => 
+
+        builder.WriteToTable("Users", b =>
                    b.PutItem(userItem)
                     .DeleteItem("userId", "user2"))
-               .WriteToTable("Orders", b => 
+               .WriteToTable("Orders", b =>
                    b.DeleteItem(orderKey)
                     .PutItem(new Dictionary<string, AttributeValue>
                     {
@@ -249,14 +249,14 @@ public class BatchWriteItemRequestBuilderTests
                     }))
                .ReturnConsumedCapacity(ReturnConsumedCapacity.INDEXES)
                .ReturnItemCollectionMetrics();
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(2);
         request.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.INDEXES);
         request.ReturnItemCollectionMetrics.Should().Be(ReturnItemCollectionMetrics.SIZE);
-        
+
         // Verify Users table operations
         request.RequestItems["Users"].Should().HaveCount(2);
         request.RequestItems["Users"][0].PutRequest.Should().NotBeNull();
@@ -264,7 +264,7 @@ public class BatchWriteItemRequestBuilderTests
         request.RequestItems["Users"][0].PutRequest.Item["name"].S.Should().Be("John Doe");
         request.RequestItems["Users"][1].DeleteRequest.Should().NotBeNull();
         request.RequestItems["Users"][1].DeleteRequest.Key["userId"].S.Should().Be("user2");
-        
+
         // Verify Orders table operations
         request.RequestItems["Orders"].Should().HaveCount(2);
         request.RequestItems["Orders"][0].DeleteRequest.Should().NotBeNull();
@@ -281,12 +281,12 @@ public class BatchWriteItemRequestBuilderTests
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         var item1 = new Dictionary<string, AttributeValue> { { "pk", new AttributeValue { S = "1" } } };
         var item2 = new Dictionary<string, AttributeValue> { { "pk", new AttributeValue { S = "2" } } };
-        
+
         builder.WriteToTable("TestTable", b => b.PutItem(item1))
                .WriteToTable("TestTable", b => b.PutItem(item2));
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(1);
         request.RequestItems["TestTable"].Should().HaveCount(2);
@@ -304,9 +304,9 @@ public class BatchWriteItemRequestBuilderTests
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         var item = new Dictionary<string, AttributeValue> { { "pk", new AttributeValue { S = "1" } } };
         builder.WriteToTable("TestTable", b => b.PutItem(item));
-        
+
         var response = await builder.ExecuteAsync();
-        
+
         response.Should().BeSameAs(expectedResponse);
         await _mockClient.Received(1).BatchWriteItemAsync(Arg.Any<BatchWriteItemRequest>(), Arg.Any<CancellationToken>());
     }
@@ -322,9 +322,9 @@ public class BatchWriteItemRequestBuilderTests
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         var item = new Dictionary<string, AttributeValue> { { "pk", new AttributeValue { S = "1" } } };
         builder.WriteToTable("TestTable", b => b.PutItem(item));
-        
+
         var response = await builder.ExecuteAsync(cancellationToken);
-        
+
         response.Should().BeSameAs(expectedResponse);
         await _mockClient.Received(1).BatchWriteItemAsync(Arg.Any<BatchWriteItemRequest>(), cancellationToken);
     }
@@ -336,10 +336,10 @@ public class BatchWriteItemRequestBuilderTests
         var item = new Dictionary<string, AttributeValue> { { "pk", new AttributeValue { S = "1" } } };
         builder.WriteToTable("TestTable", b => b.PutItem(item))
                .ReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
-        
+
         var request1 = builder.ToBatchWriteItemRequest();
         var request2 = builder.ToBatchWriteItemRequest();
-        
+
         request1.Should().BeSameAs(request2);
         request1.RequestItems.Should().HaveCount(1);
         request1.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
@@ -350,7 +350,7 @@ public class BatchWriteItemRequestBuilderTests
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().NotBeNull();
         request.RequestItems.Should().BeEmpty();
@@ -363,9 +363,9 @@ public class BatchWriteItemRequestBuilderTests
     {
         var builder = new BatchWriteItemRequestBuilder(_mockClient);
         builder.WriteToTable("TestTable", b => { });
-        
+
         var request = builder.ToBatchWriteItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().BeEmpty();
     }

@@ -8,7 +8,7 @@ public class TransactPutBuilder : IWithConditionExpression<TransactPutBuilder>, 
     private readonly TransactWriteItem _req = new TransactWriteItem();
     private readonly AttributeValueInternal _attrV = new AttributeValueInternal();
     private readonly AttributeNameInternal _attrN = new AttributeNameInternal();
-    
+
     public TransactPutBuilder(string tableName)
     {
         _req.Put = new Put();
@@ -44,11 +44,11 @@ public class TransactPutBuilder : IWithConditionExpression<TransactPutBuilder>, 
     public TransactPutBuilder Self => this;
 
 
-    
 
 
 
-    
+
+
     public TransactPutBuilder ReturnOldValuesOnConditionCheckFailure()
     {
         _req.Put.ReturnValuesOnConditionCheckFailure = Amazon.DynamoDBv2.ReturnValuesOnConditionCheckFailure.ALL_OLD;
@@ -61,7 +61,7 @@ public class TransactPutBuilder : IWithConditionExpression<TransactPutBuilder>, 
         return this;
     }
 
-    public TransactPutBuilder WithItem<TItemType>(TItemType item, Func<TItemType,Dictionary<string, AttributeValue>> modelMapper)
+    public TransactPutBuilder WithItem<TItemType>(TItemType item, Func<TItemType, Dictionary<string, AttributeValue>> modelMapper)
     {
         _req.Put.Item = modelMapper(item);
         return this;

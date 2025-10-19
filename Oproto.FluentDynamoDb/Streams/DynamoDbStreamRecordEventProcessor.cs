@@ -16,7 +16,7 @@ public class DynamoDbStreamRecordEventProcessor
     {
         Record = record;
     }
-    
+
     /// <summary>
     /// Gets the DynamoDB stream record being processed.
     /// </summary>
@@ -108,7 +108,7 @@ public static class DynamoDbStreamRecordEventProcessorExtensions
         }
         return processor.Result;
     }
-    
+
     /// <summary>
     /// 
     /// </summary>

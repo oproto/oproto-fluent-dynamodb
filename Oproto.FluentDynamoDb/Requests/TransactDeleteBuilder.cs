@@ -3,13 +3,13 @@ using Oproto.FluentDynamoDb.Requests.Interfaces;
 
 namespace Oproto.FluentDynamoDb.Requests;
 
-public class TransactDeleteBuilder : 
+public class TransactDeleteBuilder :
     IWithKey<TransactDeleteBuilder>, IWithConditionExpression<TransactDeleteBuilder>, IWithAttributeNames<TransactDeleteBuilder>, IWithAttributeValues<TransactDeleteBuilder>
 {
     private readonly TransactWriteItem _req = new TransactWriteItem();
     private readonly AttributeValueInternal _attrV = new AttributeValueInternal();
     private readonly AttributeNameInternal _attrN = new AttributeNameInternal();
-    
+
     public TransactDeleteBuilder(string tableName)
     {
         _req.Delete = new();
@@ -56,17 +56,17 @@ public class TransactDeleteBuilder :
     /// </summary>
     public TransactDeleteBuilder Self => this;
 
-    
-
-    
-
-    
 
 
 
-    
-    
-    
+
+
+
+
+
+
+
+
     public TransactDeleteBuilder ReturnOldValuesOnConditionCheckFailure()
     {
         _req.Delete.ReturnValuesOnConditionCheckFailure = Amazon.DynamoDBv2.ReturnValuesOnConditionCheckFailure.ALL_OLD;

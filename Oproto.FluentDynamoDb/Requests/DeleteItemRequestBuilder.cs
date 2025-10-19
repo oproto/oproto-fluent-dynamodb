@@ -25,10 +25,10 @@ namespace Oproto.FluentDynamoDb.Requests;
 ///     .ExecuteAsync();
 /// </code>
 /// </example>
-public class DeleteItemRequestBuilder : 
-    IWithKey<DeleteItemRequestBuilder>, 
+public class DeleteItemRequestBuilder :
+    IWithKey<DeleteItemRequestBuilder>,
     IWithConditionExpression<DeleteItemRequestBuilder>,
-    IWithAttributeNames<DeleteItemRequestBuilder>, 
+    IWithAttributeNames<DeleteItemRequestBuilder>,
     IWithAttributeValues<DeleteItemRequestBuilder>
 {
     /// <summary>
@@ -39,7 +39,7 @@ public class DeleteItemRequestBuilder :
     {
         _dynamoDbClient = dynamoDbClient;
     }
-    
+
     private DeleteItemRequest _req = new();
     private readonly IAmazonDynamoDB _dynamoDbClient;
     private readonly AttributeValueInternal _attrV = new AttributeValueInternal();
@@ -84,7 +84,7 @@ public class DeleteItemRequestBuilder :
     /// Gets the builder instance for method chaining.
     /// </summary>
     public DeleteItemRequestBuilder Self => this;
-    
+
     /// <summary>
     /// Specifies the table name for the delete operation.
     /// </summary>
@@ -97,9 +97,9 @@ public class DeleteItemRequestBuilder :
     }
 
 
-    
 
-    
+
+
 
 
 
@@ -114,7 +114,7 @@ public class DeleteItemRequestBuilder :
         _req.ReturnValues = ReturnValue.ALL_OLD;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the delete operation to return no item attributes (default behavior).
     /// This is the most efficient option when you don't need the deleted item's data.
@@ -125,7 +125,7 @@ public class DeleteItemRequestBuilder :
         _req.ReturnValues = ReturnValue.NONE;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the delete operation to return the total consumed capacity information.
     /// Useful for monitoring and optimizing DynamoDB usage costs.
@@ -136,7 +136,7 @@ public class DeleteItemRequestBuilder :
         _req.ReturnConsumedCapacity = Amazon.DynamoDBv2.ReturnConsumedCapacity.TOTAL;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the delete operation to return consumed capacity information.
     /// </summary>
@@ -169,7 +169,7 @@ public class DeleteItemRequestBuilder :
         _req.ReturnValuesOnConditionCheckFailure = Amazon.DynamoDBv2.ReturnValuesOnConditionCheckFailure.ALL_OLD;
         return this;
     }
-    
+
     /// <summary>
     /// Builds and returns the configured DeleteItemRequest.
     /// </summary>

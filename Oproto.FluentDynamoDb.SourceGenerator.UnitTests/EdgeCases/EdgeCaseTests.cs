@@ -37,7 +37,7 @@ namespace TestNamespace
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var entityCode = GetGeneratedSource(result, "EmptyEntity.g.cs");
         entityCode.Should().Contain("public partial class EmptyEntity : IDynamoDbEntity");
         entityCode.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
@@ -80,7 +80,7 @@ namespace TestNamespace
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var fieldsCode = GetGeneratedSource(result, "SpecialCharsEntityFields.g.cs");
         fieldsCode.Should().Contain("public const string FieldWithDashes = \"field-with-dashes\";");
         fieldsCode.Should().Contain("public const string FieldWithUnderscores = \"field_with_underscores\";");
@@ -129,7 +129,7 @@ namespace TestNamespace
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warnings
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var fieldsCode = GetGeneratedSource(result, "ReservedKeywordsEntityFields.g.cs");
         fieldsCode.Should().Contain("public const string @class = \"class\";");
         fieldsCode.Should().Contain("public const string @namespace = \"namespace\";");
@@ -144,7 +144,7 @@ namespace TestNamespace
         // Arrange
         var longPropertyName = "VeryLongPropertyNameThatExceedsNormalLengthLimitsAndTestsHowTheGeneratorHandlesExtremelyLongIdentifiers";
         var longAttributeName = "very_long_attribute_name_that_exceeds_normal_length_limits_and_tests_how_the_generator_handles_extremely_long_attribute_names";
-        
+
         var source = $@"
 using Oproto.FluentDynamoDb.Attributes;
 
@@ -169,7 +169,7 @@ namespace TestNamespace
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var fieldsCode = GetGeneratedSource(result, "LongNamesEntityFields.g.cs");
         fieldsCode.Should().Contain($"public const string {longPropertyName} = \"{longAttributeName}\";");
     }
@@ -203,7 +203,7 @@ namespace Very.Deeply.Nested.Namespace.Structure
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warning for "name"
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var entityCode = GetGeneratedSource(result, "NestedNamespaceEntity.g.cs");
         entityCode.Should().Contain("namespace Very.Deeply.Nested.Namespace.Structure");
         entityCode.Should().Contain("public partial class NestedNamespaceEntity : IDynamoDbEntity");
@@ -248,7 +248,7 @@ namespace TestNamespace
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB009"); // Unsupported type for Dictionary
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB012"); // Multi-item entity should have sort key
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var entityCode = GetGeneratedSource(result, "GenericConstraintsEntity.g.cs");
         // The generator should handle generic types, even if with performance warnings
         entityCode.Should().Contain("public partial class GenericConstraintsEntity : IDynamoDbEntity");
@@ -290,7 +290,7 @@ namespace TestNamespace
         // Assert
         // Should generate code gracefully even with circular references
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var entityCode = GetGeneratedSource(result, "CircularRefEntity.g.cs");
         entityCode.Should().Contain("public partial class CircularRefEntity : IDynamoDbEntity");
         // The generator should handle circular references without crashing
@@ -332,7 +332,7 @@ namespace TestNamespace
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var fieldsCode = GetGeneratedSource(result, "UnicodeEntityFields.g.cs");
         fieldsCode.Should().Contain("public const string 名前 = \"名前\";");
         fieldsCode.Should().Contain("public const string Descripción = \"descripción\";");
@@ -376,12 +376,12 @@ namespace TestNamespace
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warning for "region"
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var keysCode = GetGeneratedSource(result, "ComplexKeyFormatsEntityKeys.g.cs");
         keysCode.Should().Contain("public static string Pk(string tenantId)");
-        keysCode.Should().Contain("return \"tenant#\" + tenantId;");
+        keysCode.Should().Contain("var keyValue = \"tenant#\" + tenantId;");
         keysCode.Should().Contain("public static string Sk(string itemId)");
-        keysCode.Should().Contain("return \"item#\" + itemId;");
+        keysCode.Should().Contain("var keyValue = \"item#\" + itemId;");
     }
 
     [Fact]
@@ -414,7 +414,7 @@ namespace TestNamespace
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var fieldsCode = GetGeneratedSource(result, "EmptyAttributesEntityFields.g.cs");
         fieldsCode.Should().Contain("public const string Id = \"pk\";");
         fieldsCode.Should().NotContain("public const string EmptyAttribute");
@@ -452,7 +452,7 @@ namespace TestNamespace
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var fieldsCode = GetGeneratedSource(result, "DuplicateAttributesEntityFields.g.cs");
         fieldsCode.Should().Contain("public const string FirstProperty = \"same_name\";");
         fieldsCode.Should().Contain("public const string SecondProperty = \"same_name\";");
@@ -516,17 +516,18 @@ namespace TestNamespace
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warnings for collections
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         var entityCode = GetGeneratedSource(result, "ComplexPatternsEntity.g.cs");
         entityCode.Should().Contain("public partial class ComplexPatternsEntity : IDynamoDbEntity");
         entityCode.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
         entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
-        
-        // Verify property accessors are generated for related entities
-        entityCode.Should().Contain("GetNestedWildcardAudit(ComplexPatternsEntity entity)");
-        entityCode.Should().Contain("GetComplexPattern(ComplexPatternsEntity entity)");
-        entityCode.Should().Contain("GetVeryBroadPattern(ComplexPatternsEntity entity)");
-        entityCode.Should().Contain("GetExactMatch(ComplexPatternsEntity entity)");
+
+        // Verify related entity metadata is captured (actual mapping happens at runtime in ToCompositeEntityAsync)
+        entityCode.Should().Contain("Relationships = new RelationshipMetadata[]");
+        entityCode.Should().Contain("PropertyName = \"NestedWildcardAudit\"");
+        entityCode.Should().Contain("PropertyName = \"ComplexPattern\"");
+        entityCode.Should().Contain("PropertyName = \"VeryBroadPattern\"");
+        entityCode.Should().Contain("PropertyName = \"ExactMatch\"");
     }
 
     private static GeneratorTestResult GenerateCode(string source)
@@ -587,11 +588,11 @@ namespace Oproto.FluentDynamoDb.Attributes
 
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
-            new[] { 
+            new[] {
                 CSharpSyntaxTree.ParseText(source),
                 CSharpSyntaxTree.ParseText(attributeSource)
             },
-            new[] { 
+            new[] {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
                 // Add AWS SDK references for generated code
@@ -613,7 +614,7 @@ namespace Oproto.FluentDynamoDb.Attributes
 
         var generator = new DynamoDbSourceGenerator();
         var driver = CSharpGeneratorDriver.Create(generator);
-        
+
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
         var generatedSources = outputCompilation.SyntaxTrees

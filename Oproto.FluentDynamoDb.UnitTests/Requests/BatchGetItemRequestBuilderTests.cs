@@ -21,7 +21,7 @@ public class BatchGetItemRequestBuilderTests
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().NotBeNull();
         request.RequestItems.Should().BeEmpty();
@@ -32,9 +32,9 @@ public class BatchGetItemRequestBuilderTests
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
         builder.GetFromTable("TestTable", b => b.WithKey("pk", "1"));
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(1);
         request.RequestItems.Should().ContainKey("TestTable");
@@ -48,9 +48,9 @@ public class BatchGetItemRequestBuilderTests
         var builder = new BatchGetItemRequestBuilder(_mockClient);
         builder.GetFromTable("Table1", b => b.WithKey("pk", "1"))
                .GetFromTable("Table2", b => b.WithKey("id", "2"));
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(2);
         request.RequestItems.Should().ContainKey("Table1");
@@ -65,13 +65,13 @@ public class BatchGetItemRequestBuilderTests
     public void GetFromTableMultipleKeysPerTableSuccess()
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
-        builder.GetFromTable("TestTable", b => 
+        builder.GetFromTable("TestTable", b =>
             b.WithKey("pk", "1")
              .WithKey("pk", "2")
              .WithKey("pk", "3"));
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(1);
         request.RequestItems["TestTable"].Keys.Should().HaveCount(3);
@@ -84,12 +84,12 @@ public class BatchGetItemRequestBuilderTests
     public void GetFromTableWithProjectionSuccess()
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
-        builder.GetFromTable("TestTable", b => 
+        builder.GetFromTable("TestTable", b =>
             b.WithKey("pk", "1")
              .WithProjection("description, price"));
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems["TestTable"].ProjectionExpression.Should().Be("description, price");
     }
@@ -98,12 +98,12 @@ public class BatchGetItemRequestBuilderTests
     public void GetFromTableWithConsistentReadSuccess()
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
-        builder.GetFromTable("TestTable", b => 
+        builder.GetFromTable("TestTable", b =>
             b.WithKey("pk", "1")
              .UsingConsistentRead());
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems["TestTable"].ConsistentRead.Should().BeTrue();
     }
@@ -112,13 +112,13 @@ public class BatchGetItemRequestBuilderTests
     public void GetFromTableWithAttributeNamesSuccess()
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
-        builder.GetFromTable("TestTable", b => 
+        builder.GetFromTable("TestTable", b =>
             b.WithKey("pk", "1")
              .WithAttribute("#pk", "pk")
              .WithAttribute("#desc", "description"));
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems["TestTable"].ExpressionAttributeNames.Should().HaveCount(2);
         request.RequestItems["TestTable"].ExpressionAttributeNames["#pk"].Should().Be("pk");
@@ -130,9 +130,9 @@ public class BatchGetItemRequestBuilderTests
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
         builder.ReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
@@ -141,25 +141,25 @@ public class BatchGetItemRequestBuilderTests
     public void ComplexMultiTableRequestSuccess()
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
-        builder.GetFromTable("Users", b => 
+        builder.GetFromTable("Users", b =>
                    b.WithKey("userId", "user1")
                     .WithKey("userId", "user2")
                     .WithProjection("#name, email")
                     .WithAttribute("#name", "name")
                     .UsingConsistentRead())
-               .GetFromTable("Orders", b => 
+               .GetFromTable("Orders", b =>
                    b.WithKey("orderId", "order1", "userId", "user1")
                     .WithKey("orderId", "order2", "userId", "user1")
                     .WithProjection("orderId, total, #status")
                     .WithAttribute("#status", "status"))
                .ReturnConsumedCapacity(ReturnConsumedCapacity.INDEXES);
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(2);
         request.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.INDEXES);
-        
+
         // Verify Users table
         request.RequestItems["Users"].Keys.Should().HaveCount(2);
         request.RequestItems["Users"].Keys[0]["userId"].S.Should().Be("user1");
@@ -168,7 +168,7 @@ public class BatchGetItemRequestBuilderTests
         request.RequestItems["Users"].ConsistentRead.Should().BeTrue();
         request.RequestItems["Users"].ExpressionAttributeNames.Should().HaveCount(1);
         request.RequestItems["Users"].ExpressionAttributeNames["#name"].Should().Be("name");
-        
+
         // Verify Orders table
         request.RequestItems["Orders"].Keys.Should().HaveCount(2);
         request.RequestItems["Orders"].Keys[0]["orderId"].S.Should().Be("order1");
@@ -187,9 +187,9 @@ public class BatchGetItemRequestBuilderTests
         var builder = new BatchGetItemRequestBuilder(_mockClient);
         builder.GetFromTable("TestTable", b => b.WithKey("pk", "1"))
                .GetFromTable("TestTable", b => b.WithKey("pk", "2"));
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().HaveCount(1);
         request.RequestItems["TestTable"].Keys.Should().HaveCount(1);
@@ -205,9 +205,9 @@ public class BatchGetItemRequestBuilderTests
 
         var builder = new BatchGetItemRequestBuilder(_mockClient);
         builder.GetFromTable("TestTable", b => b.WithKey("pk", "1"));
-        
+
         var response = await builder.ExecuteAsync();
-        
+
         response.Should().BeSameAs(expectedResponse);
         await _mockClient.Received(1).BatchGetItemAsync(Arg.Any<BatchGetItemRequest>(), Arg.Any<CancellationToken>());
     }
@@ -222,9 +222,9 @@ public class BatchGetItemRequestBuilderTests
 
         var builder = new BatchGetItemRequestBuilder(_mockClient);
         builder.GetFromTable("TestTable", b => b.WithKey("pk", "1"));
-        
+
         var response = await builder.ExecuteAsync(cancellationToken);
-        
+
         response.Should().BeSameAs(expectedResponse);
         await _mockClient.Received(1).BatchGetItemAsync(Arg.Any<BatchGetItemRequest>(), cancellationToken);
     }
@@ -233,14 +233,14 @@ public class BatchGetItemRequestBuilderTests
     public void ToBatchGetItemRequestReturnsCorrectRequestSuccess()
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
-        builder.GetFromTable("TestTable", b => 
+        builder.GetFromTable("TestTable", b =>
                    b.WithKey("pk", "1")
                     .WithProjection("description"))
                .ReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
-        
+
         var request1 = builder.ToBatchGetItemRequest();
         var request2 = builder.ToBatchGetItemRequest();
-        
+
         request1.Should().BeSameAs(request2);
         request1.RequestItems.Should().HaveCount(1);
         request1.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
@@ -251,7 +251,7 @@ public class BatchGetItemRequestBuilderTests
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems.Should().NotBeNull();
         request.RequestItems.Should().BeEmpty();
@@ -262,12 +262,12 @@ public class BatchGetItemRequestBuilderTests
     public void GetFromTableWithCompositeKeysAndAttributeValuesSuccess()
     {
         var builder = new BatchGetItemRequestBuilder(_mockClient);
-        builder.GetFromTable("TestTable", b => 
+        builder.GetFromTable("TestTable", b =>
             b.WithKey("pk", new AttributeValue { S = "partition1" }, "sk", new AttributeValue { N = "123" })
              .WithKey("pk", new AttributeValue { S = "partition2" }, "sk", new AttributeValue { N = "456" }));
-        
+
         var request = builder.ToBatchGetItemRequest();
-        
+
         request.Should().NotBeNull();
         request.RequestItems["TestTable"].Keys.Should().HaveCount(2);
         request.RequestItems["TestTable"].Keys[0]["pk"].S.Should().Be("partition1");

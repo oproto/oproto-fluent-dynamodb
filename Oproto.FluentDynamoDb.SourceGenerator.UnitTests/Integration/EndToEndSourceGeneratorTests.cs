@@ -79,18 +79,17 @@ namespace TestNamespace
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warnings for collections
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB009"); // Unsupported type for Summary
         result.GeneratedSources.Should().HaveCount(3);
-        
+
         // Verify entity implementation
         var entityCode = GetGeneratedSource(result, "TransactionEntity.g.cs");
-        entityCode.Should().Contain("public partial class TransactionEntity"); // Partial class, interface added elsewhere
-        entityCode.Should().NotContain(": IDynamoDbEntity"); // Interface not in generated code (partial class)
+        entityCode.Should().Contain("public partial class TransactionEntity : IDynamoDbEntity"); // Interface included for better UX
         entityCode.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
         entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
         entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items)");
         entityCode.Should().Contain("public static string GetPartitionKey(Dictionary<string, AttributeValue> item)");
         entityCode.Should().Contain("public static bool MatchesEntity(Dictionary<string, AttributeValue> item)");
         entityCode.Should().Contain("public static EntityMetadata GetEntityMetadata()");
-        
+
         // Verify fields class
         var fieldsCode = GetGeneratedSource(result, "TransactionEntityFields.g.cs");
         fieldsCode.Should().Contain("public static partial class TransactionEntityFields");
@@ -101,14 +100,15 @@ namespace TestNamespace
         fieldsCode.Should().Contain("public static partial class StatusIndexFields");
         fieldsCode.Should().Contain("public const string PartitionKey = \"status\";");
         fieldsCode.Should().Contain("public const string SortKey = \"created_date\";");
-        
+
         // Verify keys class
         var keysCode = GetGeneratedSource(result, "TransactionEntityKeys.g.cs");
         keysCode.Should().Contain("public static partial class TransactionEntityKeys");
         keysCode.Should().Contain("public static string Pk(string tenantId)");
-        keysCode.Should().Contain("return \"tenant#\" + tenantId;");
+        // Generator uses intermediate variable for better debugging
+        keysCode.Should().Contain("var keyValue = \"tenant#\" + tenantId;");
         keysCode.Should().Contain("public static string Sk(string transactionId)");
-        keysCode.Should().Contain("return \"txn#\" + transactionId;");
+        keysCode.Should().Contain("var keyValue = \"txn#\" + transactionId;");
         keysCode.Should().Contain("public static (string PartitionKey, string SortKey) Key(string tenantId, string transactionId)");
         keysCode.Should().Contain("public static partial class StatusIndexKeys");
     }
@@ -160,9 +160,9 @@ namespace TestNamespace
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word usage ("name", "items")
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warning for collections
-        
+
         var entityCode = GetGeneratedSource(result, "MultiItemEntity.g.cs");
-        
+
         // Should generate single-item entity with native DynamoDB collection support
         entityCode.Should().NotContain("ToDynamoDbMultiple"); // Removed in Task 41
         entityCode.Should().Contain("// Convert collection Items to native DynamoDB type");
@@ -230,24 +230,21 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        // Should generate warnings for scalability and other issues, but NOT DYNDB016 since entity has sort key
+        // Should generate warnings for various issues, but NOT DYNDB016 since entity has sort key
         result.Diagnostics.Should().NotBeEmpty();
-        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word usage
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warning for collections
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB009"); // Unsupported property type
         result.Diagnostics.Should().NotContain(d => d.Id == "DYNDB016"); // Should NOT have this since entity has sort key
-        
+
         var entityCode = GetGeneratedSource(result, "ParentEntity.g.cs");
-        
-        // Should generate property accessors for related entities (relationships are detected)
-        entityCode.Should().Contain("GetChildren(ParentEntity entity)");
-        entityCode.Should().Contain("GetMetadata(ParentEntity entity)");
-        entityCode.Should().Contain("GetAuditLog(ParentEntity entity)");
-        entityCode.Should().Contain("SetChildren(ParentEntity entity");
-        entityCode.Should().Contain("SetMetadata(ParentEntity entity");
-        entityCode.Should().Contain("SetAuditLog(ParentEntity entity");
-        
+
+        // Should capture related entity metadata (actual mapping happens at runtime in ToCompositeEntityAsync)
+        entityCode.Should().Contain("Relationships = new RelationshipMetadata[]");
+        entityCode.Should().Contain("PropertyName = \"Children\"");
+        entityCode.Should().Contain("PropertyName = \"Metadata\"");
+        entityCode.Should().Contain("PropertyName = \"AuditLog\"");
+
         // Should generate basic entity mapping (only properties with DynamoDbAttribute)
         entityCode.Should().Contain("item[\"pk\"] = new AttributeValue { S = typedEntity.Id };");
         entityCode.Should().Contain("item[\"sk\"] = new AttributeValue { S = typedEntity.SortKey };");
@@ -304,7 +301,7 @@ namespace TestNamespace
         // This test has compilation issues due to missing assembly references in the test environment
         // The source generator should still produce code despite compilation errors
         result.Diagnostics.Should().NotBeEmpty(); // Will have compilation errors
-        
+
         // Check if source generator produced any files (it should generate 3 files)
         if (result.GeneratedSources.Length > 0)
         {
@@ -317,15 +314,14 @@ namespace TestNamespace
             // The compilation errors prevent the source generator from running properly
             result.Diagnostics.Should().Contain(d => d.Severity == DiagnosticSeverity.Error);
         }
-        
+
         // Only verify generated code if it was actually generated
         if (result.GeneratedSources.Length > 0)
         {
             var entityCode = GetGeneratedSource(result, "ComplexTypesEntity.g.cs");
-            
+
             // Verify basic structure is present
-            entityCode.Should().Contain("public partial class ComplexTypesEntity"); // Partial class, interface added elsewhere
-            entityCode.Should().NotContain(": IDynamoDbEntity"); // Interface not in generated code (partial class)
+            entityCode.Should().Contain("public partial class ComplexTypesEntity : IDynamoDbEntity"); // Interface included for better UX
             entityCode.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
             entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
         }
@@ -461,13 +457,13 @@ namespace TestNamespace
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB016"); // Related entities require sort key
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warning for collections
-        
+
         // Verify the specific DYNDB016 diagnostic
         var relatedEntityWarning = result.Diagnostics.First(d => d.Id == "DYNDB016");
         relatedEntityWarning.Severity.Should().Be(DiagnosticSeverity.Warning);
         relatedEntityWarning.GetMessage().Should().Contain("WarningEntity");
         relatedEntityWarning.GetMessage().Should().Contain("related entity properties but no sort key");
-        
+
         result.GeneratedSources.Should().HaveCount(3); // Should still generate code despite warning
     }
 
@@ -475,10 +471,10 @@ namespace TestNamespace
     {
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
-            new[] { 
+            new[] {
                 CSharpSyntaxTree.ParseText(source)
             },
-            new[] { 
+            new[] {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Oproto.FluentDynamoDb.Attributes.DynamoDbTableAttribute).Assembly.Location),
@@ -504,7 +500,7 @@ namespace TestNamespace
 
         var generator = new DynamoDbSourceGenerator();
         var driver = CSharpGeneratorDriver.Create(generator);
-        
+
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var driverDiagnostics);
 
         var generatedSources = outputCompilation.SyntaxTrees
@@ -557,11 +553,11 @@ namespace TestNamespace
 
         // Assert
         result.Diagnostics.Should().NotBeEmpty();
-        
+
         // Should generate DYNDB021 warnings for each reserved word
         var reservedWordWarnings = result.Diagnostics.Where(d => d.Id == "DYNDB021").ToList();
         reservedWordWarnings.Should().HaveCountGreaterThan(0);
-        
+
         // Verify diagnostic messages are helpful and actionable
         foreach (var warning in reservedWordWarnings)
         {
@@ -571,7 +567,7 @@ namespace TestNamespace
             // Message should suggest using a different attribute name
             warning.Descriptor.Description.ToString().Should().Contain("Consider using a different attribute name");
         }
-        
+
         // Should still generate code despite warnings
         result.GeneratedSources.Should().HaveCount(3);
     }
@@ -615,11 +611,11 @@ namespace TestNamespace
 
         // Assert
         result.Diagnostics.Should().NotBeEmpty();
-        
-        // Should generate DYNDB023 performance warnings
+
+        // Should generate DYNDB023 performance warnings for complex collection types
         var performanceWarnings = result.Diagnostics.Where(d => d.Id == "DYNDB023").ToList();
         performanceWarnings.Should().HaveCountGreaterThan(0);
-        
+
         // Verify diagnostic messages are actionable
         foreach (var warning in performanceWarnings)
         {
@@ -627,10 +623,10 @@ namespace TestNamespace
             warning.GetMessage().Should().Contain("may cause performance issues");
             warning.GetMessage().Should().Contain("native DynamoDB List (L) or Map (M) types");
         }
-        
-        // Should also generate scalability warnings
-        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027");
-        
+
+        // Note: DYNDB027 scalability warnings were removed in Task 39 as they cannot be
+        // accurately detected at compile time (e.g., sequential ID patterns require runtime analysis)
+
         // Should still generate code despite warnings
         result.GeneratedSources.Should().HaveCount(3);
     }
@@ -638,7 +634,10 @@ namespace TestNamespace
     [Fact]
     public void SourceGenerator_WithScalabilityIssues_GeneratesHelpfulWarnings()
     {
-        // Arrange - Entity with too many GSIs (scalability concern)
+        // Arrange - Entity with many GSIs
+        // Note: Task 39 removed DYNDB027 scalability warnings as they cannot be accurately
+        // detected at compile time. GSI count alone doesn't indicate scalability issues -
+        // it depends on access patterns, write frequency, and other runtime factors.
         var source = @"
 using Oproto.FluentDynamoDb.Attributes;
 
@@ -684,18 +683,13 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        result.Diagnostics.Should().NotBeEmpty();
-        
-        // Should generate DYNDB027 scalability warning for too many GSIs
-        var scalabilityWarnings = result.Diagnostics.Where(d => d.Id == "DYNDB027").ToList();
-        scalabilityWarnings.Should().HaveCount(1);
-        
-        var warning = scalabilityWarnings.First();
-        warning.Severity.Should().Be(DiagnosticSeverity.Warning);
-        warning.GetMessage().Should().Contain("6 GSIs which may impact write performance and costs");
-        
-        // Should still generate code despite warnings
+        // Should generate code successfully even with many GSIs
         result.GeneratedSources.Should().HaveCount(3);
+
+        // No scalability warnings expected - these were removed in Task 39
+        // The source generator focuses on correctness, not runtime performance predictions
+        var scalabilityWarnings = result.Diagnostics.Where(d => d.Id == "DYNDB027").ToList();
+        scalabilityWarnings.Should().BeEmpty("DYNDB027 scalability warnings were removed in Task 39");
     }
 
     private static string GetGeneratedSource(GeneratorTestResult result, string fileName)

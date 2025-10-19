@@ -12,7 +12,7 @@ public class BatchGetItemBuilderTests
     {
         var builder = new BatchGetItemBuilder("TestTable");
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.Keys.Should().NotBeNull();
         keysAndAttributes.Keys.Should().BeEmpty();
@@ -24,7 +24,7 @@ public class BatchGetItemBuilderTests
         var builder = new BatchGetItemBuilder("TestTable");
         builder.WithKey("pk", "1");
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.Keys.Should().HaveCount(1);
         keysAndAttributes.Keys[0].Should().ContainKey("pk");
@@ -37,7 +37,7 @@ public class BatchGetItemBuilderTests
         var builder = new BatchGetItemBuilder("TestTable");
         builder.WithKey("pk", "1", "sk", "abcd");
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.Keys.Should().HaveCount(1);
         keysAndAttributes.Keys[0].Should().ContainKey("pk");
@@ -53,7 +53,7 @@ public class BatchGetItemBuilderTests
         var builder = new BatchGetItemBuilder("TestTable");
         builder.WithKey("pk", new AttributeValue { S = "1" }, "sk", new AttributeValue { S = "abcd" });
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.Keys.Should().HaveCount(1);
         keysAndAttributes.Keys[0].Should().ContainKey("pk");
@@ -69,7 +69,7 @@ public class BatchGetItemBuilderTests
         var builder = new BatchGetItemBuilder("TestTable");
         builder.WithKey("pk", new AttributeValue { S = "1" });
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.Keys.Should().HaveCount(1);
         keysAndAttributes.Keys[0].Should().ContainKey("pk");
@@ -85,7 +85,7 @@ public class BatchGetItemBuilderTests
                .WithKey("pk", "2")
                .WithKey("pk", "3");
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.Keys.Should().HaveCount(3);
         keysAndAttributes.Keys[0]["pk"].S.Should().Be("1");
@@ -99,7 +99,7 @@ public class BatchGetItemBuilderTests
         var builder = new BatchGetItemBuilder("TestTable");
         builder.WithProjection("description, price");
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.ProjectionExpression.Should().Be("description, price");
     }
@@ -110,7 +110,7 @@ public class BatchGetItemBuilderTests
         var builder = new BatchGetItemBuilder("TestTable");
         builder.UsingConsistentRead();
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.ConsistentRead.Should().BeTrue();
     }
@@ -121,7 +121,7 @@ public class BatchGetItemBuilderTests
         var builder = new BatchGetItemBuilder("TestTable");
         builder.WithAttributes(new Dictionary<string, string> { { "#pk", "pk" } });
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.ExpressionAttributeNames.Should().NotBeNull();
         keysAndAttributes.ExpressionAttributeNames.Should().HaveCount(1);
@@ -134,7 +134,7 @@ public class BatchGetItemBuilderTests
         var builder = new BatchGetItemBuilder("TestTable");
         builder.WithAttributes(attributes => attributes.Add("#pk", "pk"));
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.ExpressionAttributeNames.Should().NotBeNull();
         keysAndAttributes.ExpressionAttributeNames.Should().HaveCount(1);
@@ -147,7 +147,7 @@ public class BatchGetItemBuilderTests
         var builder = new BatchGetItemBuilder("TestTable");
         builder.WithAttribute("#pk", "pk");
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.ExpressionAttributeNames.Should().NotBeNull();
         keysAndAttributes.ExpressionAttributeNames.Should().HaveCount(1);
@@ -162,7 +162,7 @@ public class BatchGetItemBuilderTests
                .WithAttribute("#sk", "sk")
                .WithAttribute("#desc", "description");
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.ExpressionAttributeNames.Should().NotBeNull();
         keysAndAttributes.ExpressionAttributeNames.Should().HaveCount(3);
@@ -182,9 +182,9 @@ public class BatchGetItemBuilderTests
                .WithAttribute("#pk", "pk")
                .WithAttribute("#sk", "sk")
                .WithAttribute("#desc", "description");
-        
+
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.Keys.Should().HaveCount(2);
         keysAndAttributes.Keys[0]["pk"].S.Should().Be("1");
@@ -206,9 +206,9 @@ public class BatchGetItemBuilderTests
         builder.WithKey("pk", "1")
                .WithProjection("pk, sk")
                .UsingConsistentRead();
-        
+
         var keysAndAttributes = builder.ToKeysAndAttributes();
-        
+
         keysAndAttributes.Should().NotBeNull();
         keysAndAttributes.Keys.Should().HaveCount(1);
         keysAndAttributes.ProjectionExpression.Should().Be("pk, sk");

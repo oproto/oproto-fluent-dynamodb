@@ -12,8 +12,8 @@ namespace Oproto.FluentDynamoDb.Utility;
 [JsonSerializable(typeof(bool))]
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(List<AttributeValue>))]
-[JsonSerializable(typeof(Dictionary<string,AttributeValue>))]
+[JsonSerializable(typeof(Dictionary<string, AttributeValue>))]
 internal partial class SerializationContext : JsonSerializerContext
 {
-    
+
 }

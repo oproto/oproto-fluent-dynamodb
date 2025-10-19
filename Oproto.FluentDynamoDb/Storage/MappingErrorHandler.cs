@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Amazon.DynamoDBv2.Model;
 
 namespace Oproto.FluentDynamoDb.Storage;
@@ -101,11 +102,11 @@ public static class MappingErrorHandler
         Type entityType)
     {
         var missingAttributes = requiredAttributes.Where(attr => !item.ContainsKey(attr)).ToArray();
-        
+
         if (missingAttributes.Length > 0)
         {
             var message = $"DynamoDB item is missing required attributes for {entityType.Name}: {string.Join(", ", missingAttributes)}";
-            
+
             throw new DynamoDbMappingException(
                 message,
                 entityType,
@@ -123,7 +124,7 @@ public static class MappingErrorHandler
     /// <param name="entity">The entity instance to validate.</param>
     /// <param name="requiredProperties">The list of required property names.</param>
     /// <exception cref="DynamoDbMappingException">Thrown when required properties are null or empty.</exception>
-    public static void ValidateRequiredProperties<T>(T entity, string[] requiredProperties)
+    public static void ValidateRequiredProperties<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(T entity, string[] requiredProperties)
     {
         if (entity == null)
         {
@@ -152,7 +153,7 @@ public static class MappingErrorHandler
         if (missingProperties.Count > 0)
         {
             var message = $"Entity {entityType.Name} has null or empty required properties: {string.Join(", ", missingProperties)}";
-            
+
             throw new DynamoDbMappingException(
                 message,
                 entityType,
@@ -219,7 +220,7 @@ public static class MappingErrorHandler
         catch (Exception ex)
         {
             var message = CreateDetailedErrorMessage(operationType, entityType, context);
-            
+
             var mappingException = new DynamoDbMappingException(
                 message,
                 entityType,
@@ -266,7 +267,7 @@ public static class MappingErrorHandler
         catch (Exception ex)
         {
             var message = CreateDetailedErrorMessage(operationType, entityType, context);
-            
+
             var mappingException = new DynamoDbMappingException(
                 message,
                 entityType,

@@ -28,17 +28,17 @@ public class TransactGetItemsRequestBuilder
     {
         _dynamoDbClient = dynamoDbClient;
     }
-    
+
     private readonly IAmazonDynamoDB _dynamoDbClient;
     private readonly TransactGetItemsRequest _req = new() { TransactItems = new List<TransactGetItem>() };
-    
-    
+
+
     public TransactGetItemsRequestBuilder ReturnConsumedCapacity(ReturnConsumedCapacity consumedCapacity)
     {
         _req.ReturnConsumedCapacity = consumedCapacity;
         return this;
     }
-    
+
     /// <summary>
     /// Adds a Get operation to the transaction.
     /// Get operations retrieve items by their primary key with optional projection expressions.
@@ -64,7 +64,7 @@ public class TransactGetItemsRequestBuilder
         _req.TransactItems.Add(builder.ToGetItem());
         return this;
     }
-    
+
     public TransactGetItemsRequestBuilder AddTransactItem(TransactGetItem item)
     {
         _req.TransactItems.Add(item);

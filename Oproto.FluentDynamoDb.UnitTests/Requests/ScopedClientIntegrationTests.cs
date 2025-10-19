@@ -24,7 +24,7 @@ public class ScopedClientIntegrationTests
         // Arrange - Simulate service layer generating scoped client
         var tenantId = "tenant123";
         var transactionId = "txn456";
-        
+
         var expectedItem = new Dictionary<string, AttributeValue>
         {
             ["pk"] = new AttributeValue($"{tenantId}#txn#{transactionId}"),
@@ -34,7 +34,7 @@ public class ScopedClientIntegrationTests
         };
 
         var expectedResponse = new GetItemResponse { Item = expectedItem };
-        
+
         _tenantScopedClient.GetItemAsync(Arg.Any<GetItemRequest>(), Arg.Any<CancellationToken>())
             .Returns(expectedResponse);
 
@@ -45,15 +45,15 @@ public class ScopedClientIntegrationTests
         response.Should().NotBeNull();
         response.Item.Should().ContainKey("pk");
         response.Item["pk"].S.Should().Be($"{tenantId}#txn#{transactionId}");
-        
+
         // Verify scoped client was used, not default client
         await _tenantScopedClient.Received(1).GetItemAsync(
-            Arg.Is<GetItemRequest>(req => 
+            Arg.Is<GetItemRequest>(req =>
                 req.TableName == "transactions" &&
                 req.Key.ContainsKey("pk") &&
                 req.Key["pk"].S == $"{tenantId}#txn#{transactionId}"),
             Arg.Any<CancellationToken>());
-        
+
         await _defaultClient.DidNotReceive().GetItemAsync(Arg.Any<GetItemRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -62,7 +62,7 @@ public class ScopedClientIntegrationTests
     {
         // Arrange
         var tenantId = "tenant123";
-        
+
         var expectedItems = new List<Dictionary<string, AttributeValue>>
         {
             new()
@@ -79,13 +79,13 @@ public class ScopedClientIntegrationTests
             }
         };
 
-        var expectedResponse = new QueryResponse 
-        { 
+        var expectedResponse = new QueryResponse
+        {
             Items = expectedItems,
             Count = 2,
             ScannedCount = 2
         };
-        
+
         _tenantScopedClient.QueryAsync(Arg.Any<QueryRequest>(), Arg.Any<CancellationToken>())
             .Returns(expectedResponse);
 
@@ -95,9 +95,9 @@ public class ScopedClientIntegrationTests
         // Assert
         response.Should().NotBeNull();
         response.Items.Should().HaveCount(2);
-        response.Items.Should().AllSatisfy(item => 
+        response.Items.Should().AllSatisfy(item =>
             item["pk"].S.Should().StartWith($"{tenantId}#txn#"));
-        
+
         // Verify scoped client was used
         await _tenantScopedClient.Received(1).QueryAsync(Arg.Any<QueryRequest>(), Arg.Any<CancellationToken>());
         await _defaultClient.DidNotReceive().QueryAsync(Arg.Any<QueryRequest>(), Arg.Any<CancellationToken>());
@@ -109,7 +109,7 @@ public class ScopedClientIntegrationTests
         // Arrange
         var tenantId = "tenant123";
         var transactionId = "txn789";
-        
+
         var transactionItem = new Dictionary<string, AttributeValue>
         {
             ["pk"] = new AttributeValue($"{tenantId}#txn#{transactionId}"),
@@ -120,7 +120,7 @@ public class ScopedClientIntegrationTests
         };
 
         var expectedResponse = new PutItemResponse();
-        
+
         _tenantScopedClient.PutItemAsync(Arg.Any<PutItemRequest>(), Arg.Any<CancellationToken>())
             .Returns(expectedResponse);
 
@@ -129,16 +129,16 @@ public class ScopedClientIntegrationTests
 
         // Assert
         response.Should().NotBeNull();
-        
+
         // Verify scoped client was used with correct tenant constraint
         await _tenantScopedClient.Received(1).PutItemAsync(
-            Arg.Is<PutItemRequest>(req => 
+            Arg.Is<PutItemRequest>(req =>
                 req.TableName == "transactions" &&
                 req.Item.ContainsKey("pk") &&
                 req.Item["pk"].S.StartsWith($"{tenantId}#txn#") &&
                 req.ConditionExpression == "attribute_not_exists(pk)"),
             Arg.Any<CancellationToken>());
-        
+
         await _defaultClient.DidNotReceive().PutItemAsync(Arg.Any<PutItemRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -148,7 +148,7 @@ public class ScopedClientIntegrationTests
         // Arrange
         var tenantId = "tenant123";
         var transactionId = "txn456";
-        
+
         var expectedResponse = new UpdateItemResponse
         {
             Attributes = new Dictionary<string, AttributeValue>
@@ -158,7 +158,7 @@ public class ScopedClientIntegrationTests
                 ["updatedAt"] = new AttributeValue("2024-01-15T11:00:00Z")
             }
         };
-        
+
         _tenantScopedClient.UpdateItemAsync(Arg.Any<UpdateItemRequest>(), Arg.Any<CancellationToken>())
             .Returns(expectedResponse);
 
@@ -169,17 +169,17 @@ public class ScopedClientIntegrationTests
         response.Should().NotBeNull();
         response.Attributes.Should().ContainKey("status");
         response.Attributes["status"].S.Should().Be("COMPLETED");
-        
+
         // Verify scoped client was used
         await _tenantScopedClient.Received(1).UpdateItemAsync(
-            Arg.Is<UpdateItemRequest>(req => 
+            Arg.Is<UpdateItemRequest>(req =>
                 req.TableName == "transactions" &&
                 req.Key.ContainsKey("pk") &&
                 req.Key["pk"].S == $"{tenantId}#txn#{transactionId}" &&
                 req.UpdateExpression.Contains("SET #status = :status") &&
                 req.ConditionExpression == "attribute_exists(pk)"),
             Arg.Any<CancellationToken>());
-        
+
         await _defaultClient.DidNotReceive().UpdateItemAsync(Arg.Any<UpdateItemRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -189,7 +189,7 @@ public class ScopedClientIntegrationTests
         // Arrange
         var tenantId = "tenant123";
         var transactionId = "txn456";
-        
+
         var expectedResponse = new DeleteItemResponse
         {
             Attributes = new Dictionary<string, AttributeValue>
@@ -198,7 +198,7 @@ public class ScopedClientIntegrationTests
                 ["status"] = new AttributeValue("DELETED")
             }
         };
-        
+
         _tenantScopedClient.DeleteItemAsync(Arg.Any<DeleteItemRequest>(), Arg.Any<CancellationToken>())
             .Returns(expectedResponse);
 
@@ -209,17 +209,17 @@ public class ScopedClientIntegrationTests
         response.Should().NotBeNull();
         response.Attributes.Should().ContainKey("pk");
         response.Attributes["pk"].S.Should().Be($"{tenantId}#txn#{transactionId}");
-        
+
         // Verify scoped client was used
         await _tenantScopedClient.Received(1).DeleteItemAsync(
-            Arg.Is<DeleteItemRequest>(req => 
+            Arg.Is<DeleteItemRequest>(req =>
                 req.TableName == "transactions" &&
                 req.Key.ContainsKey("pk") &&
                 req.Key["pk"].S == $"{tenantId}#txn#{transactionId}" &&
                 req.ConditionExpression == "attribute_exists(pk)" &&
                 req.ReturnValues == ReturnValue.ALL_OLD),
             Arg.Any<CancellationToken>());
-        
+
         await _defaultClient.DidNotReceive().DeleteItemAsync(Arg.Any<DeleteItemRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -228,7 +228,7 @@ public class ScopedClientIntegrationTests
     {
         // Arrange
         var tenantId = "tenant123";
-        
+
         var expectedItems = new List<Dictionary<string, AttributeValue>>
         {
             new()
@@ -245,13 +245,13 @@ public class ScopedClientIntegrationTests
             }
         };
 
-        var expectedResponse = new ScanResponse 
-        { 
+        var expectedResponse = new ScanResponse
+        {
             Items = expectedItems,
             Count = 2,
             ScannedCount = 2
         };
-        
+
         _tenantScopedClient.ScanAsync(Arg.Any<ScanRequest>(), Arg.Any<CancellationToken>())
             .Returns(expectedResponse);
 
@@ -261,9 +261,9 @@ public class ScopedClientIntegrationTests
         // Assert
         response.Should().NotBeNull();
         response.Items.Should().HaveCount(2);
-        response.Items.Should().AllSatisfy(item => 
+        response.Items.Should().AllSatisfy(item =>
             item["pk"].S.Should().StartWith($"{tenantId}#txn#"));
-        
+
         // Verify scoped client was used
         await _tenantScopedClient.Received(1).ScanAsync(Arg.Any<ScanRequest>(), Arg.Any<CancellationToken>());
         await _defaultClient.DidNotReceive().ScanAsync(Arg.Any<ScanRequest>(), Arg.Any<CancellationToken>());

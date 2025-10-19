@@ -8,13 +8,13 @@ namespace Oproto.FluentDynamoDb.Requests;
 public class ParameterGenerator
 {
     private int _counter = 0;
-    
+
     /// <summary>
     /// Generates a unique parameter name in the format ":p{counter}".
     /// </summary>
     /// <returns>A unique parameter name like ":p0", ":p1", etc.</returns>
     public string GenerateParameterName() => $":p{_counter++}";
-    
+
     /// <summary>
     /// Resets the parameter counter to 0. Primarily used for testing scenarios.
     /// </summary>

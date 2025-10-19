@@ -38,8 +38,7 @@ public class MapperGeneratorTests
 
         // Assert
         result.Should().Contain("namespace TestNamespace");
-        result.Should().Contain("public partial class TestEntity"); // Partial class, interface added elsewhere
-        result.Should().NotContain(": IDynamoDbEntity"); // Interface not in generated code (partial class)
+        result.Should().Contain("public partial class TestEntity : IDynamoDbEntity"); // Interface included for better UX
         result.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
         result.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
         result.Should().Contain("public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items)");
@@ -335,7 +334,7 @@ public class MapperGeneratorTests
         result.Should().Contain("new AttributeValue { BOOL = typedEntity.IsActive }");
         result.Should().Contain("new AttributeValue { S = typedEntity.CreatedDate.ToString(\"O\") }");
         result.Should().Contain("new AttributeValue { S = typedEntity.UniqueId.ToString() }"); // No format specifier
-        
+
         // Check FromDynamoDb conversions
         result.Should().Contain("entity.Id = idValue.S");
         result.Should().Contain("entity.Count = int.Parse(countValue.N)");

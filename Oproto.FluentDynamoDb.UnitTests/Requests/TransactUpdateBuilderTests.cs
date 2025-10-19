@@ -17,9 +17,9 @@ public class TransactUpdateBuilderTests
         req.Update.Should().NotBeNull();
         req.Update.TableName.Should().Be("TestTable");
     }
-    
+
     #region Keys
-    
+
     [Fact]
     public void WithKeyPkStringValueSuccess()
     {
@@ -33,7 +33,7 @@ public class TransactUpdateBuilderTests
         req.Update.Key.Keys.Should().HaveCount(1);
         req.Update.Key["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WithKeyPkSkStringValueSuccess()
     {
@@ -49,7 +49,7 @@ public class TransactUpdateBuilderTests
         req.Update.Key["pk"].S.Should().Be("1");
         req.Update.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     [Fact]
     public void WithKeyPkSkAttributeValueSuccess()
     {
@@ -65,11 +65,11 @@ public class TransactUpdateBuilderTests
         req.Update.Key["pk"].S.Should().Be("1");
         req.Update.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     #endregion Keys
-    
+
     #region Attributes
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
@@ -82,7 +82,7 @@ public class TransactUpdateBuilderTests
         req.Update.ExpressionAttributeNames.Should().HaveCount(1);
         req.Update.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
@@ -108,7 +108,7 @@ public class TransactUpdateBuilderTests
         req.Update.ExpressionAttributeNames.Should().HaveCount(1);
         req.Update.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeValuesSuccess()
     {
@@ -122,7 +122,7 @@ public class TransactUpdateBuilderTests
         req.Update.ExpressionAttributeValues[":pk"].S.Should().Be("1");
 
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeValuesLambdaSuccess()
     {
@@ -149,7 +149,7 @@ public class TransactUpdateBuilderTests
         req.Update.ExpressionAttributeValues.Should().HaveCount(1);
         req.Update.ExpressionAttributeValues[":pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeBooleanValueSuccess()
     {
@@ -164,7 +164,7 @@ public class TransactUpdateBuilderTests
     }
 
     #endregion Attributes
-    
+
     [Fact]
     public void SetSuccess()
     {
@@ -175,7 +175,7 @@ public class TransactUpdateBuilderTests
         req.Update.Should().NotBeNull();
         req.Update.UpdateExpression.Should().Be("SET #pk = :pk");
     }
-    
+
     [Fact]
     public void WhereSuccess()
     {
@@ -186,7 +186,7 @@ public class TransactUpdateBuilderTests
         req.Update.Should().NotBeNull();
         req.Update.ConditionExpression.Should().Be("#pk = :pk");
     }
-    
+
     [Fact]
     public void ReturnOldValuesOnConditionCheckFailureSuccess()
     {
@@ -197,7 +197,7 @@ public class TransactUpdateBuilderTests
         req.Update.Should().NotBeNull();
         req.Update.ReturnValuesOnConditionCheckFailure.Should().Be(Amazon.DynamoDBv2.ReturnValuesOnConditionCheckFailure.ALL_OLD);
     }
-    
+
     [Fact]
     public void ReturnNoValuesOnConditionCheckFailureSuccess()
     {

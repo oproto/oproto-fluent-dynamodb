@@ -93,7 +93,7 @@ public static class WithKeyExtensions
             keyDict[keyName] = new AttributeValue { S = keyValue };
         });
     }
-    
+
     /// <summary>
     /// Specifies both primary key and sort key using string values (automatically converted to DynamoDB string type).
     /// Use this method for tables with composite primary keys where both keys are strings.

@@ -18,9 +18,9 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.TableName.Should().Be("TestTable");
     }
-    
-     #region Attributes
-    
+
+    #region Attributes
+
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
@@ -32,7 +32,7 @@ public class PutItemRequestBuilderTests
         req.ExpressionAttributeNames.Should().HaveCount(1);
         req.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
@@ -44,7 +44,7 @@ public class PutItemRequestBuilderTests
         req.ExpressionAttributeNames.Should().HaveCount(1);
         req.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNameSuccess()
     {
@@ -69,7 +69,7 @@ public class PutItemRequestBuilderTests
         req.ExpressionAttributeValues[":pk"].S.Should().Be("1");
 
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeValuesLambdaSuccess()
     {
@@ -94,7 +94,7 @@ public class PutItemRequestBuilderTests
         req.ExpressionAttributeValues.Should().HaveCount(1);
         req.ExpressionAttributeValues[":pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeBooleanValueSuccess()
     {
@@ -120,12 +120,12 @@ public class PutItemRequestBuilderTests
         req.Item.Should().HaveCount(1);
         req.Item["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WithItemLambdaSuccess()
     {
         var builder = new PutItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
-        builder.WithItem( new { Pk = "1"}, (item) =>
+        builder.WithItem(new { Pk = "1" }, (item) =>
         {
             return new Dictionary<string, AttributeValue>() { { "pk", new AttributeValue() { S = item.Pk } } };
         });
@@ -135,7 +135,7 @@ public class PutItemRequestBuilderTests
         req.Item.Should().HaveCount(1);
         req.Item["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WhereSuccess()
     {
@@ -147,7 +147,7 @@ public class PutItemRequestBuilderTests
     }
 
     #region ConsumedCapacity
-    
+
     [Fact]
     public void ReturnConsumedCapacitySuccess()
     {
@@ -157,7 +157,7 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
-    
+
     [Fact]
     public void ReturnTotalConsumedCapacitySuccess()
     {
@@ -167,7 +167,7 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
-    
+
     [Fact]
     public void ReturnItemCollectionMetricsSuccess()
     {
@@ -177,11 +177,11 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnItemCollectionMetrics.Should().Be(ReturnItemCollectionMetrics.SIZE);
     }
-    
+
     #endregion ConsumedCapacity
-    
+
     #region ReturnValues
-    
+
     [Fact]
     public void ReturnValuesNoneSuccess()
     {
@@ -191,7 +191,7 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.NONE);
     }
-    
+
     [Fact]
     public void ReturnAllNewValuesSuccess()
     {
@@ -201,7 +201,7 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.ALL_NEW);
     }
-    
+
     [Fact]
     public void ReturnAllOldValuesSuccess()
     {
@@ -211,7 +211,7 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.ALL_OLD);
     }
-    
+
     [Fact]
     public void ReturnUpdatedNewValuesSuccess()
     {
@@ -221,7 +221,7 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.UPDATED_NEW);
     }
-    
+
     [Fact]
     public void ReturnUpdatedOldValuesSuccess()
     {
@@ -231,7 +231,7 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.UPDATED_OLD);
     }
-    
+
     [Fact]
     public void ReturnOldValuesOnConditionCheckFailureSuccess()
     {
@@ -241,7 +241,7 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValuesOnConditionCheckFailure.Should().Be(ReturnValuesOnConditionCheckFailure.ALL_OLD);
     }
-    
+
     [Fact]
     public void ReturnNoValuesOnConditionCheckFailureSuccess()
     {
@@ -250,6 +250,6 @@ public class PutItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValuesOnConditionCheckFailure.Should().BeNull();
     }
-    
+
     #endregion ReturnValues
 }

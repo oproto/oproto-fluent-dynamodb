@@ -37,18 +37,18 @@ namespace TestNamespace
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warning for "name"
         result.GeneratedSources.Should().HaveCount(3); // Entity + Fields + Keys
-        
+
         // Check entity implementation
         var entityCode = result.GeneratedSources.First(s => s.FileName.Contains("TestEntity.g.cs")).SourceText.ToString();
         entityCode.Should().Contain("public partial class TestEntity");
         entityCode.Should().Contain("namespace TestNamespace");
-        
+
         // Check fields class
         var fieldsCode = result.GeneratedSources.First(s => s.FileName.Contains("TestEntityFields.g.cs")).SourceText.ToString();
         fieldsCode.Should().Contain("public static partial class TestEntityFields");
         fieldsCode.Should().Contain("public const string Id = \"pk\";");
         fieldsCode.Should().Contain("public const string Name = \"name\";");
-        
+
         // Check keys class
         var keysCode = result.GeneratedSources.First(s => s.FileName.Contains("TestEntityKeys.g.cs")).SourceText.ToString();
         keysCode.Should().Contain("public static partial class TestEntityKeys");
@@ -110,7 +110,7 @@ namespace TestNamespace
         // Should generate code without any diagnostics for GSI entity
         result.Diagnostics.Should().BeEmpty();
         result.GeneratedSources.Should().HaveCount(3); // Entity + Fields + Keys
-        
+
         var fieldsCode = result.GeneratedSources.First(s => s.FileName.Contains("TestEntityFields.g.cs")).SourceText.ToString();
         fieldsCode.Should().Contain("public static partial class TestEntityFields");
         fieldsCode.Should().Contain("public const string Id = \"pk\";");
@@ -125,10 +125,10 @@ namespace TestNamespace
     {
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
-            new[] { 
+            new[] {
                 CSharpSyntaxTree.ParseText(source)
             },
-            new[] { 
+            new[] {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Oproto.FluentDynamoDb.Attributes.DynamoDbTableAttribute).Assembly.Location),
@@ -151,7 +151,7 @@ namespace TestNamespace
 
         var generator = new DynamoDbSourceGenerator();
         var driver = CSharpGeneratorDriver.Create(generator);
-        
+
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
         var generatedSources = outputCompilation.SyntaxTrees

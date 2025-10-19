@@ -18,9 +18,9 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.TableName.Should().Be("TestTable");
     }
-    
+
     #region Keys
-    
+
     [Fact]
     public void WithKeyPkStringValueSuccess()
     {
@@ -33,7 +33,7 @@ public class UpdateItemRequestBuilderTests
         req.Key.Keys.Should().HaveCount(1);
         req.Key["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WithKeyPkSkStringValueSuccess()
     {
@@ -48,7 +48,7 @@ public class UpdateItemRequestBuilderTests
         req.Key["pk"].S.Should().Be("1");
         req.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     [Fact]
     public void WithKeyPkSkAttributeValueSuccess()
     {
@@ -63,11 +63,11 @@ public class UpdateItemRequestBuilderTests
         req.Key["pk"].S.Should().Be("1");
         req.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     #endregion Keys
-    
+
     #region Attributes
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
@@ -79,7 +79,7 @@ public class UpdateItemRequestBuilderTests
         req.ExpressionAttributeNames.Should().HaveCount(1);
         req.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
@@ -115,7 +115,7 @@ public class UpdateItemRequestBuilderTests
         req.ExpressionAttributeValues[":pk"].S.Should().Be("1");
 
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeValuesLambdaSuccess()
     {
@@ -140,7 +140,7 @@ public class UpdateItemRequestBuilderTests
         req.ExpressionAttributeValues.Should().HaveCount(1);
         req.ExpressionAttributeValues[":pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeBooleanValueSuccess()
     {
@@ -154,7 +154,7 @@ public class UpdateItemRequestBuilderTests
     }
 
     #endregion Attributes
-    
+
     [Fact]
     public void WhereSuccess()
     {
@@ -164,7 +164,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ConditionExpression.Should().Be("#pk = :pk");
     }
-    
+
     [Fact]
     public void SetSuccess()
     {
@@ -174,9 +174,9 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.UpdateExpression.Should().Be("SET #pk = :pk");
     }
-    
+
     #region ConsumedCapacity
-    
+
     [Fact]
     public void ReturnConsumedCapacitySuccess()
     {
@@ -186,7 +186,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
-    
+
     [Fact]
     public void ReturnTotalConsumedCapacitySuccess()
     {
@@ -196,7 +196,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
-    
+
     [Fact]
     public void ReturnItemCollectionMetricsSuccess()
     {
@@ -206,11 +206,11 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnItemCollectionMetrics.Should().Be(ReturnItemCollectionMetrics.SIZE);
     }
-    
+
     #endregion ConsumedCapacity
-    
+
     #region ReturnValues
-    
+
     [Fact]
     public void ReturnValuesNoneSuccess()
     {
@@ -220,7 +220,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.NONE);
     }
-    
+
     [Fact]
     public void ReturnAllNewValuesSuccess()
     {
@@ -230,7 +230,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.ALL_NEW);
     }
-    
+
     [Fact]
     public void ReturnAllOldValuesSuccess()
     {
@@ -240,7 +240,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.ALL_OLD);
     }
-    
+
     [Fact]
     public void ReturnUpdatedNewValuesSuccess()
     {
@@ -250,7 +250,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.UPDATED_NEW);
     }
-    
+
     [Fact]
     public void ReturnUpdatedOldValuesSuccess()
     {
@@ -260,7 +260,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValues.Should().Be(ReturnValue.UPDATED_OLD);
     }
-    
+
     [Fact]
     public void ReturnOldValuesOnConditionCheckFailureSuccess()
     {
@@ -270,7 +270,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValuesOnConditionCheckFailure.Should().Be(ReturnValuesOnConditionCheckFailure.ALL_OLD);
     }
-    
+
     [Fact]
     public void ReturnNoValuesOnConditionCheckFailureSuccess()
     {
@@ -279,7 +279,7 @@ public class UpdateItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnValuesOnConditionCheckFailure.Should().BeNull();
     }
-    
+
     #endregion ReturnValues
 
 }

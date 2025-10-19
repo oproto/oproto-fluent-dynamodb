@@ -19,28 +19,28 @@ public static class IncrementalSourceGenerator
     {
         var classDecl = (ClassDeclarationSyntax)context.Node;
         var semanticModel = context.SemanticModel;
-        
+
         // Generate cache key based on class content
         var cacheKey = GenerateCacheKey(classDecl, semanticModel);
-        
+
         // Try to get from cache first
         if (EntityTransformCache.TryGetCached(cacheKey, out var cachedResult))
         {
             return (cachedResult, cacheKey);
         }
-        
+
         // Cache miss - perform transformation
         try
         {
             var analyzer = new EntityAnalyzer();
             var entityModel = analyzer.AnalyzeEntity(classDecl, semanticModel);
-            
+
             // Cache the result
             if (entityModel != null)
             {
                 EntityTransformCache.Cache(cacheKey, entityModel);
             }
-            
+
             return (entityModel, cacheKey);
         }
         catch (Exception)
@@ -57,19 +57,19 @@ public static class IncrementalSourceGenerator
     {
         var className = classDecl.Identifier.ValueText;
         var namespaceName = GetNamespace(classDecl);
-        
+
         // Include attribute information in cache key
-        var attributeInfo = string.Join("|", 
+        var attributeInfo = string.Join("|",
             classDecl.AttributeLists
                 .SelectMany(al => al.Attributes)
                 .Select(a => a.Name.ToString()));
-        
+
         // Include property information in cache key
         var propertyInfo = string.Join("|",
             classDecl.Members
                 .OfType<PropertyDeclarationSyntax>()
                 .Select(p => $"{p.Identifier.ValueText}:{p.Type}"));
-        
+
         return $"{namespaceName}.{className}#{attributeInfo}#{propertyInfo}".GetHashCode().ToString();
     }
 
@@ -127,7 +127,7 @@ public static class EntityTransformCache
     public static void Cache(string cacheKey, EntityModel entityModel)
     {
         _cache.AddOrUpdate(cacheKey, new WeakReference<EntityModel>(entityModel), (_, _) => new WeakReference<EntityModel>(entityModel));
-        
+
         // Periodic maintenance
         PerformPeriodicMaintenance();
     }
@@ -149,7 +149,7 @@ public static class EntityTransformCache
         lock (_maintenanceLock)
         {
             var keysToRemove = new List<string>();
-            
+
             foreach (var kvp in _cache)
             {
                 if (!kvp.Value.TryGetTarget(out _))

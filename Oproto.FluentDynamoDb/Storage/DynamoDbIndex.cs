@@ -32,12 +32,12 @@ public class DynamoDbIndex
     }
 
     private readonly DynamoDbTableBase _table;
-    
+
     /// <summary>
     /// Gets the name of the index.
     /// </summary>
     public string Name { get; private init; }
-    
+
     /// <summary>
     /// Gets a query builder pre-configured to query this specific index.
     /// The builder is automatically configured with the correct table name and index name.

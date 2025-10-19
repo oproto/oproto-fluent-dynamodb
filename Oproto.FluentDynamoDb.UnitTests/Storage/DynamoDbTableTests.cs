@@ -21,7 +21,7 @@ public class DynamoDbTableTests
         table.Name.Should().Be("TestTable");
         table.DynamoDbClient.Should().NotBeNull();
     }
-    
+
     [Fact]
     public void TableGetReturnsBuilder()
     {
@@ -72,7 +72,7 @@ public class DynamoDbTableTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         // TODO table..Should().NotBeNull();
     }
-    
+
     [Fact]
     public void TableQueryOnIndexReturnsBuilder()
     {

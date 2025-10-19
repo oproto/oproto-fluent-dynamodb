@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2.Model;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 namespace Oproto.FluentDynamoDb.Storage;
@@ -90,6 +91,8 @@ public class DynamoDbMappingException : Exception
     /// Creates a detailed error message with context information for debugging.
     /// </summary>
     /// <returns>A formatted error message with context details.</returns>
+    [RequiresUnreferencedCode("ToString uses reflection to format exception details")]
+    [RequiresDynamicCode("ToString uses reflection to format exception details")]
     public override string ToString()
     {
         var details = new List<string> { base.ToString() };

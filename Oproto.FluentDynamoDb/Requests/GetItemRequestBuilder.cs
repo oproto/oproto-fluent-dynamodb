@@ -36,7 +36,7 @@ public class GetItemRequestBuilder : IWithKey<GetItemRequestBuilder>, IWithAttri
     {
         _dynamoDbClient = dynamoDbClient;
     }
-    
+
     private GetItemRequest _req = new GetItemRequest();
     private readonly IAmazonDynamoDB _dynamoDbClient;
     private readonly AttributeNameInternal _attrN = new AttributeNameInternal();
@@ -65,7 +65,7 @@ public class GetItemRequestBuilder : IWithKey<GetItemRequestBuilder>, IWithAttri
     /// Gets the builder instance for method chaining.
     /// </summary>
     public GetItemRequestBuilder Self => this;
-    
+
     /// <summary>
     /// Specifies the name of the table to get the item from.
     /// </summary>
@@ -78,7 +78,7 @@ public class GetItemRequestBuilder : IWithKey<GetItemRequestBuilder>, IWithAttri
     }
 
 
-    
+
 
 
     /// <summary>
@@ -124,7 +124,7 @@ public class GetItemRequestBuilder : IWithKey<GetItemRequestBuilder>, IWithAttri
         _req.ReturnConsumedCapacity = Amazon.DynamoDBv2.ReturnConsumedCapacity.TOTAL;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the level of consumed capacity information to return in the response.
     /// </summary>
@@ -146,7 +146,7 @@ public class GetItemRequestBuilder : IWithKey<GetItemRequestBuilder>, IWithAttri
         _req.ExpressionAttributeNames = _attrN.AttributeNames;
         return _req;
     }
-    
+
     /// <summary>
     /// Executes the GetItem operation asynchronously using the configured parameters.
     /// </summary>

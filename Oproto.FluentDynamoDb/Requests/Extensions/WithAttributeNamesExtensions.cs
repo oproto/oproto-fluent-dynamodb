@@ -47,7 +47,7 @@ public static class WithAttributeNamesExtensions
         builder.GetAttributeNameHelper().WithAttributes(attributeNames);
         return builder.Self;
     }
-    
+
     /// <summary>
     /// Adds multiple attribute name mappings using a configuration action.
     /// This is essential when attribute names conflict with DynamoDB reserved words.

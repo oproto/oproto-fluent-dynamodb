@@ -223,7 +223,7 @@ public class CoreIntegrationTests
     public void AllBuilders_BackwardCompatibility_ShouldWork()
     {
         // Test that existing method signatures still work exactly as before
-        
+
         // Query builder - existing usage pattern
         var queryBuilder = new QueryRequestBuilder(_mockClient);
         var queryRequest = queryBuilder
@@ -234,11 +234,11 @@ public class CoreIntegrationTests
             .Take(10)
             .UsingConsistentRead()
             .ToQueryRequest();
-        
+
         queryRequest.Should().NotBeNull();
         queryRequest.KeyConditionExpression.Should().Be("pk = :pk");
         queryRequest.ExpressionAttributeValues[":pk"].S.Should().Be("USER#123");
-        
+
         // Get builder - existing usage pattern
         var getBuilder = new GetItemRequestBuilder(_mockClient);
         var getRequest = getBuilder
@@ -247,7 +247,7 @@ public class CoreIntegrationTests
             .WithAttribute("#name", "name")
             .UsingConsistentRead()
             .ToGetItemRequest();
-        
+
         getRequest.Should().NotBeNull();
         getRequest.Key["pk"].S.Should().Be("USER#123");
         getRequest.Key["sk"].S.Should().Be("profile");
@@ -259,7 +259,7 @@ public class CoreIntegrationTests
         // Arrange
         var testDate = new DateTime(2024, 1, 15, 10, 30, 0, DateTimeKind.Utc);
         var testDecimal = 99.99m;
-        
+
         // Act
         var builder = new QueryRequestBuilder(_mockClient);
         var request = builder
@@ -282,17 +282,17 @@ public class CoreIntegrationTests
     public void Builders_ErrorHandling_ShouldThrowAppropriateExceptions()
     {
         var builder = new QueryRequestBuilder(_mockClient);
-        
+
         // Test empty format string
         var act1 = () => builder.Where("", "value");
         act1.Should().Throw<ArgumentException>()
             .WithMessage("Format string cannot be null or empty.*");
-        
+
         // Test mismatched parameter count
         var act2 = () => builder.Where("pk = {0} AND sk = {1}", "onlyOneValue");
         act2.Should().Throw<ArgumentException>()
             .WithMessage("*parameter index 1 but only 1 arguments were provided*");
-        
+
         // Test null arguments
         var act3 = () => builder.Where("pk = {0}", (object[])null!);
         act3.Should().Throw<ArgumentNullException>();

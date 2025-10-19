@@ -17,9 +17,9 @@ public class TransactPutBuilderTests
         req.Put.Should().NotBeNull();
         req.Put.TableName.Should().Be("TestTable");
     }
-    
+
     #region Attributes
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
@@ -32,7 +32,7 @@ public class TransactPutBuilderTests
         req.Put.ExpressionAttributeNames.Should().HaveCount(1);
         req.Put.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
@@ -71,7 +71,7 @@ public class TransactPutBuilderTests
         req.Put.ExpressionAttributeValues[":pk"].S.Should().Be("1");
 
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeValuesLambdaSuccess()
     {
@@ -98,7 +98,7 @@ public class TransactPutBuilderTests
         req.Put.ExpressionAttributeValues.Should().HaveCount(1);
         req.Put.ExpressionAttributeValues[":pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeBooleanValueSuccess()
     {
@@ -113,7 +113,7 @@ public class TransactPutBuilderTests
     }
 
     #endregion Attributes
-    
+
     [Fact]
     public void WithItemSuccess()
     {
@@ -126,12 +126,12 @@ public class TransactPutBuilderTests
         req.Put.Item.Should().HaveCount(1);
         req.Put.Item["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WithItemLambdaSuccess()
     {
         var builder = new TransactPutBuilder("TestTable");
-        builder.WithItem( new { Pk = "1"}, (item) =>
+        builder.WithItem(new { Pk = "1" }, (item) =>
         {
             return new Dictionary<string, AttributeValue>() { { "pk", new AttributeValue() { S = item.Pk } } };
         });
@@ -142,7 +142,7 @@ public class TransactPutBuilderTests
         req.Put.Item.Should().HaveCount(1);
         req.Put.Item["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WhereSuccess()
     {
@@ -153,7 +153,7 @@ public class TransactPutBuilderTests
         req.Put.Should().NotBeNull();
         req.Put.ConditionExpression.Should().Be("#pk = :pk");
     }
-    
+
     [Fact]
     public void ReturnOldValuesOnConditionCheckFailureSuccess()
     {
@@ -164,7 +164,7 @@ public class TransactPutBuilderTests
         req.Put.Should().NotBeNull();
         req.Put.ReturnValuesOnConditionCheckFailure.Should().Be(ReturnValuesOnConditionCheckFailure.ALL_OLD);
     }
-    
+
     [Fact]
     public void ReturnNoValuesOnConditionCheckFailureSuccess()
     {

@@ -72,7 +72,7 @@ public static class WithConditionExpressionExtensions
     {
         return builder.SetConditionExpression(conditionExpression);
     }
-    
+
     /// <summary>
     /// Specifies the condition expression using format string syntax with automatic parameter generation.
     /// This method allows you to use {0}, {1}, {2:format} syntax instead of manual parameter naming.

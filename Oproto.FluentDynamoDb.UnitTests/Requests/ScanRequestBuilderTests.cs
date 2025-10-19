@@ -251,8 +251,8 @@ public class ScanRequestBuilderTests
     }
 
     #endregion Consumed Capacity Tests
- 
-   #region Attribute Names Tests
+
+    #region Attribute Names Tests
 
     [Fact]
     public void WithAttributesSuccess()
@@ -271,7 +271,7 @@ public class ScanRequestBuilderTests
     public void WithAttributesUsingLambdaSuccess()
     {
         var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
-        builder.WithAttributes(attributes => 
+        builder.WithAttributes(attributes =>
         {
             attributes.Add("#pk", "pk");
             attributes.Add("#status", "status");
@@ -304,8 +304,8 @@ public class ScanRequestBuilderTests
     public void WithValuesSuccess()
     {
         var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
-        builder.WithValues(new Dictionary<string, AttributeValue> 
-        { 
+        builder.WithValues(new Dictionary<string, AttributeValue>
+        {
             { ":pk", new AttributeValue { S = "1" } },
             { ":status", new AttributeValue { S = "active" } }
         });
@@ -321,7 +321,7 @@ public class ScanRequestBuilderTests
     public void WithValuesLambdaSuccess()
     {
         var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
-        builder.WithValues(attributes => 
+        builder.WithValues(attributes =>
         {
             attributes.Add(":pk", new AttributeValue { S = "1" });
             attributes.Add(":status", new AttributeValue { S = "active" });
@@ -425,10 +425,10 @@ public class ScanRequestBuilderTests
     public void WithValueAttributeValueDictionarySuccess()
     {
         var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
-        var mapValue = new Dictionary<string, AttributeValue> 
-        { 
-            { "key1", new AttributeValue { S = "value1" } }, 
-            { "key2", new AttributeValue { N = "42" } } 
+        var mapValue = new Dictionary<string, AttributeValue>
+        {
+            { "key1", new AttributeValue { S = "value1" } },
+            { "key2", new AttributeValue { N = "42" } }
         };
         builder.WithValue(":map", mapValue);
         var req = builder.ToScanRequest();
@@ -483,7 +483,7 @@ public class ScanRequestBuilderTests
                .ReturnTotalConsumedCapacity();
 
         var req = builder.ToScanRequest();
-        
+
         req.Should().NotBeNull();
         req.TableName.Should().Be("TestTable");
         req.FilterExpression.Should().Be("#status = :status");
@@ -524,7 +524,7 @@ public class ScanRequestBuilderTests
         var mockClient = Substitute.For<IAmazonDynamoDB>();
         var expectedResponse = new ScanResponse();
         var cancellationToken = new CancellationToken();
-        
+
         mockClient.ScanAsync(Arg.Any<ScanRequest>(), cancellationToken)
                   .Returns(Task.FromResult(expectedResponse));
 
@@ -545,7 +545,7 @@ public class ScanRequestBuilderTests
     public void FluentInterfaceChainSuccess()
     {
         var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
-        
+
         var result = builder
             .ForTable("TestTable")
             .WithFilter("#status = :status")
@@ -559,7 +559,7 @@ public class ScanRequestBuilderTests
             .ReturnTotalConsumedCapacity();
 
         result.Should().Be(builder);
-        
+
         var req = result.ToScanRequest();
         req.Should().NotBeNull();
         req.TableName.Should().Be("TestTable");
@@ -569,7 +569,7 @@ public class ScanRequestBuilderTests
     public void MultipleAttributeAndValueCallsSuccess()
     {
         var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
-        
+
         builder.WithAttribute("#pk", "pk")
                .WithAttribute("#status", "status")
                .WithValue(":pk", "test-key")
@@ -577,7 +577,7 @@ public class ScanRequestBuilderTests
                .WithValue(":price", 99.99m);
 
         var req = builder.ToScanRequest();
-        
+
         req.Should().NotBeNull();
         req.ExpressionAttributeNames.Should().HaveCount(2);
         req.ExpressionAttributeNames["#pk"].Should().Be("pk");

@@ -253,7 +253,7 @@ public class BuilderExtensionMethodsIntegrationTests
         var request = builder
             .ForTable("TestTable")
             .WithItem(item)
-            .Where("(attribute_not_exists(version) OR version = {0}) AND amount <= {1:F2} AND #status IN ({2}, {3})", 
+            .Where("(attribute_not_exists(version) OR version = {0}) AND amount <= {1:F2} AND #status IN ({2}, {3})",
                 currentVersion, maxAmount, validStatuses[0], validStatuses[1])
             .WithAttribute("#status", "status")
             .ToPutItemRequest();

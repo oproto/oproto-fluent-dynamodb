@@ -93,7 +93,7 @@ public static class WithUpdateExpressionExtensions
     {
         return builder.SetUpdateExpression(updateExpression);
     }
-    
+
     /// <summary>
     /// Specifies the update expression using format string syntax with automatic parameter generation.
     /// This method allows you to use {0}, {1}, {2:format} syntax instead of manual parameter naming.

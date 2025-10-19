@@ -207,7 +207,7 @@ public class DiagnosticDescriptorsTests
             .ToArray();
 
         // Assert
-        descriptors.Should().AllSatisfy(d => 
+        descriptors.Should().AllSatisfy(d =>
             d.Category.Should().Be("DynamoDb", "All descriptors should use DynamoDb category"));
     }
 
@@ -226,7 +226,7 @@ public class DiagnosticDescriptorsTests
             .ToArray();
 
         // Assert
-        descriptors.Should().AllSatisfy(d => 
+        descriptors.Should().AllSatisfy(d =>
             d.IsEnabledByDefault.Should().BeTrue("All descriptors should be enabled by default"));
     }
 

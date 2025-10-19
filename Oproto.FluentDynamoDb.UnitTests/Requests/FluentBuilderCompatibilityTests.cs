@@ -237,11 +237,11 @@ public class FluentBuilderCompatibilityTests
         request.Should().NotBeNull();
         request.KeyConditionExpression.Should().Be("pk = :p0 AND sk BETWEEN :minDate AND :maxDate");
         request.FilterExpression.Should().Be("#status = :status AND amount > :minAmount");
-        
+
         // Format string parameters
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
         request.ExpressionAttributeValues[":p0"].S.Should().Be("USER#123");
-        
+
         // Traditional parameters
         request.ExpressionAttributeValues.Should().ContainKey(":minDate");
         request.ExpressionAttributeValues[":minDate"].S.Should().Be("2024-01-01");
@@ -277,15 +277,15 @@ public class FluentBuilderCompatibilityTests
         // Assert - Both parameter styles should work together
         request.Should().NotBeNull();
         request.ConditionExpression.Should().Be("(attribute_not_exists(pk) OR version = :p0) AND #status <> :oldStatus");
-        
+
         // Format string parameter
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
         request.ExpressionAttributeValues[":p0"].N.Should().Be("1");
-        
+
         // Traditional parameter
         request.ExpressionAttributeValues.Should().ContainKey(":oldStatus");
         request.ExpressionAttributeValues[":oldStatus"].S.Should().Be("DELETED");
-        
+
         request.ExpressionAttributeNames.Should().ContainKey("#status");
         request.ExpressionAttributeNames["#status"].Should().Be("status");
     }
@@ -307,11 +307,11 @@ public class FluentBuilderCompatibilityTests
         // Assert - Both parameter styles should work together
         request.Should().NotBeNull();
         request.ConditionExpression.Should().Be("version = :p0 AND #status = :currentStatus");
-        
+
         // Format string parameter
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
         request.ExpressionAttributeValues[":p0"].N.Should().Be("1");
-        
+
         // Traditional parameters
         request.ExpressionAttributeValues.Should().ContainKey(":currentStatus");
         request.ExpressionAttributeValues[":currentStatus"].S.Should().Be("ACTIVE");
@@ -336,11 +336,11 @@ public class FluentBuilderCompatibilityTests
         // Assert - Both parameter styles should work together
         request.Should().NotBeNull();
         request.ConditionExpression.Should().Be("version = :p0 AND #status IN (:status1, :status2)");
-        
+
         // Format string parameter
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
         request.ExpressionAttributeValues[":p0"].N.Should().Be("1");
-        
+
         // Traditional parameters
         request.ExpressionAttributeValues.Should().ContainKey(":status1");
         request.ExpressionAttributeValues[":status1"].S.Should().Be("ACTIVE");
@@ -374,20 +374,20 @@ public class FluentBuilderCompatibilityTests
         request.Should().NotBeNull();
         request.KeyConditionExpression.Should().Be("pk = :p0 AND sk BETWEEN :p1 AND :p2");
         request.FilterExpression.Should().Be("amount >= :amount AND #status = :filterStatus");
-        
+
         // Verify all parameters are correctly formatted
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
         request.ExpressionAttributeValues[":p0"].S.Should().Be("USER#123");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
         request.ExpressionAttributeValues[":p1"].S.Should().Be("2023-12-16T10:30:00.0000000Z");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":p2");
         request.ExpressionAttributeValues[":p2"].S.Should().Be("2024-01-15T10:30:00.0000000Z");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":amount");
         request.ExpressionAttributeValues[":amount"].N.Should().Be("99.99");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":filterStatus");
         request.ExpressionAttributeValues[":filterStatus"].S.Should().Be("ACTIVE");
     }
@@ -411,7 +411,7 @@ public class FluentBuilderCompatibilityTests
         var request = builder
             .ForTable("TestTable")
             .WithItem(item)
-            .Where("(attribute_not_exists(version) OR version = {0}) AND amount <= {1:F2} AND #status IN ({2}, {3})", 
+            .Where("(attribute_not_exists(version) OR version = {0}) AND amount <= {1:F2} AND #status IN ({2}, {3})",
                 currentVersion, maxAmount, validStatuses[0], validStatuses[1])
             .WithAttribute("#status", "status")
             .ToPutItemRequest();
@@ -419,16 +419,16 @@ public class FluentBuilderCompatibilityTests
         // Assert - Complex conditions should work with multiple parameter types
         request.Should().NotBeNull();
         request.ConditionExpression.Should().Be("(attribute_not_exists(version) OR version = :p0) AND amount <= :p1 AND #status IN (:p2, :p3)");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
         request.ExpressionAttributeValues[":p0"].N.Should().Be("0");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
         request.ExpressionAttributeValues[":p1"].N.Should().Be("1000.00");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":p2");
         request.ExpressionAttributeValues[":p2"].S.Should().Be("DRAFT");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":p3");
         request.ExpressionAttributeValues[":p3"].S.Should().Be("PENDING");
     }
@@ -459,22 +459,22 @@ public class FluentBuilderCompatibilityTests
         // Assert - Complex nested conditions should work
         request.Should().NotBeNull();
         request.FilterExpression.Should().Be("(createdAt BETWEEN :startDate AND :endDate) AND (amount BETWEEN :minAmount AND :maxAmount) AND (#status = :status1 OR #status = :status2)");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":startDate");
         request.ExpressionAttributeValues[":startDate"].S.Should().Be("2024-01-01T00:00:00.0000000Z");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":endDate");
         request.ExpressionAttributeValues[":endDate"].S.Should().Be("2024-12-31T23:59:59.0000000Z");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":minAmount");
         request.ExpressionAttributeValues[":minAmount"].N.Should().Be("1000.5");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":maxAmount");
         request.ExpressionAttributeValues[":maxAmount"].N.Should().Be("5000.75");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":status1");
         request.ExpressionAttributeValues[":status1"].S.Should().Be("ACTIVE");
-        
+
         request.ExpressionAttributeValues.Should().ContainKey(":status2");
         request.ExpressionAttributeValues[":status2"].S.Should().Be("PENDING");
     }
@@ -702,11 +702,11 @@ public class FluentBuilderCompatibilityTests
         var testDate = new DateTime(2024, 1, 15, 10, 30, 0, DateTimeKind.Utc);
         var testGuid = Guid.Parse("12345678-1234-1234-1234-123456789012");
         var testEnum = ReturnValue.ALL_OLD;
-        
+
         var builder = new QueryRequestBuilder(_mockClient);
         var request = builder
             .ForTable("TestTable")
-            .Where("pk = {0} AND created = {1:o} AND requestId = {2:D} AND status = {3} AND amount = {4:F2}", 
+            .Where("pk = {0} AND created = {1:o} AND requestId = {2:D} AND status = {3} AND amount = {4:F2}",
                 "USER#123", testDate, testGuid, testEnum, 99.99m)
             .ToQueryRequest();
 

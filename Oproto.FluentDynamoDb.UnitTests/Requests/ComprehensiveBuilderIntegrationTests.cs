@@ -313,7 +313,7 @@ public class ComprehensiveBuilderIntegrationTests
         var request = builder
             .ForTable("TestTable")
             .WithItem(item)
-            .Where("(attribute_not_exists(version) OR version = {0}) AND amount <= {1:F2} AND #status IN ({2}, {3})", 
+            .Where("(attribute_not_exists(version) OR version = {0}) AND amount <= {1:F2} AND #status IN ({2}, {3})",
                 currentVersion, maxAmount, validStatuses[0], validStatuses[1])
             .WithAttribute("#status", "status")
             .ToPutItemRequest();
@@ -526,7 +526,7 @@ public class ComprehensiveBuilderIntegrationTests
         request.Limit.Should().Be(20);
         request.ScanIndexForward.Should().BeFalse();
         request.ReturnConsumedCapacity.Should().Be(Amazon.DynamoDBv2.ReturnConsumedCapacity.INDEXES);
-        
+
         // Verify all parameters are correctly set
         request.ExpressionAttributeValues[":p0"].S.Should().Be("CATEGORY#electronics");
         request.ExpressionAttributeValues[":p2"].N.Should().Be("100");
@@ -567,7 +567,7 @@ public class ComprehensiveBuilderIntegrationTests
         request.Segment.Should().Be(0);
         request.TotalSegments.Should().Be(4);
         request.ReturnConsumedCapacity.Should().Be(Amazon.DynamoDBv2.ReturnConsumedCapacity.TOTAL);
-        
+
         // Verify parameters
         request.ExpressionAttributeValues[":status1"].S.Should().Be("ACTIVE");
         request.ExpressionAttributeValues[":status2"].S.Should().Be("PENDING");

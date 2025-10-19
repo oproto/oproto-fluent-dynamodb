@@ -35,7 +35,7 @@ public class PutItemRequestBuilder : IWithAttributeNames<PutItemRequestBuilder>,
     {
         _dynamoDbClient = dynamoDbClient;
     }
-    
+
     private PutItemRequest _req = new PutItemRequest();
     private readonly IAmazonDynamoDB _dynamoDbClient;
     private readonly AttributeValueInternal _attrV = new AttributeValueInternal();
@@ -68,56 +68,56 @@ public class PutItemRequestBuilder : IWithAttributeNames<PutItemRequestBuilder>,
     /// Gets the builder instance for method chaining.
     /// </summary>
     public PutItemRequestBuilder Self => this;
-    
+
     public PutItemRequestBuilder ForTable(string tableName)
     {
         _req.TableName = tableName;
         return this;
     }
-    
 
 
 
 
 
 
-    
+
+
     public PutItemRequestBuilder ReturnUpdatedNewValues()
     {
         _req.ReturnValues = ReturnValue.UPDATED_NEW;
         return this;
     }
-    
+
     public PutItemRequestBuilder ReturnUpdatedOldValues()
     {
         _req.ReturnValues = ReturnValue.UPDATED_OLD;
         return this;
     }
-    
+
     public PutItemRequestBuilder ReturnAllNewValues()
     {
         _req.ReturnValues = ReturnValue.ALL_NEW;
         return this;
     }
-    
+
     public PutItemRequestBuilder ReturnAllOldValues()
     {
         _req.ReturnValues = ReturnValue.ALL_OLD;
         return this;
     }
-    
+
     public PutItemRequestBuilder ReturnNone()
     {
         _req.ReturnValues = ReturnValue.NONE;
         return this;
     }
-    
+
     public PutItemRequestBuilder ReturnTotalConsumedCapacity()
     {
         _req.ReturnConsumedCapacity = Amazon.DynamoDBv2.ReturnConsumedCapacity.TOTAL;
         return this;
     }
-    
+
     public PutItemRequestBuilder ReturnConsumedCapacity(ReturnConsumedCapacity consumedCapacity)
     {
         _req.ReturnConsumedCapacity = consumedCapacity;
@@ -142,12 +142,12 @@ public class PutItemRequestBuilder : IWithAttributeNames<PutItemRequestBuilder>,
         return this;
     }
 
-    public PutItemRequestBuilder WithItem<TItemType>(TItemType item, Func<TItemType,Dictionary<string, AttributeValue>> modelMapper)
+    public PutItemRequestBuilder WithItem<TItemType>(TItemType item, Func<TItemType, Dictionary<string, AttributeValue>> modelMapper)
     {
         _req.Item = modelMapper(item);
         return this;
     }
-    
+
     public PutItemRequest ToPutItemRequest()
     {
         _req.ExpressionAttributeNames = _attrN.AttributeNames;

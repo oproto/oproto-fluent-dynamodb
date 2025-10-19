@@ -92,7 +92,7 @@ public static class WithFilterExpressionExtensions
     {
         return builder.SetFilterExpression(filterExpression);
     }
-    
+
     /// <summary>
     /// Specifies the filter expression using format string syntax with automatic parameter generation.
     /// This method allows you to use {0}, {1}, {2:format} syntax instead of manual parameter naming.

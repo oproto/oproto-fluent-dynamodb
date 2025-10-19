@@ -19,8 +19,8 @@ public static class FluentResultsExtensions
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A Result containing the GetItemResponse with mapped entity or error details.</returns>
     public static async Task<Result<GetItemResponse<T>>> ExecuteAsyncResult<T>(
-        this GetItemRequestBuilder builder, 
-        CancellationToken cancellationToken = default) 
+        this GetItemRequestBuilder builder,
+        CancellationToken cancellationToken = default)
         where T : class, IDynamoDbEntity
     {
         try
@@ -202,8 +202,8 @@ public static class FluentResultsExtensions
     /// <param name="item">The entity instance to put.</param>
     /// <returns>A Result containing the configured builder or error details.</returns>
     public static Result<PutItemRequestBuilder> WithItemResult<T>(
-        this PutItemRequestBuilder builder, 
-        T item) 
+        this PutItemRequestBuilder builder,
+        T item)
         where T : class, IDynamoDbEntity
     {
         try

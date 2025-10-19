@@ -3,13 +3,13 @@ using Oproto.FluentDynamoDb.Requests.Interfaces;
 
 namespace Oproto.FluentDynamoDb.Requests;
 
-public class TransactUpdateBuilder : 
+public class TransactUpdateBuilder :
     IWithKey<TransactUpdateBuilder>, IWithConditionExpression<TransactUpdateBuilder>, IWithAttributeNames<TransactUpdateBuilder>, IWithAttributeValues<TransactUpdateBuilder>, IWithUpdateExpression<TransactUpdateBuilder>
 {
     private readonly TransactWriteItem _req = new TransactWriteItem();
     private readonly AttributeValueInternal _attrV = new AttributeValueInternal();
     private readonly AttributeNameInternal _attrN = new AttributeNameInternal();
-    
+
     public TransactUpdateBuilder(string tableName)
     {
         _req.Update = new Update();
@@ -56,11 +56,11 @@ public class TransactUpdateBuilder :
     /// </summary>
     public TransactUpdateBuilder Self => this;
 
-    
 
-    
 
-    
+
+
+
     /// <summary>
     /// Sets the update expression on the builder.
     /// </summary>
@@ -72,11 +72,11 @@ public class TransactUpdateBuilder :
         return this;
     }
 
-    
 
 
 
-    
+
+
     public TransactUpdateBuilder ReturnOldValuesOnConditionCheckFailure()
     {
         _req.Update.ReturnValuesOnConditionCheckFailure = Amazon.DynamoDBv2.ReturnValuesOnConditionCheckFailure.ALL_OLD;

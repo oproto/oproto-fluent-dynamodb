@@ -46,7 +46,7 @@ public class ScanRequestBuilder :
     {
         _dynamoDbClient = dynamoDbClient;
     }
-    
+
     private ScanRequest _req = new ScanRequest() { ConsistentRead = false };
     private readonly IAmazonDynamoDB _dynamoDbClient;
     private readonly AttributeValueInternal _attrV = new AttributeValueInternal();
@@ -79,7 +79,7 @@ public class ScanRequestBuilder :
     /// Gets the builder instance for method chaining.
     /// </summary>
     public ScanRequestBuilder Self => this;
-    
+
     /// <summary>
     /// Specifies the table name for the scan operation.
     /// </summary>
@@ -90,9 +90,9 @@ public class ScanRequestBuilder :
         _req.TableName = tableName;
         return this;
     }
-    
 
-    
+
+
     /// <summary>
     /// Specifies which attributes to retrieve from each item.
     /// This reduces network traffic and can improve performance.
@@ -110,7 +110,7 @@ public class ScanRequestBuilder :
         _req.Select = Select.SPECIFIC_ATTRIBUTES;
         return this;
     }
-    
+
     /// <summary>
     /// Specifies a secondary index to scan instead of the main table.
     /// </summary>
@@ -121,7 +121,7 @@ public class ScanRequestBuilder :
         _req.IndexName = indexName;
         return this;
     }
-    
+
     /// <summary>
     /// Limits the number of items examined during the scan operation.
     /// Note: This limits items examined, not items returned. Filtering may result in fewer returned items.
@@ -133,7 +133,7 @@ public class ScanRequestBuilder :
         _req.Limit = limit;
         return this;
     }
-    
+
     /// <summary>
     /// Specifies where to start the scan operation for pagination.
     /// Use the LastEvaluatedKey from a previous scan response.
@@ -145,7 +145,7 @@ public class ScanRequestBuilder :
         _req.ExclusiveStartKey = exclusiveStartKey;
         return this;
     }
-    
+
     /// <summary>
     /// Enables strongly consistent reads for the scan operation.
     /// Note: Consistent reads consume twice the read capacity and are not supported on global secondary indexes.
@@ -156,7 +156,7 @@ public class ScanRequestBuilder :
         _req.ConsistentRead = true;
         return this;
     }
-    
+
     /// <summary>
     /// Configures parallel scanning by specifying which segment this scan should process.
     /// Use this to improve throughput on large tables by running multiple scan operations in parallel.
@@ -176,7 +176,7 @@ public class ScanRequestBuilder :
         _req.TotalSegments = totalSegments;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the scan to return only the count of items, not the items themselves.
     /// This is more efficient when you only need to know how many items match your criteria.
@@ -187,7 +187,7 @@ public class ScanRequestBuilder :
         _req.Select = Select.COUNT;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the scan operation to return total consumed capacity information.
     /// Useful for monitoring and optimizing DynamoDB usage costs.
@@ -198,7 +198,7 @@ public class ScanRequestBuilder :
         _req.ReturnConsumedCapacity = Amazon.DynamoDBv2.ReturnConsumedCapacity.TOTAL;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the scan operation to return consumed capacity information for indexes.
     /// </summary>
@@ -208,7 +208,7 @@ public class ScanRequestBuilder :
         _req.ReturnConsumedCapacity = Amazon.DynamoDBv2.ReturnConsumedCapacity.INDEXES;
         return this;
     }
-    
+
     /// <summary>
     /// Configures the scan operation to return consumed capacity information.
     /// </summary>
@@ -219,7 +219,7 @@ public class ScanRequestBuilder :
         _req.ReturnConsumedCapacity = consumedCapacity;
         return this;
     }
-    
+
 
 
 

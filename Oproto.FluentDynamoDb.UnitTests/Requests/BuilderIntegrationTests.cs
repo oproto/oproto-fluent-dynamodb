@@ -86,7 +86,7 @@ public class BuilderIntegrationTests
         // Arrange
         var testDate = new DateTime(2024, 1, 15, 10, 30, 0, DateTimeKind.Utc);
         var testDecimal = 99.99m;
-        
+
         // Act
         var builder = new QueryRequestBuilder(_mockClient);
         var request = builder
@@ -413,7 +413,7 @@ public class BuilderIntegrationTests
     {
         // Arrange
         var clientToken = Guid.NewGuid().ToString();
-        
+
         // Act
         var builder = new TransactWriteItemsRequestBuilder(_mockClient);
         var request = builder
@@ -472,7 +472,7 @@ public class BuilderIntegrationTests
     {
         // This test verifies that all existing method signatures still work
         // exactly as they did before the refactoring
-        
+
         // Query builder - existing usage pattern
         var queryBuilder = new QueryRequestBuilder(_mockClient);
         var queryRequest = queryBuilder
@@ -483,11 +483,11 @@ public class BuilderIntegrationTests
             .Take(10)
             .UsingConsistentRead()
             .ToQueryRequest();
-        
+
         queryRequest.Should().NotBeNull();
         queryRequest.KeyConditionExpression.Should().Be("pk = :pk");
         queryRequest.ExpressionAttributeValues[":pk"].S.Should().Be("USER#123");
-        
+
         // Get builder - existing usage pattern
         var getBuilder = new GetItemRequestBuilder(_mockClient);
         var getRequest = getBuilder
@@ -496,11 +496,11 @@ public class BuilderIntegrationTests
             .WithAttribute("#name", "name")
             .UsingConsistentRead()
             .ToGetItemRequest();
-        
+
         getRequest.Should().NotBeNull();
         getRequest.Key["pk"].S.Should().Be("USER#123");
         getRequest.Key["sk"].S.Should().Be("profile");
-        
+
         // Put builder - existing usage pattern
         var putBuilder = new PutItemRequestBuilder(_mockClient);
         var putRequest = putBuilder
@@ -509,7 +509,7 @@ public class BuilderIntegrationTests
             .Where("attribute_not_exists(id)")
             .ReturnAllOldValues()
             .ToPutItemRequest();
-        
+
         putRequest.Should().NotBeNull();
         putRequest.ConditionExpression.Should().Be("attribute_not_exists(id)");
         putRequest.ReturnValues.Should().Be(ReturnValue.ALL_OLD);
@@ -520,7 +520,7 @@ public class BuilderIntegrationTests
     {
         // Verify that method chaining returns the correct builder types
         // This ensures the Self property and extension methods work correctly
-        
+
         var queryBuilder = new QueryRequestBuilder(_mockClient);
         var chainedQuery = queryBuilder
             .ForTable("TestTable")
@@ -528,24 +528,24 @@ public class BuilderIntegrationTests
             .WithValue(":pk", "test")
             .WithAttribute("#attr", "attribute")
             .Take(10);
-        
+
         chainedQuery.Should().BeOfType<QueryRequestBuilder>();
-        
+
         var getBuilder = new GetItemRequestBuilder(_mockClient);
         var chainedGet = getBuilder
             .ForTable("TestTable")
             .WithKey("id", "123")
             .WithAttribute("#name", "name");
-        
+
         chainedGet.Should().BeOfType<GetItemRequestBuilder>();
-        
+
         var putBuilder = new PutItemRequestBuilder(_mockClient);
         var chainedPut = putBuilder
             .ForTable("TestTable")
             .WithItem(new Dictionary<string, AttributeValue>())
             .Where("condition")
             .WithValue(":val", "test");
-        
+
         chainedPut.Should().BeOfType<PutItemRequestBuilder>();
     }
 
@@ -557,9 +557,9 @@ public class BuilderIntegrationTests
     public void Builders_WithEmptyFormatString_ShouldThrowArgumentException()
     {
         var builder = new QueryRequestBuilder(_mockClient);
-        
+
         var act = () => builder.Where("", "value");
-        
+
         act.Should().Throw<ArgumentException>()
             .WithMessage("Format string cannot be null or empty.*");
     }
@@ -568,9 +568,9 @@ public class BuilderIntegrationTests
     public void Builders_WithMismatchedParameterCount_ShouldThrowArgumentException()
     {
         var builder = new QueryRequestBuilder(_mockClient);
-        
+
         var act = () => builder.Where("pk = {0} AND sk = {1}", "onlyOneValue");
-        
+
         act.Should().Throw<ArgumentException>()
             .WithMessage("*parameter index 1 but only 1 arguments were provided*");
     }
@@ -581,9 +581,9 @@ public class BuilderIntegrationTests
     public void Builders_WithNullArguments_ShouldThrowArgumentNullException()
     {
         var builder = new QueryRequestBuilder(_mockClient);
-        
+
         var act = () => builder.Where("pk = {0}", (object[])null!);
-        
+
         act.Should().Throw<ArgumentNullException>();
     }
 

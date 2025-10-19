@@ -49,7 +49,7 @@ public class BatchWriteItemBuilderTests
         // Arrange
         var builder = new BatchWriteItemBuilder(TableName);
         var testObject = new { Id = "test-id", Name = "test-name", Value = 42 };
-        
+
         Dictionary<string, AttributeValue> Mapper(object obj)
         {
             var testObj = (dynamic)obj;
@@ -168,15 +168,15 @@ public class BatchWriteItemBuilderTests
         result.Should().BeSameAs(builder);
         var writeRequests = builder.ToWriteRequests();
         writeRequests.Should().HaveCount(3);
-        
+
         // First request should be put
         writeRequests[0].PutRequest.Should().NotBeNull();
         writeRequests[0].PutRequest.Item.Should().BeEquivalentTo(putItem);
-        
+
         // Second request should be delete with dictionary key
         writeRequests[1].DeleteRequest.Should().NotBeNull();
         writeRequests[1].DeleteRequest.Key.Should().BeEquivalentTo(deleteKey);
-        
+
         // Third request should be delete with string key
         writeRequests[2].DeleteRequest.Should().NotBeNull();
         writeRequests[2].DeleteRequest.Key.Should().ContainKey("pk2");
@@ -199,17 +199,17 @@ public class BatchWriteItemBuilderTests
         // Assert
         var writeRequests = builder.ToWriteRequests();
         writeRequests.Should().HaveCount(4);
-        
+
         // Verify order and types
         writeRequests[0].PutRequest.Should().NotBeNull();
         writeRequests[0].PutRequest.Item["pk"].S.Should().Be("put1");
-        
+
         writeRequests[1].DeleteRequest.Should().NotBeNull();
         writeRequests[1].DeleteRequest.Key["pk"].S.Should().Be("delete1");
-        
+
         writeRequests[2].PutRequest.Should().NotBeNull();
         writeRequests[2].PutRequest.Item["pk"].S.Should().Be("put2");
-        
+
         writeRequests[3].DeleteRequest.Should().NotBeNull();
         writeRequests[3].DeleteRequest.Key["pk"].S.Should().Be("delete2");
         writeRequests[3].DeleteRequest.Key["sk"].S.Should().Be("sort2");

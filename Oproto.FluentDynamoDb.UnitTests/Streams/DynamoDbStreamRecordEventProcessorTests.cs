@@ -22,7 +22,7 @@ public class DynamoDbStreamRecordEventProcessorTests
                 Type = ""
             }
         };
-        
+
         var processor = new DynamoDbStreamRecordEventProcessor(record);
         await processor.Awaitable()
             .OnInsert(async envt => await Task.Run(() => { envt.Should().NotBeNull(); }))
@@ -31,7 +31,7 @@ public class DynamoDbStreamRecordEventProcessorTests
             .OnNonTtlDelete(async envt => await Task.Run(() => { Assert.Fail(""); }))
             .OnTtlDelete(async envt => await Task.Run(() => { Assert.Fail(""); }));
     }
-    
+
     [Fact]
     public async Task OnUpdateTestAsync()
     {
@@ -48,7 +48,7 @@ public class DynamoDbStreamRecordEventProcessorTests
                 Type = ""
             }
         };
-        
+
         var processor = new DynamoDbStreamRecordEventProcessor(record);
         await processor.Awaitable()
             .OnInsert(async envt => await Task.Run(() => { Assert.Fail(""); }))
@@ -57,7 +57,7 @@ public class DynamoDbStreamRecordEventProcessorTests
             .OnNonTtlDelete(async envt => await Task.Run(() => { Assert.Fail(""); }))
             .OnTtlDelete(async envt => await Task.Run(() => { Assert.Fail(""); }));
     }
-    
+
     [Fact]
     public async Task OnDeleteTestAsync()
     {
@@ -74,7 +74,7 @@ public class DynamoDbStreamRecordEventProcessorTests
                 Type = ""
             }
         };
-        
+
         var processor = new DynamoDbStreamRecordEventProcessor(record);
         await processor.Awaitable()
             .OnInsert(async envt => await Task.Run(() => { Assert.Fail(""); }))
@@ -83,7 +83,7 @@ public class DynamoDbStreamRecordEventProcessorTests
             .OnNonTtlDelete(async envt => await Task.Run(() => { envt.Should().NotBeNull(); }))
             .OnTtlDelete(async envt => await Task.Run(() => { Assert.Fail(""); }));
     }
-    
+
     [Fact]
     public async Task OnDeleteWithTtlTestAsync()
     {
@@ -100,7 +100,7 @@ public class DynamoDbStreamRecordEventProcessorTests
                 Type = "Service"
             }
         };
-        
+
         var processor = new DynamoDbStreamRecordEventProcessor(record);
         await processor.Awaitable()
             .OnInsert(async envt => await Task.Run(() => { Assert.Fail(""); }))

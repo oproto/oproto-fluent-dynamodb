@@ -20,12 +20,12 @@ public static class WithClientExtensions
     public static GetItemRequestBuilder WithClient(this GetItemRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new GetItemRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToGetItemRequest();
         var newBuilderRequestField = typeof(GetItemRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         // Copy attribute name mappings
         var originalAttrN = builder.GetAttributeNameHelper();
         var newBuilderAttrNField = typeof(GetItemRequestBuilder).GetField("_attrN", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -37,7 +37,7 @@ public static class WithClientExtensions
                 newAttrN.AttributeNames[kvp.Key] = kvp.Value;
             }
         }
-        
+
         return newBuilder;
     }
 
@@ -51,15 +51,15 @@ public static class WithClientExtensions
     public static QueryRequestBuilder WithClient(this QueryRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new QueryRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToQueryRequest();
         var newBuilderRequestField = typeof(QueryRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         // Copy attribute mappings
         CopyAttributeHelpers(builder.GetAttributeValueHelper(), builder.GetAttributeNameHelper(), newBuilder);
-        
+
         return newBuilder;
     }
 
@@ -73,15 +73,15 @@ public static class WithClientExtensions
     public static PutItemRequestBuilder WithClient(this PutItemRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new PutItemRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToPutItemRequest();
         var newBuilderRequestField = typeof(PutItemRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         // Copy attribute mappings
         CopyAttributeHelpers(builder.GetAttributeValueHelper(), builder.GetAttributeNameHelper(), newBuilder);
-        
+
         return newBuilder;
     }
 
@@ -95,15 +95,15 @@ public static class WithClientExtensions
     public static UpdateItemRequestBuilder WithClient(this UpdateItemRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new UpdateItemRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToUpdateItemRequest();
         var newBuilderRequestField = typeof(UpdateItemRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         // Copy attribute mappings
         CopyAttributeHelpers(builder.GetAttributeValueHelper(), builder.GetAttributeNameHelper(), newBuilder);
-        
+
         return newBuilder;
     }
 
@@ -117,15 +117,15 @@ public static class WithClientExtensions
     public static DeleteItemRequestBuilder WithClient(this DeleteItemRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new DeleteItemRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToDeleteItemRequest();
         var newBuilderRequestField = typeof(DeleteItemRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         // Copy attribute mappings
         CopyAttributeHelpers(builder.GetAttributeValueHelper(), builder.GetAttributeNameHelper(), newBuilder);
-        
+
         return newBuilder;
     }
 
@@ -139,15 +139,15 @@ public static class WithClientExtensions
     public static ScanRequestBuilder WithClient(this ScanRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new ScanRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToScanRequest();
         var newBuilderRequestField = typeof(ScanRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         // Copy attribute mappings
         CopyAttributeHelpers(builder.GetAttributeValueHelper(), builder.GetAttributeNameHelper(), newBuilder);
-        
+
         return newBuilder;
     }
 
@@ -161,12 +161,12 @@ public static class WithClientExtensions
     public static BatchGetItemRequestBuilder WithClient(this BatchGetItemRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new BatchGetItemRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToBatchGetItemRequest();
         var newBuilderRequestField = typeof(BatchGetItemRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         return newBuilder;
     }
 
@@ -180,12 +180,12 @@ public static class WithClientExtensions
     public static BatchWriteItemRequestBuilder WithClient(this BatchWriteItemRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new BatchWriteItemRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToBatchWriteItemRequest();
         var newBuilderRequestField = typeof(BatchWriteItemRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         return newBuilder;
     }
 
@@ -199,12 +199,12 @@ public static class WithClientExtensions
     public static TransactWriteItemsRequestBuilder WithClient(this TransactWriteItemsRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new TransactWriteItemsRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToTransactWriteItemsRequest();
         var newBuilderRequestField = typeof(TransactWriteItemsRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         return newBuilder;
     }
 
@@ -218,12 +218,12 @@ public static class WithClientExtensions
     public static TransactGetItemsRequestBuilder WithClient(this TransactGetItemsRequestBuilder builder, IAmazonDynamoDB client)
     {
         var newBuilder = new TransactGetItemsRequestBuilder(client);
-        
+
         // Copy the request configuration
         var originalRequest = builder.ToTransactGetItemsRequest();
         var newBuilderRequestField = typeof(TransactGetItemsRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
-        
+
         return newBuilder;
     }
 

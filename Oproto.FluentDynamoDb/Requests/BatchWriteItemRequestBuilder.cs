@@ -64,7 +64,7 @@ public class BatchWriteItemRequestBuilder
     {
         var builder = new BatchWriteItemBuilder(tableName);
         builderAction(builder);
-        
+
         var writeRequests = builder.ToWriteRequests();
         if (writeRequests.Count > 0)
         {
@@ -74,7 +74,7 @@ public class BatchWriteItemRequestBuilder
             }
             _req.RequestItems[tableName].AddRange(writeRequests);
         }
-        
+
         return this;
     }
 

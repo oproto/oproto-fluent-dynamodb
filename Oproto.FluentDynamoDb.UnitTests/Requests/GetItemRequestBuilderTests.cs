@@ -18,7 +18,7 @@ public class GetItemRequestBuilderTests
         req.Should().NotBeNull();
         req.TableName.Should().Be("TestTable");
     }
-    
+
     [Fact]
     public void WithKeyPkStringValueSuccess()
     {
@@ -31,7 +31,7 @@ public class GetItemRequestBuilderTests
         req.Key.Keys.Should().HaveCount(1);
         req.Key["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WithKeyPkSkStringValueSuccess()
     {
@@ -46,7 +46,7 @@ public class GetItemRequestBuilderTests
         req.Key["pk"].S.Should().Be("1");
         req.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     [Fact]
     public void WithKeyPkSkAttributeValueSuccess()
     {
@@ -61,7 +61,7 @@ public class GetItemRequestBuilderTests
         req.Key["pk"].S.Should().Be("1");
         req.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
@@ -73,7 +73,7 @@ public class GetItemRequestBuilderTests
         req.ExpressionAttributeNames.Should().HaveCount(1);
         req.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
@@ -85,7 +85,7 @@ public class GetItemRequestBuilderTests
         req.ExpressionAttributeNames.Should().HaveCount(1);
         req.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNameSuccess()
     {
@@ -107,7 +107,7 @@ public class GetItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ProjectionExpression.Should().Be("description, price");
     }
-    
+
     [Fact]
     public void ReturnConsumedCapacitySuccess()
     {
@@ -117,7 +117,7 @@ public class GetItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
-    
+
     [Fact]
     public void ReturnTotalConsumedCapacitySuccess()
     {
@@ -127,7 +127,7 @@ public class GetItemRequestBuilderTests
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().Be(ReturnConsumedCapacity.TOTAL);
     }
-    
+
     [Fact]
     public void UsingConsistentReadSuccess()
     {

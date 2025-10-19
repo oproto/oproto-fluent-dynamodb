@@ -18,9 +18,9 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.Should().NotBeNull();
         req.ConditionCheck.TableName.Should().Be("TestTable");
     }
-    
+
     #region Keys
-    
+
     [Fact]
     public void WithKeyPkStringValueSuccess()
     {
@@ -34,7 +34,7 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.Key.Keys.Should().HaveCount(1);
         req.ConditionCheck.Key["pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void WithKeyPkSkStringValueSuccess()
     {
@@ -50,7 +50,7 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.Key["pk"].S.Should().Be("1");
         req.ConditionCheck.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     [Fact]
     public void WithKeyPkSkAttributeValueSuccess()
     {
@@ -66,11 +66,11 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.Key["pk"].S.Should().Be("1");
         req.ConditionCheck.Key["sk"].S.Should().Be("abcd");
     }
-    
+
     #endregion Keys
-    
+
     #region Attributes
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
@@ -83,7 +83,7 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.ExpressionAttributeNames.Should().HaveCount(1);
         req.ConditionCheck.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
@@ -96,7 +96,7 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.ExpressionAttributeNames.Should().HaveCount(1);
         req.ConditionCheck.ExpressionAttributeNames["#pk"].Should().Be("pk");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeNameSuccess()
     {
@@ -123,7 +123,7 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.ExpressionAttributeValues[":pk"].S.Should().Be("1");
 
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeValuesLambdaSuccess()
     {
@@ -150,7 +150,7 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.ExpressionAttributeValues.Should().HaveCount(1);
         req.ConditionCheck.ExpressionAttributeValues[":pk"].S.Should().Be("1");
     }
-    
+
     [Fact]
     public void UsingExpressionAttributeBooleanValueSuccess()
     {
@@ -165,7 +165,7 @@ public class TransactConditionCheckBuilderTests
     }
 
     #endregion Attributes
-    
+
     [Fact]
     public void WhereSuccess()
     {
@@ -176,7 +176,7 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.Should().NotBeNull();
         req.ConditionCheck.ConditionExpression.Should().Be("#pk = :pk");
     }
-    
+
     [Fact]
     public void ReturnOldValuesOnConditionCheckFailureSuccess()
     {
@@ -187,7 +187,7 @@ public class TransactConditionCheckBuilderTests
         req.ConditionCheck.Should().NotBeNull();
         req.ConditionCheck.ReturnValuesOnConditionCheckFailure.Should().Be(ReturnValuesOnConditionCheckFailure.ALL_OLD);
     }
-    
+
     [Fact]
     public void ReturnNoValuesOnConditionCheckFailureSuccess()
     {

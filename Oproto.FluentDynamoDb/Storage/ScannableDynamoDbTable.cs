@@ -31,12 +31,12 @@ internal class ScannableDynamoDbTable : IScannableDynamoDbTable
     /// Gets the DynamoDB client from the underlying table.
     /// </summary>
     public IAmazonDynamoDB DynamoDbClient => _table.DynamoDbClient;
-    
+
     /// <summary>
     /// Gets the table name from the underlying table.
     /// </summary>
     public string Name => _table.Name;
-    
+
     /// <summary>
     /// Gets the underlying table instance, providing access to custom properties and methods.
     /// </summary>
@@ -46,22 +46,22 @@ internal class ScannableDynamoDbTable : IScannableDynamoDbTable
     /// Gets a builder for GetItem operations (pass-through to underlying table).
     /// </summary>
     public GetItemRequestBuilder Get => _table.Get;
-    
+
     /// <summary>
     /// Gets a builder for PutItem operations (pass-through to underlying table).
     /// </summary>
     public PutItemRequestBuilder Put => _table.Put;
-    
+
     /// <summary>
     /// Gets a builder for UpdateItem operations (pass-through to underlying table).
     /// </summary>
     public UpdateItemRequestBuilder Update => _table.Update;
-    
+
     /// <summary>
     /// Gets a builder for Query operations (pass-through to underlying table).
     /// </summary>
     public QueryRequestBuilder Query => _table.Query;
-    
+
     /// <summary>
     /// Gets a builder for DeleteItem operations (pass-through to underlying table).
     /// </summary>

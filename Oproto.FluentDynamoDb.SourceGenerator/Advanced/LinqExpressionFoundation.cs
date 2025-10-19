@@ -92,7 +92,7 @@ public static class LinqExpressionFoundation
         foreach (var property in entity.Properties)
         {
             var propertyType = GetBaseType(property.PropertyType);
-            
+
             // Generate getter
             sb.AppendLine($"            /// <summary>");
             sb.AppendLine($"            /// Gets the {property.PropertyName} property value.");
@@ -158,7 +158,7 @@ public static class LinqExpressionFoundation
             foreach (var property in queryableProperties)
             {
                 var operations = string.Join(", ", property.Queryable!.SupportedOperations.Select(op => $"DynamoDbOperation.{op}"));
-                var indexes = property.Queryable.AvailableInIndexes != null 
+                var indexes = property.Queryable.AvailableInIndexes != null
                     ? string.Join(", ", property.Queryable.AvailableInIndexes.Select(idx => $"\"{idx}\""))
                     : "";
 
@@ -309,7 +309,7 @@ public static class LinqExpressionFoundation
     private static string GetDynamoDbType(string propertyType)
     {
         var baseType = GetBaseType(propertyType);
-        
+
         return baseType switch
         {
             "string" => "S",
@@ -332,7 +332,7 @@ public static class LinqExpressionFoundation
         var numericTypes = new[]
         {
             "int", "long", "double", "float", "decimal", "byte", "short", "uint", "ulong", "ushort",
-            "System.Int32", "System.Int64", "System.Double", "System.Single", "System.Decimal", 
+            "System.Int32", "System.Int64", "System.Double", "System.Single", "System.Decimal",
             "System.Byte", "System.Int16", "System.UInt32", "System.UInt64", "System.UInt16"
         };
         return numericTypes.Contains(baseType);

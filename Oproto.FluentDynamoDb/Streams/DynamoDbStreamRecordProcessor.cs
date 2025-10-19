@@ -22,7 +22,7 @@ public class DynamoDbStreamRecordProcessor
     {
         Record = record;
     }
-    
+
     public async Task<DynamoDbStreamRecordProcessor> Awaitable()
     {
         return await Task.Run(() => this);
@@ -31,12 +31,12 @@ public class DynamoDbStreamRecordProcessor
 
 public static class DynamoDbStreamProcessorExtensions
 {
-    private static async Task InternalProcess(this Task<DynamoDbStreamRecordProcessor> recordProcessor, Func<Task<DynamoDbStreamRecordEventProcessor>,Task> processFunc)
+    private static async Task InternalProcess(this Task<DynamoDbStreamRecordProcessor> recordProcessor, Func<Task<DynamoDbStreamRecordEventProcessor>, Task> processFunc)
     {
         DynamoDbStreamRecordEventProcessor eventProcessor = new(recordProcessor.Result.Record);
         await processFunc(eventProcessor.Awaitable());
     }
-    
+
     /// <summary>
     /// Conditionally processes the stream record if the primary key matches the specified value.
     /// This is useful for filtering stream records to only process specific entities.
@@ -56,10 +56,10 @@ public static class DynamoDbStreamProcessorExtensions
     /// </code>
     /// </example>
     public static async Task<DynamoDbStreamRecordProcessor> OnMatch(
-        this Task<DynamoDbStreamRecordProcessor> recordProcessor, string pkName, string pkValue, Func<Task<DynamoDbStreamRecordEventProcessor>,Task> processFunc)
+        this Task<DynamoDbStreamRecordProcessor> recordProcessor, string pkName, string pkValue, Func<Task<DynamoDbStreamRecordEventProcessor>, Task> processFunc)
     {
         await recordProcessor;
-        if (recordProcessor.Result.Record.Dynamodb.Keys[pkName].S==pkValue)
+        if (recordProcessor.Result.Record.Dynamodb.Keys[pkName].S == pkValue)
         {
             await InternalProcess(recordProcessor, processFunc);
         }
@@ -81,13 +81,13 @@ public static class DynamoDbStreamProcessorExtensions
         string pkName, string pkValue, string skName, string skValue, Func<Task<DynamoDbStreamRecordEventProcessor>, Task> processFunc)
     {
         await recordProcessor;
-        if (recordProcessor.Result.Record.Dynamodb.Keys[pkName].S==pkValue && recordProcessor.Result.Record.Dynamodb.Keys[skName].S==skValue)
+        if (recordProcessor.Result.Record.Dynamodb.Keys[pkName].S == pkValue && recordProcessor.Result.Record.Dynamodb.Keys[skName].S == skValue)
         {
             await InternalProcess(recordProcessor, processFunc);
         }
         return recordProcessor.Result;
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -101,7 +101,7 @@ public static class DynamoDbStreamProcessorExtensions
         string skName, string skValue, Func<Task<DynamoDbStreamRecordEventProcessor>, Task> processFunc)
     {
         await recordProcessor;
-        if (recordProcessor.Result.Record.Dynamodb.Keys[skName].S==skValue)
+        if (recordProcessor.Result.Record.Dynamodb.Keys[skName].S == skValue)
         {
             await InternalProcess(recordProcessor, processFunc);
         }
@@ -120,16 +120,16 @@ public static class DynamoDbStreamProcessorExtensions
     /// <returns></returns>
     public static async Task<DynamoDbStreamRecordProcessor> OnPatternMatch(
         this Task<DynamoDbStreamRecordProcessor> recordProcessor,
-        string pkName, string pkValue, string skName, Regex skPattern, Func<Task<DynamoDbStreamRecordEventProcessor>,Task> processFunc)
+        string pkName, string pkValue, string skName, Regex skPattern, Func<Task<DynamoDbStreamRecordEventProcessor>, Task> processFunc)
     {
-        if (recordProcessor.Result.Record.Dynamodb.Keys[pkName].S==pkValue
+        if (recordProcessor.Result.Record.Dynamodb.Keys[pkName].S == pkValue
             && skPattern.IsMatch(recordProcessor.Result.Record.Dynamodb.Keys[skName].S))
         {
             await InternalProcess(recordProcessor, processFunc);
         }
         return recordProcessor.Result;
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -140,7 +140,7 @@ public static class DynamoDbStreamProcessorExtensions
     /// <returns></returns>
     public static async Task<DynamoDbStreamRecordProcessor> OnSortKeyPatternMatch(
         this Task<DynamoDbStreamRecordProcessor> recordProcessor,
-        string skName, Regex skPattern, Func<Task<DynamoDbStreamRecordEventProcessor>,Task> processFunc)
+        string skName, Regex skPattern, Func<Task<DynamoDbStreamRecordEventProcessor>, Task> processFunc)
     {
         if (skPattern.IsMatch(recordProcessor.Result.Record.Dynamodb.Keys[skName].S))
         {
@@ -148,7 +148,7 @@ public static class DynamoDbStreamProcessorExtensions
         }
         return recordProcessor.Result;
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -159,7 +159,7 @@ public static class DynamoDbStreamProcessorExtensions
     /// <returns></returns>
     public static async Task<DynamoDbStreamRecordProcessor> OnPatternMatch(
         this Task<DynamoDbStreamRecordProcessor> recordProcessor,
-        string pkName, Regex pkPattern, Func<Task<DynamoDbStreamRecordEventProcessor>,Task> processFunc)
+        string pkName, Regex pkPattern, Func<Task<DynamoDbStreamRecordEventProcessor>, Task> processFunc)
     {
         if (pkPattern.IsMatch(recordProcessor.Result.Record.Dynamodb.Keys[pkName].S))
         {
@@ -167,7 +167,7 @@ public static class DynamoDbStreamProcessorExtensions
         }
         return recordProcessor.Result;
     }
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -181,7 +181,7 @@ public static class DynamoDbStreamProcessorExtensions
     public static async Task<DynamoDbStreamRecordProcessor> OnPatternMatch(
         this Task<DynamoDbStreamRecordProcessor> recordProcessor,
         string pkName, Regex pkPattern, string skName, Regex skPattern,
-        Func<Task<DynamoDbStreamRecordEventProcessor>,Task> processFunc)
+        Func<Task<DynamoDbStreamRecordEventProcessor>, Task> processFunc)
     {
         if (pkPattern.IsMatch(recordProcessor.Result.Record.Dynamodb.Keys[pkName].S) && skPattern.IsMatch(recordProcessor.Result.Record.Dynamodb.Keys[skName].S))
         {

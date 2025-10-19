@@ -64,7 +64,7 @@ public static class WithAttributeValuesExtensions
         builder.GetAttributeValueHelper().WithValues(attributeValues);
         return builder.Self;
     }
-    
+
     /// <summary>
     /// Adds multiple attribute values using a configuration action.
     /// These values are referenced in expressions using parameter names (e.g., ":value").
@@ -93,7 +93,7 @@ public static class WithAttributeValuesExtensions
         builder.GetAttributeValueHelper().WithValues(attributeValueFunc);
         return builder.Self;
     }
-    
+
     /// <summary>
     /// Adds a string attribute value for use in expressions.
     /// The value is automatically converted to a DynamoDB string type.
@@ -124,7 +124,7 @@ public static class WithAttributeValuesExtensions
         builder.GetAttributeValueHelper().WithValue(attributeName, attributeValue, conditionalUse);
         return builder.Self;
     }
-    
+
     /// <summary>
     /// Adds a boolean attribute value for use in expressions.
     /// The value is automatically converted to a DynamoDB boolean type.
@@ -140,7 +140,7 @@ public static class WithAttributeValuesExtensions
         builder.GetAttributeValueHelper().WithValue(attributeName, attributeValue, conditionalUse);
         return builder.Self;
     }
-    
+
     /// <summary>
     /// Adds a numeric attribute value for use in expressions.
     /// The value is automatically converted to a DynamoDB number type.
@@ -156,7 +156,7 @@ public static class WithAttributeValuesExtensions
         builder.GetAttributeValueHelper().WithValue(attributeName, attributeValue, conditionalUse);
         return builder.Self;
     }
-    
+
     /// <summary>
     /// Adds a map attribute value (string dictionary) for use in expressions.
     /// The dictionary is automatically converted to a DynamoDB map type with string values.
@@ -172,7 +172,7 @@ public static class WithAttributeValuesExtensions
         builder.GetAttributeValueHelper().WithValue(attributeName, attributeValue, conditionalUse);
         return builder.Self;
     }
-    
+
     /// <summary>
     /// Adds a map attribute value (AttributeValue dictionary) for use in expressions.
     /// This provides full control over the DynamoDB map structure and types.
