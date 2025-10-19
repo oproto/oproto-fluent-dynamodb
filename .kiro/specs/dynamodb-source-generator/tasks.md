@@ -325,7 +325,7 @@ Convert the DynamoDB Source Generator design into a series of incremental implem
   - Update test expectations to match actual diagnostic behavior
   - _Requirements: Diagnostic system accuracy and test alignment_
 
-- [ ] 35. Fix missing diagnostic generation for error scenarios
+- [x] 35. Fix missing diagnostic generation for error scenarios
   - Fix `SourceGenerator_WithMultiplePartitionKeys_GeneratesDiagnostics` expecting diagnostics but getting none
   - Fix `SourceGenerator_WithNonPartialClass_GeneratesDiagnostics` expecting diagnostics but getting none
   - Fix `SourceGenerator_WithErrorScenarios_GeneratesDiagnostics` expecting diagnostics but getting none

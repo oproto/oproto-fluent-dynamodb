@@ -122,74 +122,16 @@ namespace TestNamespace
 
     private static GeneratorTestResult GenerateCode(string source)
     {
-        // Include attribute definitions in the compilation
-        var attributeSource = @"
-using System;
-
-namespace Oproto.FluentDynamoDb.Attributes
-{
-    [AttributeUsage(AttributeTargets.Class)]
-    public class DynamoDbTableAttribute : Attribute
-    {
-        public string TableName { get; }
-        public string? EntityDiscriminator { get; set; }
-        public DynamoDbTableAttribute(string tableName) => TableName = tableName;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class DynamoDbAttributeAttribute : Attribute
-    {
-        public string AttributeName { get; }
-        public DynamoDbAttributeAttribute(string attributeName) => AttributeName = attributeName;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class PartitionKeyAttribute : Attribute
-    {
-        public string? Prefix { get; set; }
-        public string? Separator { get; set; } = ""#"";
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class SortKeyAttribute : Attribute
-    {
-        public string? Prefix { get; set; }
-        public string? Separator { get; set; } = ""#"";
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class GlobalSecondaryIndexAttribute : Attribute
-    {
-        public string IndexName { get; }
-        public bool IsPartitionKey { get; set; }
-        public bool IsSortKey { get; set; }
-        public string? KeyFormat { get; set; }
-        public GlobalSecondaryIndexAttribute(string indexName) => IndexName = indexName;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class RelatedEntityAttribute : Attribute
-    {
-        public string SortKeyPattern { get; }
-        public Type? EntityType { get; set; }
-        public RelatedEntityAttribute(string sortKeyPattern) => SortKeyPattern = sortKeyPattern;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class QueryableAttribute : Attribute
-    {
-        public string[] SupportedOperations { get; set; } = Array.Empty<string>();
-        public string[]? AvailableInIndexes { get; set; }
-    }
-}";
-
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
             new[] { 
-                CSharpSyntaxTree.ParseText(source),
-                CSharpSyntaxTree.ParseText(attributeSource)
+                CSharpSyntaxTree.ParseText(source)
             },
-            new[] { MetadataReference.CreateFromFile(typeof(object).Assembly.Location) },
+            new[] { 
+                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Oproto.FluentDynamoDb.Attributes.DynamoDbTableAttribute).Assembly.Location)
+            },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var generator = new DynamoDbSourceGenerator();

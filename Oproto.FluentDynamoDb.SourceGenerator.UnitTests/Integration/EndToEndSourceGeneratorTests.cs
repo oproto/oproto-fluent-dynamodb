@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Oproto.FluentDynamoDb.SourceGenerator;
 using System.Collections.Immutable;
+using System.IO;
 
 namespace Oproto.FluentDynamoDb.SourceGenerator.UnitTests.Integration;
 
@@ -355,9 +356,11 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        result.Diagnostics.Should().HaveCount(1);
-        result.Diagnostics[0].Id.Should().Be("DYNDB001");
-        result.Diagnostics[0].Severity.Should().Be(DiagnosticSeverity.Error);
+        // Filter out compilation errors and only look at source generator diagnostics
+        var sourceGeneratorDiagnostics = result.Diagnostics.Where(d => d.Id.StartsWith("DYNDB")).ToArray();
+        sourceGeneratorDiagnostics.Should().HaveCount(1);
+        sourceGeneratorDiagnostics[0].Id.Should().Be("DYNDB001");
+        sourceGeneratorDiagnostics[0].Severity.Should().Be(DiagnosticSeverity.Error);
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -387,9 +390,11 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        result.Diagnostics.Should().HaveCount(1);
-        result.Diagnostics[0].Id.Should().Be("DYNDB002");
-        result.Diagnostics[0].Severity.Should().Be(DiagnosticSeverity.Error);
+        // Filter out compilation errors and only look at source generator diagnostics
+        var sourceGeneratorDiagnostics = result.Diagnostics.Where(d => d.Id.StartsWith("DYNDB")).ToArray();
+        sourceGeneratorDiagnostics.Should().HaveCount(1);
+        sourceGeneratorDiagnostics[0].Id.Should().Be("DYNDB002");
+        sourceGeneratorDiagnostics[0].Severity.Should().Be(DiagnosticSeverity.Error);
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -415,9 +420,11 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        result.Diagnostics.Should().HaveCount(1);
-        result.Diagnostics[0].Id.Should().Be("DYNDB010");
-        result.Diagnostics[0].Severity.Should().Be(DiagnosticSeverity.Error);
+        // Filter out compilation errors and only look at source generator diagnostics
+        var sourceGeneratorDiagnostics = result.Diagnostics.Where(d => d.Id.StartsWith("DYNDB")).ToArray();
+        sourceGeneratorDiagnostics.Should().HaveCount(1);
+        sourceGeneratorDiagnostics[0].Id.Should().Be("DYNDB010");
+        sourceGeneratorDiagnostics[0].Severity.Should().Be(DiagnosticSeverity.Error);
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -469,92 +476,37 @@ namespace TestNamespace
 
     private static GeneratorTestResult GenerateCode(string source)
     {
-        // Include attribute definitions in the compilation
-        var attributeSource = @"
-using System;
-
-namespace Oproto.FluentDynamoDb.Attributes
-{
-    [AttributeUsage(AttributeTargets.Class)]
-    public class DynamoDbTableAttribute : Attribute
-    {
-        public string TableName { get; }
-        public string? EntityDiscriminator { get; set; }
-        public DynamoDbTableAttribute(string tableName) => TableName = tableName;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class DynamoDbAttributeAttribute : Attribute
-    {
-        public string AttributeName { get; }
-        public DynamoDbAttributeAttribute(string attributeName) => AttributeName = attributeName;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class PartitionKeyAttribute : Attribute
-    {
-        public string? Prefix { get; set; }
-        public string? Separator { get; set; } = ""#"";
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class SortKeyAttribute : Attribute
-    {
-        public string? Prefix { get; set; }
-        public string? Separator { get; set; } = ""#"";
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class GlobalSecondaryIndexAttribute : Attribute
-    {
-        public string IndexName { get; }
-        public bool IsPartitionKey { get; set; }
-        public bool IsSortKey { get; set; }
-        public string? KeyFormat { get; set; }
-        public GlobalSecondaryIndexAttribute(string indexName) => IndexName = indexName;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class RelatedEntityAttribute : Attribute
-    {
-        public string SortKeyPattern { get; }
-        public Type? EntityType { get; set; }
-        public RelatedEntityAttribute(string sortKeyPattern) => SortKeyPattern = sortKeyPattern;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class QueryableAttribute : Attribute
-    {
-        public string[] SupportedOperations { get; set; } = Array.Empty<string>();
-        public string[]? AvailableInIndexes { get; set; }
-    }
-}";
-
         var compilation = CSharpCompilation.Create(
             "TestAssembly",
             new[] { 
-                CSharpSyntaxTree.ParseText(source),
-                CSharpSyntaxTree.ParseText(attributeSource)
+                CSharpSyntaxTree.ParseText(source)
             },
             new[] { 
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location)
+                MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Oproto.FluentDynamoDb.Attributes.DynamoDbTableAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(System.Attribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(System.Runtime.Serialization.SerializationInfo).Assembly.Location),
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Runtime.dll"))
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var generator = new DynamoDbSourceGenerator();
         var driver = CSharpGeneratorDriver.Create(generator);
         
-        driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
+        driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var driverDiagnostics);
 
         var generatedSources = outputCompilation.SyntaxTrees
             .Skip(compilation.SyntaxTrees.Count())
             .Select(tree => new GeneratedSource(tree.FilePath, tree.GetText()))
             .ToArray();
 
+        // Get all diagnostics from the output compilation, which includes source generator diagnostics
+        var allDiagnostics = outputCompilation.GetDiagnostics();
+
         return new GeneratorTestResult
         {
-            Diagnostics = diagnostics,
+            Diagnostics = allDiagnostics,
             GeneratedSources = generatedSources
         };
     }

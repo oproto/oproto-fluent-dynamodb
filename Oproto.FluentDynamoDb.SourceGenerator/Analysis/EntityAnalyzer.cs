@@ -829,16 +829,19 @@ public class EntityAnalyzer
                 // Fallback to syntax-based matching for cases where semantic model can't resolve
                 var attributeNameText = attr.Name.ToString();
                 var targetName = attributeName.Replace("Attribute", "");
-                var shortTargetName = targetName.Replace("Attribute", "");
                 
+                // More comprehensive matching for attribute names
                 return attributeNameText == attributeName ||
                        attributeNameText == targetName ||
-                       attributeNameText == shortTargetName ||
                        attributeNameText.EndsWith("." + attributeName) ||
                        attributeNameText.EndsWith("." + targetName) ||
-                       attributeNameText.EndsWith("." + shortTargetName) ||
                        // Handle cases where the attribute name in source doesn't have "Attribute" suffix
-                       (attributeName.EndsWith("Attribute") && attributeNameText == attributeName.Substring(0, attributeName.Length - 9));
+                       (attributeName.EndsWith("Attribute") && attributeNameText == attributeName.Substring(0, attributeName.Length - 9)) ||
+                       // Additional matching for common patterns
+                       (attributeName == "PartitionKeyAttribute" && (attributeNameText == "PartitionKey" || attributeNameText.EndsWith(".PartitionKey"))) ||
+                       (attributeName == "SortKeyAttribute" && (attributeNameText == "SortKey" || attributeNameText.EndsWith(".SortKey"))) ||
+                       (attributeName == "DynamoDbTableAttribute" && (attributeNameText == "DynamoDbTable" || attributeNameText.EndsWith(".DynamoDbTable"))) ||
+                       (attributeName == "DynamoDbAttributeAttribute" && (attributeNameText == "DynamoDbAttribute" || attributeNameText.EndsWith(".DynamoDbAttribute")));
             });
     }
 
