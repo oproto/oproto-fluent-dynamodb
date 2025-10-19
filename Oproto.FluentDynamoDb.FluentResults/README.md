@@ -37,10 +37,12 @@ else
 
 ## Available Methods
 
-- `ExecuteAsyncResult<T>()` - For GetItem, Query, and Scan operations
+- `ExecuteAsyncResult<T>()` - For GetItem operations
+- `ToListAsyncResult<T>()` - For Query and Scan operations (1:1 mapping)
+- `ToCompositeEntityAsyncResult<T>()` - For Query operations (N:1 mapping)
+- `ToCompositeEntityListAsyncResult<T>()` - For Query and Scan operations (N:1 mapping)
 - `WithItemResult<T>()` - For configuring PutItem with entities
 - `ExecuteAsyncResult<T>(entity)` - For executing PutItem operations
-- `GetDynamoDbItemsResult<T>()` - For converting entities to DynamoDB items
 
 ## Requirements
 

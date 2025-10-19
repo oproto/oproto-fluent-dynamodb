@@ -57,6 +57,7 @@ public class EntityAnalyzer
         foreach (var property in entityModel.Properties)
         {
             ValidatePropertyModel(property);
+            ValidatePropertyPerformance(property);
         }
 
         // Validate entity configuration
@@ -693,13 +694,36 @@ public class EntityAnalyzer
             }
         }
 
+        // Warn about binary data properties
+        if (propertyModel.PropertyType == "byte[]" || propertyModel.PropertyType == "System.Byte[]")
+        {
+            ReportDiagnostic(DiagnosticDescriptors.PerformanceWarning,
+                propertyModel.PropertyDeclaration?.Identifier.GetLocation(),
+                propertyModel.PropertyName, propertyModel.PropertyType,
+                "Binary data properties may cause performance issues. Consider using native DynamoDB List (L) or Map (M) types");
+        }
+
         // Warn about complex collection types
         if (propertyModel.IsCollection && IsComplexCollectionType(propertyModel.PropertyType))
         {
             ReportDiagnostic(DiagnosticDescriptors.PerformanceWarning,
                 propertyModel.PropertyDeclaration?.Identifier.GetLocation(),
                 propertyModel.PropertyName, propertyModel.PropertyType,
-                "Complex collection types require JSON serialization which may impact performance");
+                "Complex collection types may cause performance issues. Consider using native DynamoDB List (L) or Map (M) types");
+        }
+
+        // Warn about nested complex objects
+        if (!propertyModel.IsCollection && !IsPrimitiveType(propertyModel.PropertyType) && 
+            propertyModel.PropertyType != "object" && !propertyModel.PropertyType.EndsWith("?"))
+        {
+            // Check if it's a complex nested object (not a simple value type)
+            if (IsComplexNestedType(propertyModel.PropertyType))
+            {
+                ReportDiagnostic(DiagnosticDescriptors.PerformanceWarning,
+                    propertyModel.PropertyDeclaration?.Identifier.GetLocation(),
+                    propertyModel.PropertyName, propertyModel.PropertyType,
+                    "Complex nested objects may cause performance issues. Consider using native DynamoDB List (L) or Map (M) types");
+            }
         }
     }
 
@@ -707,7 +731,65 @@ public class EntityAnalyzer
     {
         // Check if collection contains complex types
         var elementType = GetCollectionElementType(collectionType);
-        return !IsPrimitiveType(elementType);
+        
+        // Dictionary<string, object> and similar complex types are performance concerns
+        if (elementType.StartsWith("Dictionary<") || elementType.StartsWith("System.Collections.Generic.Dictionary<"))
+        {
+            return true;
+        }
+        
+        // Collections of complex objects (not primitive types)
+        return !IsPrimitiveType(elementType) && elementType != "object";
+    }
+
+    private string GetCollectionElementType(string collectionType)
+    {
+        // Handle nullable collections like List<T>?
+        var baseType = collectionType.TrimEnd('?');
+        
+        // Extract element type from generic collections
+        // Examples: List<string> -> string, IEnumerable<ChildEntity> -> ChildEntity
+        if (baseType.Contains('<') && baseType.Contains('>'))
+        {
+            var startIndex = baseType.IndexOf('<') + 1;
+            var endIndex = baseType.LastIndexOf('>');
+            if (endIndex > startIndex)
+            {
+                return baseType.Substring(startIndex, endIndex - startIndex).Trim();
+            }
+        }
+        
+        // Handle array types like string[] -> string
+        if (baseType.EndsWith("[]"))
+        {
+            return baseType.Substring(0, baseType.Length - 2);
+        }
+        
+        // If we can't determine the element type, return the original type
+        return baseType;
+    }
+
+    private bool IsComplexNestedType(string typeName)
+    {
+        // Skip nullable annotations
+        var baseType = typeName.TrimEnd('?');
+        
+        // These are complex types that may cause performance issues
+        if (baseType.StartsWith("Dictionary<") || baseType.StartsWith("System.Collections.Generic.Dictionary<"))
+        {
+            return true;
+        }
+        
+        // Custom classes/structs that aren't primitive types
+        if (!IsPrimitiveType(baseType) && 
+            baseType != "object" && 
+            !baseType.StartsWith("System.") && 
+            !baseType.Contains("[]"))
+        {
+            return true;
+        }
+        
+        return false;
     }
 
     private bool IsPrimitiveType(string typeName)
@@ -719,35 +801,14 @@ public class EntityAnalyzer
             "System.String", "System.Int32", "System.Int64", "System.Double", "System.Single",
             "System.Decimal", "System.Boolean", "System.DateTime", "System.DateTimeOffset",
             "System.Guid", "System.Byte", "System.Int16", "System.UInt32", "System.UInt64",
-            "System.UInt16", "System.SByte", "System.Char", "Ulid"
+            "System.UInt16", "System.SByte", "System.Char", "Ulid", "System.Ulid"
         };
 
         var baseType = typeName.TrimEnd('?');
         return primitiveTypes.Contains(baseType);
     }
 
-    private string GetCollectionElementType(string collectionType)
-    {
-        // Extract element type from collection types
-        if (collectionType.StartsWith("List<") && collectionType.EndsWith(">"))
-        {
-            return collectionType.Substring(5, collectionType.Length - 6);
-        }
-        if (collectionType.StartsWith("IList<") && collectionType.EndsWith(">"))
-        {
-            return collectionType.Substring(6, collectionType.Length - 7);
-        }
-        if (collectionType.StartsWith("ICollection<") && collectionType.EndsWith(">"))
-        {
-            return collectionType.Substring(12, collectionType.Length - 13);
-        }
-        if (collectionType.StartsWith("IEnumerable<") && collectionType.EndsWith(">"))
-        {
-            return collectionType.Substring(12, collectionType.Length - 13);
-        }
-        
-        return "object";
-    }
+
 
     private bool IsCollectionType(ITypeSymbol type)
     {
@@ -768,7 +829,7 @@ public class EntityAnalyzer
             "string", "int", "long", "double", "float", "decimal", "bool", "DateTime", "DateTimeOffset",
             "Guid", "byte[]", "System.String", "System.Int32", "System.Int64", "System.Double", 
             "System.Single", "System.Decimal", "System.Boolean", "System.DateTime", "System.DateTimeOffset",
-            "System.Guid", "System.Byte[]", "Ulid"
+            "System.Guid", "System.Byte[]", "Ulid", "System.Ulid"
         };
 
         // Remove nullable annotations for checking
@@ -910,6 +971,9 @@ public class EntityAnalyzer
                 entityModel.ClassName);
         }
 
+        // Check for complex relationship patterns that may impact scalability
+        ValidateRelationshipComplexity(entityModel);
+
         // Check for conflicting patterns
         var patterns = entityModel.Relationships.Select(r => r.SortKeyPattern).ToArray();
         for (int i = 0; i < patterns.Length; i++)
@@ -952,6 +1016,41 @@ public class EntityAnalyzer
                     entityModel.ClassDeclaration?.Identifier.GetLocation(),
                     relationship.PropertyName, relationship.EntityType);
             }
+        }
+    }
+
+    private void ValidateRelationshipComplexity(EntityModel entityModel)
+    {
+        var relationships = entityModel.Relationships;
+        
+        // Check for complex relationship patterns that may impact scalability
+        if (relationships.Length >= 3)
+        {
+            // Multiple related entities can impact query performance and complexity
+            ReportDiagnostic(DiagnosticDescriptors.ScalabilityWarning,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                entityModel.ClassName,
+                $"Entity has {relationships.Length} related entity relationships which may impact query performance and complexity");
+        }
+
+        // Check for collection relationships that may cause hot partitions
+        var collectionRelationships = relationships.Where(r => r.IsCollection).ToArray();
+        if (collectionRelationships.Length >= 2)
+        {
+            ReportDiagnostic(DiagnosticDescriptors.ScalabilityWarning,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                entityModel.ClassName,
+                $"Entity has {collectionRelationships.Length} collection relationships which may cause hot partition issues");
+        }
+
+        // Check for wildcard patterns that may be inefficient
+        var wildcardPatterns = relationships.Where(r => r.SortKeyPattern.Contains("*")).ToArray();
+        if (wildcardPatterns.Length >= 2)
+        {
+            ReportDiagnostic(DiagnosticDescriptors.ScalabilityWarning,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                entityModel.ClassName,
+                $"Entity has {wildcardPatterns.Length} wildcard relationship patterns which may require inefficient query patterns");
         }
     }
 
@@ -1215,6 +1314,33 @@ public class EntityAnalyzer
                 entityModel.ClassDeclaration?.Identifier.GetLocation(),
                 entityModel.ClassName,
                 $"Entity has {entityModel.Indexes.Length} GSIs which may impact write performance and costs");
+        }
+
+        // Check for multi-item entities with complex collections (scalability concern)
+        if (entityModel.IsMultiItemEntity)
+        {
+            var complexCollectionCount = entityModel.Properties.Count(p => 
+                p.IsCollection && p.HasAttributeMapping && IsComplexCollectionType(p.PropertyType));
+            
+            if (complexCollectionCount > 2)
+            {
+                ReportDiagnostic(DiagnosticDescriptors.ScalabilityWarning,
+                    entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                    entityModel.ClassName,
+                    $"Multi-item entity with {complexCollectionCount} complex collections may not scale well");
+            }
+        }
+
+        // Check for entities with many complex properties (potential scalability issue)
+        var complexPropertyCount = entityModel.Properties.Count(p => 
+            p.HasAttributeMapping && (IsComplexCollectionType(p.PropertyType) || IsComplexNestedType(p.PropertyType)));
+        
+        if (complexPropertyCount >= 3)
+        {
+            ReportDiagnostic(DiagnosticDescriptors.ScalabilityWarning,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                entityModel.ClassName,
+                $"Entity with {complexPropertyCount} complex properties may impact DynamoDB performance and scalability");
         }
     }
 

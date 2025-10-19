@@ -3,8 +3,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Oproto.FluentDynamoDb.SourceGenerator.Analysis;
 using Oproto.FluentDynamoDb.SourceGenerator.Generators;
 using Oproto.FluentDynamoDb.SourceGenerator.Models;
-using Oproto.FluentDynamoDb.SourceGenerator.Performance;
-using Oproto.FluentDynamoDb.SourceGenerator.Advanced;
 using System.Collections.Immutable;
 
 namespace Oproto.FluentDynamoDb.SourceGenerator;
@@ -22,8 +20,8 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
         var entityClasses = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (s, _) => IsDynamoDbEntity(s),
-                transform: static (ctx, _) => GetEntityModel(ctx))
-            .Where(static m => m.Model is not null);
+                transform: static (ctx, _) => GetEntityModel(ctx));
+            // Note: We don't filter out null models here because we still need to report diagnostics
 
         // Register code generation
         context.RegisterSourceOutput(entityClasses.Collect(), Execute);
@@ -55,10 +53,22 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
 
             return (entityModel, analyzer.Diagnostics);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // If there's an exception during analysis, return null to skip this entity
-            return (null, Array.Empty<Diagnostic>());
+            // Create a diagnostic for the exception to help with debugging
+            var diagnostic = Diagnostic.Create(
+                new DiagnosticDescriptor(
+                    "DYNDB999",
+                    "Source generator error",
+                    "Source generator failed to analyze entity '{0}': {1}",
+                    "DynamoDb",
+                    DiagnosticSeverity.Error,
+                    isEnabledByDefault: true),
+                classDecl.Identifier.GetLocation(),
+                classDecl.Identifier.ValueText,
+                ex.Message);
+            
+            return (null, new[] { diagnostic });
         }
     }
 
@@ -89,20 +99,11 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Generates optimized entity implementation using advanced performance optimizations.
+    /// Generates optimized entity implementation using MapperGenerator.
     /// </summary>
     private static string GenerateOptimizedEntityImplementation(EntityModel entity)
     {
-        // Create default compilation settings for the legacy generator
-        var settings = new CompilationSettings
-        {
-            TargetFramework = "net8.0",
-            OptimizationLevel = Microsoft.CodeAnalysis.OptimizationLevel.Release,
-            NullableContextOptions = Microsoft.CodeAnalysis.NullableContextOptions.Enable,
-            AssemblyName = "Generated"
-        };
-
-        // Use the advanced performance optimization system
-        return AdvancedPerformanceOptimizations.GenerateOptimizedEntityCode(entity, settings);
+        // Use MapperGenerator as the single source of truth for entity implementation
+        return MapperGenerator.GenerateEntityImplementation(entity);
     }
 }

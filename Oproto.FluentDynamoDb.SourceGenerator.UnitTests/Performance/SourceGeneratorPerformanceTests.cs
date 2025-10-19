@@ -503,7 +503,15 @@ namespace Oproto.FluentDynamoDb.Attributes
             },
             new[] { 
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location)
+                MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
+                // Add AWS SDK references for generated code
+                MetadataReference.CreateFromFile(typeof(Amazon.DynamoDBv2.Model.AttributeValue).Assembly.Location),
+                // Add main library reference for IDynamoDbEntity and other types
+                MetadataReference.CreateFromFile(typeof(Oproto.FluentDynamoDb.Storage.IDynamoDbEntity).Assembly.Location),
+                // Add System.Linq reference
+                MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
+                // Add System.IO reference  
+                MetadataReference.CreateFromFile(typeof(System.IO.Stream).Assembly.Location)
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

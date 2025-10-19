@@ -33,6 +33,9 @@ public static class CustomTypeConverterSupport
 
         // Generate converter methods
         GenerateConverterMethods(sb, customTypeProperties);
+        
+        // Generate dictionary conversion helpers
+        GenerateDictionaryConversionHelpers(sb);
 
         sb.AppendLine("        #endregion");
     }
@@ -154,8 +157,7 @@ public static class CustomTypeConverterSupport
             _ when baseType.StartsWith("Dictionary<") => true,
             _ when baseType.StartsWith("HashSet<") => true,
             _ when baseType.StartsWith("SortedSet<") => true,
-            _ when baseType.Contains("JsonElement") => true,
-            _ when baseType.Contains("JsonDocument") => true,
+
             _ => false
         };
     }
@@ -189,7 +191,7 @@ public static class CustomTypeConverterSupport
             "Uri" or "System.Uri" => $"new AttributeValue {{ S = {valueExpression}?.ToString() ?? string.Empty }}",
             "TimeSpan" or "System.TimeSpan" => $"new AttributeValue {{ S = {valueExpression}.ToString() }}",
             "Version" or "System.Version" => $"new AttributeValue {{ S = {valueExpression}?.ToString() ?? string.Empty }}",
-            _ when baseType.StartsWith("Dictionary<") => $"new AttributeValue {{ S = System.Text.Json.JsonSerializer.Serialize({valueExpression}) }}",
+            _ when baseType.StartsWith("Dictionary<") => $"new AttributeValue {{ M = ConvertDictionaryToAttributeValueMap({valueExpression}) }}",
             _ => $"new AttributeValue {{ S = {valueExpression}?.ToString() ?? string.Empty }}"
         };
     }
@@ -206,9 +208,87 @@ public static class CustomTypeConverterSupport
             "Uri" or "System.Uri" => $"new Uri({valueExpression}.S)",
             "TimeSpan" or "System.TimeSpan" => $"TimeSpan.Parse({valueExpression}.S)",
             "Version" or "System.Version" => $"new Version({valueExpression}.S)",
-            _ when baseType.StartsWith("Dictionary<") => $"System.Text.Json.JsonSerializer.Deserialize<{baseType}>({valueExpression}.S) ?? new {baseType}()",
+            _ when baseType.StartsWith("Dictionary<") => $"ConvertAttributeValueMapToDictionary<{baseType}>({valueExpression}.M)",
             _ => $"{valueExpression}.S"
         };
+    }
+
+    /// <summary>
+    /// Generates helper methods for converting dictionaries to/from native DynamoDB Map types.
+    /// </summary>
+    private static void GenerateDictionaryConversionHelpers(StringBuilder sb)
+    {
+        sb.AppendLine();
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// Converts a Dictionary to DynamoDB Map (M) type using native AttributeValue types.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine("        private static Dictionary<string, AttributeValue> ConvertDictionaryToAttributeValueMap<T>(T dictionary)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            if (dictionary is IDictionary<string, object> dict)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                var result = new Dictionary<string, AttributeValue>();");
+        sb.AppendLine("                foreach (var kvp in dict)");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    result[kvp.Key] = ConvertObjectToAttributeValue(kvp.Value);");
+        sb.AppendLine("                }");
+        sb.AppendLine("                return result;");
+        sb.AppendLine("            }");
+        sb.AppendLine("            return new Dictionary<string, AttributeValue>();");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// Converts a DynamoDB Map (M) type to Dictionary using native AttributeValue types.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine("        private static T ConvertAttributeValueMapToDictionary<T>(Dictionary<string, AttributeValue> map)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            if (typeof(T).IsAssignableFrom(typeof(Dictionary<string, object>)))");
+        sb.AppendLine("            {");
+        sb.AppendLine("                var result = new Dictionary<string, object>();");
+        sb.AppendLine("                foreach (var kvp in map)");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    result[kvp.Key] = ConvertAttributeValueToObject(kvp.Value);");
+        sb.AppendLine("                }");
+        sb.AppendLine("                return (T)(object)result;");
+        sb.AppendLine("            }");
+        sb.AppendLine("            return Activator.CreateInstance<T>();");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// Converts an object to AttributeValue using native DynamoDB types.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine("        private static AttributeValue ConvertObjectToAttributeValue(object value)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            return value switch");
+        sb.AppendLine("            {");
+        sb.AppendLine("                string s => new AttributeValue { S = s },");
+        sb.AppendLine("                int i => new AttributeValue { N = i.ToString() },");
+        sb.AppendLine("                long l => new AttributeValue { N = l.ToString() },");
+        sb.AppendLine("                double d => new AttributeValue { N = d.ToString() },");
+        sb.AppendLine("                bool b => new AttributeValue { BOOL = b },");
+        sb.AppendLine("                byte[] bytes => new AttributeValue { B = new MemoryStream(bytes) },");
+        sb.AppendLine("                null => new AttributeValue { NULL = true },");
+        sb.AppendLine("                _ => new AttributeValue { S = value.ToString() }");
+        sb.AppendLine("            };");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// Converts an AttributeValue to object using native DynamoDB types.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine("        private static object ConvertAttributeValueToObject(AttributeValue attributeValue)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            if (attributeValue.S != null) return attributeValue.S;");
+        sb.AppendLine("            if (attributeValue.N != null) return double.Parse(attributeValue.N);");
+        sb.AppendLine("            if (attributeValue.BOOL.HasValue) return attributeValue.BOOL.Value;");
+        sb.AppendLine("            if (attributeValue.B != null) return attributeValue.B.ToArray();");
+        sb.AppendLine("            if (attributeValue.SS?.Count > 0) return attributeValue.SS;");
+        sb.AppendLine("            if (attributeValue.NS?.Count > 0) return attributeValue.NS;");
+        sb.AppendLine("            if (attributeValue.L?.Count > 0) return attributeValue.L.Select(ConvertAttributeValueToObject).ToList();");
+        sb.AppendLine("            if (attributeValue.M?.Count > 0) return attributeValue.M.ToDictionary(kvp => kvp.Key, kvp => ConvertAttributeValueToObject(kvp.Value));");
+        sb.AppendLine("            return null;");
+        sb.AppendLine("        }");
     }
 
     /// <summary>

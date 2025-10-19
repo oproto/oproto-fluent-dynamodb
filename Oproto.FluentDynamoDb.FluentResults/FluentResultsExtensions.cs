@@ -248,26 +248,4 @@ public static class FluentResultsExtensions
                 .WithError(new ExceptionalError(ex));
         }
     }
-
-    /// <summary>
-    /// Gets all DynamoDB items for a multi-item entity, returning a Result.
-    /// This is useful for batch operations or when you need to work with individual items.
-    /// </summary>
-    /// <typeparam name="T">The entity type that implements IDynamoDbEntity.</typeparam>
-    /// <param name="entity">The entity instance to convert.</param>
-    /// <returns>A Result containing the list of DynamoDB items or error details.</returns>
-    public static Result<List<Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>>> GetDynamoDbItemsResult<T>(T entity) 
-        where T : class, IDynamoDbEntity
-    {
-        try
-        {
-            var items = T.ToDynamoDbMultiple(entity);
-            return Result.Ok(items);
-        }
-        catch (Exception ex)
-        {
-            return Result.Fail($"Failed to convert {typeof(T).Name} entity to DynamoDB items: {ex.Message}")
-                .WithError(new ExceptionalError(ex));
-        }
-    }
 }

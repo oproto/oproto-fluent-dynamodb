@@ -57,8 +57,8 @@ public static class EntityMetadataCache
                 PropertyType = p.PropertyType,
                 IsPartitionKey = p.IsPartitionKey,
                 IsSortKey = p.IsSortKey,
-                SupportedOperations = p.Queryable?.SupportedOperations ?? Array.Empty<DynamoDbOperation>(),
-                AvailableInIndexes = p.Queryable?.AvailableInIndexes ?? Array.Empty<string>()
+                SupportedOperations = p.Queryable != null ? p.Queryable.SupportedOperations : Array.Empty<DynamoDbOperation>(),
+                AvailableInIndexes = p.Queryable != null ? p.Queryable.AvailableInIndexes : Array.Empty<string>()
             }).ToArray(),
             Indexes = entity.Indexes.Select(i => new CachedIndexMetadata
             {
@@ -199,7 +199,7 @@ public class CachedIndexMetadata
 {
     public string IndexName { get; set; } = string.Empty;
     public string PartitionKeyProperty { get; set; } = string.Empty;
-    public string? SortKeyProperty { get; set; }
+    public string SortKeyProperty { get; set; }
     public string[] ProjectedProperties { get; set; } = Array.Empty<string>();
 }
 
@@ -210,6 +210,6 @@ public class CachedRelationshipMetadata
 {
     public string PropertyName { get; set; } = string.Empty;
     public string SortKeyPattern { get; set; } = string.Empty;
-    public string? EntityType { get; set; }
+    public string EntityType { get; set; }
     public bool IsCollection { get; set; }
 }

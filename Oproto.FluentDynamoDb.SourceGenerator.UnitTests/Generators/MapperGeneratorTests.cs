@@ -38,7 +38,8 @@ public class MapperGeneratorTests
 
         // Assert
         result.Should().Contain("namespace TestNamespace");
-        result.Should().Contain("public partial class TestEntity : IDynamoDbEntity");
+        result.Should().Contain("public partial class TestEntity"); // Partial class, interface added elsewhere
+        result.Should().NotContain(": IDynamoDbEntity"); // Interface not in generated code (partial class)
         result.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
         result.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
         result.Should().Contain("public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items)");
@@ -88,8 +89,7 @@ public class MapperGeneratorTests
 
         // Assert
         result.Should().Contain("Multi-item entity: Supports entities that span multiple DynamoDB items.");
-        result.Should().Contain("public static List<Dictionary<string, AttributeValue>> ToDynamoDbMultiple<TSelf>(TSelf entity)");
-        result.Should().Contain("// Generate multiple items for multi-item entity");
+        result.Should().NotContain("ToDynamoDbMultiple"); // Removed in Task 41
         result.Should().Contain("// Multi-item entity: combine all items into a single entity");
     }
 
@@ -243,7 +243,7 @@ public class MapperGeneratorTests
     }
 
     [Fact]
-    public void GenerateEntityImplementation_WithCollectionProperties_GeneratesJsonSerialization()
+    public void GenerateEntityImplementation_WithCollectionProperties_GeneratesNativeDynamoDbCollections()
     {
         // Arrange
         var entity = new EntityModel
@@ -274,10 +274,10 @@ public class MapperGeneratorTests
         var result = MapperGenerator.GenerateEntityImplementation(entity);
 
         // Assert
-        result.Should().Contain("// Optimized collection conversion for Tags");
-        result.Should().Contain("SS = typedEntity.Tags is List<string> list ? list : new List<string>(typedEntity.Tags)");
-        result.Should().Contain("// Optimized collection conversion from DynamoDB for Tags");
-        result.Should().Contain("new List<string>(tagsValue.SS)");
+        result.Should().Contain("// Convert collection Tags to native DynamoDB type");
+        result.Should().Contain("SS = typedEntity.Tags.ToList()");
+        result.Should().Contain("// Convert collection Tags from native DynamoDB type");
+        result.Should().Contain("entity.Tags = new List<string>(tagsValue.SS)");
     }
 
     [Fact]
@@ -334,7 +334,7 @@ public class MapperGeneratorTests
         result.Should().Contain("new AttributeValue { N = typedEntity.Count.ToString() }");
         result.Should().Contain("new AttributeValue { BOOL = typedEntity.IsActive }");
         result.Should().Contain("new AttributeValue { S = typedEntity.CreatedDate.ToString(\"O\") }");
-        result.Should().Contain("new AttributeValue { S = typedEntity.UniqueId.ToString(\"D\") }");
+        result.Should().Contain("new AttributeValue { S = typedEntity.UniqueId.ToString() }"); // No format specifier
         
         // Check FromDynamoDb conversions
         result.Should().Contain("entity.Id = idValue.S");

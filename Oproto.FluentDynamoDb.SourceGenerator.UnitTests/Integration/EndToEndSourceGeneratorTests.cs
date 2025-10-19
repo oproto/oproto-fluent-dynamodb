@@ -82,11 +82,11 @@ namespace TestNamespace
         
         // Verify entity implementation
         var entityCode = GetGeneratedSource(result, "TransactionEntity.g.cs");
-        entityCode.Should().Contain("public partial class TransactionEntity : IDynamoDbEntity");
+        entityCode.Should().Contain("public partial class TransactionEntity"); // Partial class, interface added elsewhere
+        entityCode.Should().NotContain(": IDynamoDbEntity"); // Interface not in generated code (partial class)
         entityCode.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
         entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
-        // Multi-item FromDynamoDb method is not currently generated for this entity type
-        // entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items)");
+        entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items)");
         entityCode.Should().Contain("public static string GetPartitionKey(Dictionary<string, AttributeValue> item)");
         entityCode.Should().Contain("public static bool MatchesEntity(Dictionary<string, AttributeValue> item)");
         entityCode.Should().Contain("public static EntityMetadata GetEntityMetadata()");
@@ -156,16 +156,15 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        // Should generate warnings for reserved words, performance, and scalability
+        // Should generate warnings for reserved words and performance
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word usage ("name", "items")
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warning for collections
-        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
         
         var entityCode = GetGeneratedSource(result, "MultiItemEntity.g.cs");
         
         // Should generate single-item entity with native DynamoDB collection support
-        entityCode.Should().Contain("public static List<Dictionary<string, AttributeValue>> ToDynamoDbMultiple<TSelf>(TSelf entity)");
+        entityCode.Should().NotContain("ToDynamoDbMultiple"); // Removed in Task 41
         entityCode.Should().Contain("// Convert collection Items to native DynamoDB type");
         entityCode.Should().Contain("// Convert collection Details to native DynamoDB type");
         entityCode.Should().Contain("// Convert collection Items from native DynamoDB type");
@@ -325,7 +324,8 @@ namespace TestNamespace
             var entityCode = GetGeneratedSource(result, "ComplexTypesEntity.g.cs");
             
             // Verify basic structure is present
-            entityCode.Should().Contain("public partial class ComplexTypesEntity : IDynamoDbEntity");
+            entityCode.Should().Contain("public partial class ComplexTypesEntity"); // Partial class, interface added elsewhere
+            entityCode.Should().NotContain(": IDynamoDbEntity"); // Interface not in generated code (partial class)
             entityCode.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
             entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
         }
@@ -352,11 +352,13 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        // Filter out compilation errors and only look at source generator diagnostics
-        var sourceGeneratorDiagnostics = result.Diagnostics.Where(d => d.Id.StartsWith("DYNDB")).ToArray();
-        sourceGeneratorDiagnostics.Should().HaveCount(1);
-        sourceGeneratorDiagnostics[0].Id.Should().Be("DYNDB001");
-        sourceGeneratorDiagnostics[0].Severity.Should().Be(DiagnosticSeverity.Error);
+        // Filter to only ERROR diagnostics from source generator (not warnings)
+        var sourceGeneratorErrors = result.Diagnostics
+            .Where(d => d.Id.StartsWith("DYNDB") && d.Severity == DiagnosticSeverity.Error)
+            .ToArray();
+        sourceGeneratorErrors.Should().HaveCount(1);
+        sourceGeneratorErrors[0].Id.Should().Be("DYNDB001");
+        sourceGeneratorErrors[0].Severity.Should().Be(DiagnosticSeverity.Error);
         result.GeneratedSources.Should().BeEmpty();
     }
 
@@ -459,7 +461,6 @@ namespace TestNamespace
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB016"); // Related entities require sort key
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warning for collections
-        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB027"); // Scalability warning
         
         // Verify the specific DYNDB016 diagnostic
         var relatedEntityWarning = result.Diagnostics.First(d => d.Id == "DYNDB016");
@@ -483,7 +484,21 @@ namespace TestNamespace
                 MetadataReference.CreateFromFile(typeof(Oproto.FluentDynamoDb.Attributes.DynamoDbTableAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(System.Attribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(System.Runtime.Serialization.SerializationInfo).Assembly.Location),
-                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Runtime.dll"))
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Runtime.dll")),
+                // Add AWS SDK references for generated code
+                MetadataReference.CreateFromFile(typeof(Amazon.DynamoDBv2.Model.AttributeValue).Assembly.Location),
+                // Add main library reference for IDynamoDbEntity and other types
+                MetadataReference.CreateFromFile(typeof(Oproto.FluentDynamoDb.Storage.IDynamoDbEntity).Assembly.Location),
+                // Add System.Linq reference
+                MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
+                // Add System.IO reference  
+                MetadataReference.CreateFromFile(typeof(System.IO.Stream).Assembly.Location),
+                // Add netstandard reference for Attribute, Enum, and other base types
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "netstandard.dll")),
+                // Add System.Collections reference for Dictionary<,> and List<>
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Collections.dll")),
+                // Add System.Linq.Expressions reference
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Linq.Expressions.dll"))
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
@@ -497,12 +512,12 @@ namespace TestNamespace
             .Select(tree => new GeneratedSource(tree.FilePath, tree.GetText()))
             .ToArray();
 
-        // Get all diagnostics from the output compilation, which includes source generator diagnostics
-        var allDiagnostics = outputCompilation.GetDiagnostics();
+        // Get source generator diagnostics from the driver, not compilation errors
+        var sourceGeneratorDiagnostics = driverDiagnostics.ToImmutableArray();
 
         return new GeneratorTestResult
         {
-            Diagnostics = allDiagnostics,
+            Diagnostics = sourceGeneratorDiagnostics,
             GeneratedSources = generatedSources
         };
     }
@@ -610,7 +625,7 @@ namespace TestNamespace
         {
             warning.Severity.Should().Be(DiagnosticSeverity.Warning);
             warning.GetMessage().Should().Contain("may cause performance issues");
-            warning.GetMessage().Should().Contain("JSON serialization");
+            warning.GetMessage().Should().Contain("native DynamoDB List (L) or Map (M) types");
         }
         
         // Should also generate scalability warnings

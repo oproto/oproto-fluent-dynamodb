@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Oproto.FluentDynamoDb.SourceGenerator;
 using System.Collections.Immutable;
+using System.IO;
 
 namespace Oproto.FluentDynamoDb.SourceGenerator.UnitTests.EdgeCases;
 
@@ -592,7 +593,21 @@ namespace Oproto.FluentDynamoDb.Attributes
             },
             new[] { 
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location)
+                MetadataReference.CreateFromFile(typeof(System.Collections.Generic.List<>).Assembly.Location),
+                // Add AWS SDK references for generated code
+                MetadataReference.CreateFromFile(typeof(Amazon.DynamoDBv2.Model.AttributeValue).Assembly.Location),
+                // Add main library reference for IDynamoDbEntity and other types
+                MetadataReference.CreateFromFile(typeof(Oproto.FluentDynamoDb.Storage.IDynamoDbEntity).Assembly.Location),
+                // Add System.Linq reference
+                MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
+                // Add System.IO reference  
+                MetadataReference.CreateFromFile(typeof(System.IO.Stream).Assembly.Location),
+                // Add netstandard reference for Attribute, Enum, and other base types
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "netstandard.dll")),
+                // Add System.Collections reference for Dictionary<,> and List<>
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Collections.dll")),
+                // Add System.Linq.Expressions reference
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Linq.Expressions.dll"))
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

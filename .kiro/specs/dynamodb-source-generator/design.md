@@ -767,12 +767,12 @@ public static class MappingErrorHandler
 {
     public static T HandleMappingError<T>(Exception ex, Dictionary<string, AttributeValue> item)
     {
-        var itemJson = System.Text.Json.JsonSerializer.Serialize(
-            item.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString()));
+        var itemDescription = string.Join(", ", 
+            item.Select(kvp => $"{kvp.Key}: {kvp.Value}"));
             
         throw new DynamoDbMappingException(
             $"Failed to map DynamoDB item to {typeof(T).Name}. " +
-            $"Item: {itemJson}. " +
+            $"Item: {itemDescription}. " +
             $"Error: {ex.Message}", ex);
     }
 }

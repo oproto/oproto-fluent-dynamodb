@@ -282,6 +282,172 @@ else
 }
 ```
 
+## Architecture
+
+The DynamoDB Source Generator consists of four main components that work together to analyze your entity classes and generate optimized mapping code:
+
+### 1. EntityAnalyzer
+
+**Purpose**: Analyzes class declarations to extract DynamoDB entity information.
+
+**Location**: `Oproto.FluentDynamoDb.SourceGenerator/Analysis/EntityAnalyzer.cs`
+
+**Responsibilities**:
+- Parses class declarations with `[DynamoDbTable]` attributes
+- Extracts property information including keys, attributes, and relationships
+- Validates entity configuration (partition key requirements, conflicting patterns)
+- Reports diagnostic errors and warnings for configuration issues
+- Produces `EntityModel` data structures for code generation
+
+**Key Features**:
+- Detects partition and sort keys
+- Identifies Global Secondary Index configurations
+- Analyzes related entity relationships
+- Validates computed and extracted key patterns
+- Ensures classes are marked as `partial`
+
+### 2. MapperGenerator
+
+**Purpose**: Generates entity mapping code for converting between C# objects and DynamoDB AttributeValue dictionaries.
+
+**Location**: `Oproto.FluentDynamoDb.SourceGenerator/Generators/MapperGenerator.cs`
+
+**Responsibilities**:
+- Generates `ToDynamoDb<TSelf>()` method for entity-to-DynamoDB conversion
+- Generates `FromDynamoDb<TSelf>()` methods (single-item and multi-item overloads)
+- Generates `GetPartitionKey()` method for extracting partition keys
+- Generates `MatchesEntity()` method for entity type discrimination
+- Generates `GetEntityMetadata()` method for future LINQ support
+
+**Performance Optimizations**:
+- **Pre-allocated dictionaries**: Dictionary capacity is calculated at compile time to avoid resizing
+- **Aggressive inlining**: Methods marked with `[MethodImpl(MethodImplOptions.AggressiveInlining)]`
+- **Direct property access**: No reflection overhead at runtime
+- **Efficient type conversions**: Optimized conversion logic for common types
+
+**Generated Code Structure**:
+```csharp
+public partial class YourEntity
+{
+    // High-performance conversion with pre-allocated capacity
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)
+    {
+        // Pre-allocate with exact capacity (no resizing needed)
+        var item = new Dictionary<string, AttributeValue>(propertyCount);
+        
+        // Direct property access (no reflection)
+        item["pk"] = new AttributeValue { S = typedEntity.PartitionKey };
+        // ... more mappings
+        
+        return item;
+    }
+    
+    // Additional generated methods...
+}
+```
+
+### 3. KeysGenerator
+
+**Purpose**: Generates static key builder methods for DynamoDB entities.
+
+**Location**: `Oproto.FluentDynamoDb.SourceGenerator/Generators/KeysGenerator.cs`
+
+**Responsibilities**:
+- Generates partition key and sort key builder methods
+- Handles composite keys with multiple components, prefixes, and separators
+- Generates separate key builders for each Global Secondary Index
+- Creates extraction helper methods for composite keys
+- Ensures type safety for all key builder parameters
+
+**Generated Code Structure**:
+```csharp
+public static partial class YourEntityKeys
+{
+    // Main table keys
+    public static string Pk(string tenantId, string customerId) 
+        => $"{tenantId}#{customerId}";
+    
+    public static string Sk(DateTime date) 
+        => date.ToString("yyyy-MM-dd");
+    
+    // GSI keys
+    public static partial class StatusIndex
+    {
+        public static string Pk(string status) => $"STATUS#{status}";
+    }
+    
+    // Extraction helpers
+    public static (string TenantId, string CustomerId) ExtractPkComponents(string pk)
+    {
+        var parts = pk.Split('#');
+        return (parts[0], parts[1]);
+    }
+}
+```
+
+### 4. FieldsGenerator
+
+**Purpose**: Generates static field name constant classes for DynamoDB entities.
+
+**Location**: `Oproto.FluentDynamoDb.SourceGenerator/Generators/FieldsGenerator.cs`
+
+**Responsibilities**:
+- Generates string constants for all DynamoDB attribute names
+- Creates nested classes for Global Secondary Index fields
+- Provides compile-time safety when referencing attribute names
+- Handles reserved word mapping and special cases
+
+**Generated Code Structure**:
+```csharp
+public static partial class YourEntityFields
+{
+    // Main table fields
+    public const string PartitionKey = "pk";
+    public const string SortKey = "sk";
+    public const string Amount = "amount";
+    public const string Status = "status";
+    
+    // GSI fields
+    public static partial class StatusIndex
+    {
+        public const string Status = "status";
+        public const string CreatedDate = "created_date";
+    }
+}
+```
+
+### Code Generation Pipeline
+
+1. **Syntax Analysis**: The source generator identifies classes with `[DynamoDbTable]` attributes
+2. **Entity Analysis**: `EntityAnalyzer` parses the class and creates an `EntityModel`
+3. **Validation**: Configuration is validated and diagnostics are reported
+4. **Code Generation**: Three generators produce separate files:
+   - `MapperGenerator` → `YourEntity.g.cs` (entity implementation)
+   - `KeysGenerator` → `YourEntityKeys.g.cs` (key builders)
+   - `FieldsGenerator` → `YourEntityFields.g.cs` (field constants)
+5. **Compilation**: Generated code is compiled with your project
+
+### Design Principles
+
+**Single Responsibility**: Each generator has a focused purpose and generates one type of code.
+
+**Performance First**: Generated code is optimized for minimal allocations and maximum throughput:
+- Pre-allocated collections with exact capacity
+- Aggressive inlining for hot paths
+- Direct property access (no reflection)
+- Efficient string operations
+
+**AOT Compatibility**: All code generation produces AOT-safe code:
+- No runtime reflection
+- All types resolved at compile time
+- Trimmer-safe implementations
+
+**Maintainability**: Clear separation of concerns makes the codebase easy to understand and extend:
+- `EntityAnalyzer` handles all parsing and validation
+- Each generator focuses on one output type
+- No circular dependencies between components
+
 ## Compatibility
 
 ### .NET Versions

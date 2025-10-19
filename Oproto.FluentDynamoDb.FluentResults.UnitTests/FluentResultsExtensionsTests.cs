@@ -213,20 +213,8 @@ public class FluentResultsExtensionsTests
         result.Errors[0].Message.Should().Contain("Failed to execute PutItem operation for TestEntity");
     }
 
-    [Fact]
-    public void GetDynamoDbItemsResult_Success_ReturnsOkResult()
-    {
-        // Arrange
-        var entity = new TestEntity { Id = "test-id", Name = "test-name" };
-
-        // Act
-        var result = FluentResultsExtensions.GetDynamoDbItemsResult(entity);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeNull();
-        result.Value.Should().BeOfType<List<Dictionary<string, AttributeValue>>>();
-    }
+    // Test removed - GetDynamoDbItemsResult method was removed in Task 41
+    // The method was a leftover from the old multi-item design that was replaced by ToListAsync/ToCompositeEntityAsync
 
     [Fact]
     public async Task ExecuteAsyncResult_OperationCanceled_RethrowsException()
@@ -294,10 +282,5 @@ public partial class TestEntity : IDynamoDbEntity
             Indexes = Array.Empty<IndexMetadata>(),
             Relationships = Array.Empty<RelationshipMetadata>()
         };
-    }
-
-    public static List<Dictionary<string, AttributeValue>> ToDynamoDbMultiple<TSelf>(TSelf entity) where TSelf : IDynamoDbEntity
-    {
-        return new List<Dictionary<string, AttributeValue>> { ToDynamoDb(entity) };
     }
 }
