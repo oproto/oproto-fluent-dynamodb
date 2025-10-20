@@ -56,13 +56,24 @@ Lower-level manual approaches for dynamic scenarios. Covers:
 - Dynamic query building
 - Mixing approaches
 
+### [Advanced Type System](AdvancedTypes.md)
+Use DynamoDB's native collection types, TTL, JSON blobs, and external storage. Covers:
+- Native Maps, Sets, and Lists
+- Time-To-Live (TTL) fields for automatic expiration
+- JSON blob serialization with AOT support
+- External blob storage (S3) for large data
+- Empty collection handling
+- Format string support for advanced types
+- AOT compatibility matrix
+
 ## Getting Started
 
 If you're new to advanced topics, we recommend starting with:
 
-1. **[Composite Entities](CompositeEntities.md)** - Essential for modeling complex data
-2. **[Global Secondary Indexes](GlobalSecondaryIndexes.md)** - Enable alternative query patterns
-3. **[Performance Optimization](PerformanceOptimization.md)** - Improve efficiency and reduce costs
+1. **[Advanced Type System](AdvancedTypes.md)** - Use native DynamoDB types and advanced storage
+2. **[Composite Entities](CompositeEntities.md)** - Essential for modeling complex data
+3. **[Global Secondary Indexes](GlobalSecondaryIndexes.md)** - Enable alternative query patterns
+4. **[Performance Optimization](PerformanceOptimization.md)** - Improve efficiency and reduce costs
 
 ## Prerequisites
 

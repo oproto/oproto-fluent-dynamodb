@@ -467,3 +467,80 @@ Comprehensive alphabetical index of all topics covered in the Oproto.FluentDynam
 **See Also:**
 - [Quick Reference](QUICK_REFERENCE.md)
 - [Documentation Hub](README.md)
+
+**Advanced Types**
+- Complete guide: [Advanced Types](advanced-topics/AdvancedTypes.md)
+- Examples: [Advanced Types Examples](examples/AdvancedTypesExamples.md)
+- Migration guide: [Advanced Types Migration](reference/AdvancedTypesMigration.md)
+- Quick reference: [Advanced Types Quick Reference](reference/AdvancedTypesQuickReference.md)
+
+**AOT Compatibility (Advanced Types)**
+- Compatibility matrix: [Advanced Types](advanced-topics/AdvancedTypes.md#aot-compatibility)
+- System.Text.Json: [Advanced Types](advanced-topics/AdvancedTypes.md#systemtextjson-recommended-for-aot)
+
+**Blob Storage**
+- Overview: [Advanced Types](advanced-topics/AdvancedTypes.md#external-blob-storage)
+- S3 implementation: [Advanced Types](advanced-topics/AdvancedTypes.md#s3-blob-storage)
+- Examples: [Advanced Types Examples](examples/AdvancedTypesExamples.md#blob-reference-examples)
+
+**BlobReference Attribute**
+- Reference: [Attribute Reference](reference/AttributeReference.md#blobreference)
+- Usage: [Advanced Types](advanced-topics/AdvancedTypes.md#external-blob-storage)
+
+## E
+
+**Empty Collections**
+- Handling: [Advanced Types](advanced-topics/AdvancedTypes.md#empty-collection-handling)
+- Best practices: [Advanced Types Examples](examples/AdvancedTypesExamples.md#empty-collection-handling)
+
+## J
+
+**JSON Blob**
+- Overview: [Advanced Types](advanced-topics/AdvancedTypes.md#json-blob-serialization)
+- System.Text.Json: [Advanced Types](advanced-topics/AdvancedTypes.md#systemtextjson-recommended-for-aot)
+- Newtonsoft.Json: [Advanced Types](advanced-topics/AdvancedTypes.md#newtonsoftjson-limited-aot-support)
+- Examples: [Advanced Types Examples](examples/AdvancedTypesExamples.md#json-blob-examples)
+
+**JsonBlob Attribute**
+- Reference: [Attribute Reference](reference/AttributeReference.md#jsonblob)
+- Usage: [Advanced Types](advanced-topics/AdvancedTypes.md#json-blob-serialization)
+
+## L
+
+**Lists (DynamoDB)**
+- Overview: [Advanced Types](advanced-topics/AdvancedTypes.md#lists)
+- Examples: [Advanced Types Examples](examples/AdvancedTypesExamples.md#list-examples)
+- Format strings: [Advanced Types](advanced-topics/AdvancedTypes.md#format-string-support)
+
+## M
+
+**Maps (DynamoDB)**
+- Overview: [Advanced Types](advanced-topics/AdvancedTypes.md#maps)
+- Dictionary mapping: [Advanced Types](advanced-topics/AdvancedTypes.md#dictionarystring-string)
+- Nested objects: [Advanced Types](advanced-topics/AdvancedTypes.md#custom-objects-with-dynamodbmap)
+- Examples: [Advanced Types Examples](examples/AdvancedTypesExamples.md#map-examples)
+
+**Migration (Advanced Types)**
+- Complete guide: [Advanced Types Migration](reference/AdvancedTypesMigration.md)
+- Strategies: [Advanced Types Migration](reference/AdvancedTypesMigration.md#migration-strategies)
+- Common scenarios: [Advanced Types Migration](reference/AdvancedTypesMigration.md#common-migration-scenarios)
+
+## S
+
+**Sets (DynamoDB)**
+- Overview: [Advanced Types](advanced-topics/AdvancedTypes.md#sets)
+- String sets: [Advanced Types](advanced-topics/AdvancedTypes.md#string-sets-ss)
+- Number sets: [Advanced Types](advanced-topics/AdvancedTypes.md#number-sets-ns)
+- Binary sets: [Advanced Types](advanced-topics/AdvancedTypes.md#binary-sets-bs)
+- Examples: [Advanced Types Examples](examples/AdvancedTypesExamples.md#set-examples)
+
+## T
+
+**Time-To-Live (TTL)**
+- Overview: [Advanced Types](advanced-topics/AdvancedTypes.md#time-to-live-ttl-fields)
+- Configuration: [Advanced Types](advanced-topics/AdvancedTypes.md#configuring-ttl-on-your-table)
+- Examples: [Advanced Types Examples](examples/AdvancedTypesExamples.md#ttl-examples)
+
+**TimeToLive Attribute**
+- Reference: [Attribute Reference](reference/AttributeReference.md#timetolive)
+- Usage: [Advanced Types](advanced-topics/AdvancedTypes.md#time-to-live-ttl-fields)

@@ -16,6 +16,7 @@ Quick lookup for common Oproto.FluentDynamoDb operations and syntax patterns.
 ## Table of Contents
 
 - [Entity Definition](#entity-definition)
+- [Advanced Types](#advanced-types)
 - [Basic Operations](#basic-operations)
 - [Query Operations](#query-operations)
 - [Expression Formatting](#expression-formatting)
@@ -97,6 +98,111 @@ public string GsiSortKey { get; set; } = string.Empty;
 ```
 
 **Details:** [Global Secondary Indexes](advanced-topics/GlobalSecondaryIndexes.md)
+
+---
+
+## Advanced Types
+
+### Maps (Dictionary)
+
+```csharp
+[DynamoDbAttribute("metadata")]
+public Dictionary<string, string> Metadata { get; set; }
+```
+
+**Details:** [Advanced Types - Maps](advanced-topics/AdvancedTypes.md#maps)
+
+### Maps (Nested Object)
+
+```csharp
+[DynamoDbEntity]
+public partial class Address
+{
+    [DynamoDbAttribute("street")]
+    public string Street { get; set; }
+}
+
+[DynamoDbAttribute("address")]
+[DynamoDbMap]
+public Address ShippingAddress { get; set; }
+```
+
+**Details:** [Advanced Types - Maps](advanced-topics/AdvancedTypes.md#custom-objects-with-dynamodbmap)
+
+### Sets
+
+```csharp
+// String set
+[DynamoDbAttribute("tags")]
+public HashSet<string> Tags { get; set; }
+
+// Number set
+[DynamoDbAttribute("category_ids")]
+public HashSet<int> CategoryIds { get; set; }
+
+// Binary set
+[DynamoDbAttribute("checksums")]
+public HashSet<byte[]> Checksums { get; set; }
+```
+
+**Details:** [Advanced Types - Sets](advanced-topics/AdvancedTypes.md#sets)
+
+### Lists
+
+```csharp
+[DynamoDbAttribute("item_ids")]
+public List<string> ItemIds { get; set; }
+
+[DynamoDbAttribute("quantities")]
+public List<int> Quantities { get; set; }
+```
+
+**Details:** [Advanced Types - Lists](advanced-topics/AdvancedTypes.md#lists)
+
+### Time-To-Live (TTL)
+
+```csharp
+[DynamoDbAttribute("ttl")]
+[TimeToLive]
+public DateTime? ExpiresAt { get; set; }
+
+// Usage
+entity.ExpiresAt = DateTime.UtcNow.AddHours(1);
+```
+
+**Details:** [Advanced Types - TTL](advanced-topics/AdvancedTypes.md#time-to-live-ttl-fields)
+
+### JSON Blob
+
+```csharp
+// Configure at assembly level
+[assembly: DynamoDbJsonSerializer(JsonSerializerType.SystemTextJson)]
+
+[DynamoDbAttribute("content")]
+[JsonBlob]
+public ComplexObject Content { get; set; }
+```
+
+**Details:** [Advanced Types - JSON Blobs](advanced-topics/AdvancedTypes.md#json-blob-serialization)
+
+### Blob Reference (S3)
+
+```csharp
+[DynamoDbAttribute("data_ref")]
+[BlobReference(BlobProvider.S3, BucketName = "my-bucket")]
+public byte[] Data { get; set; }
+
+// Setup
+var blobProvider = new S3BlobProvider(s3Client, "my-bucket");
+
+// Save
+var item = await Entity.ToDynamoDbAsync(entity, blobProvider);
+
+// Load
+var loaded = await Entity.FromDynamoDbAsync<Entity>(item, blobProvider);
+```
+
+**Details:** [Advanced Types - Blob Storage](advanced-topics/AdvancedTypes.md#external-blob-storage)
 
 ---
 

@@ -470,62 +470,62 @@
     - Test DYNDB106: Unsupported collection type
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
 
-- [ ] 20. Write integration tests
-  - [ ] 20.1 Test Map property end-to-end
+- [x] 20. Write integration tests
+  - [x] 20.1 Test Map property end-to-end
     - Test save entity with map property
     - Test load entity with map property
     - Test round-trip preserves data
     - Test empty map is omitted
     - _Requirements: 1.1, 1.5, 15.1_
   
-  - [ ] 20.2 Test Set property end-to-end
+  - [x] 20.2 Test Set property end-to-end
     - Test save entity with set properties
     - Test load entity with set properties
     - Test round-trip preserves data
     - Test empty set is omitted
     - _Requirements: 2.1, 2.5, 15.1_
   
-  - [ ] 20.3 Test List property end-to-end
+  - [x] 20.3 Test List property end-to-end
     - Test save entity with list property
     - Test load entity with list property
     - Test round-trip preserves order and data
     - Test empty list is omitted
     - _Requirements: 3.1, 3.5, 15.1_
   
-  - [ ] 20.4 Test TTL property end-to-end
+  - [x] 20.4 Test TTL property end-to-end
     - Test save entity with TTL property
     - Test load entity with TTL property
     - Test Unix epoch stored correctly in DynamoDB
     - Test round-trip preserves value within tolerance
     - _Requirements: 4.1, 4.4_
   
-  - [ ] 20.5 Test JSON blob property end-to-end
+  - [x] 20.5 Test JSON blob property end-to-end
     - Test save entity with JSON blob
     - Test load entity with JSON blob
     - Test round-trip preserves complex object
     - _Requirements: 5.1, 5.5_
   
-  - [ ] 20.6 Test blob reference property end-to-end
+  - [x] 20.6 Test blob reference property end-to-end
     - Test save entity stores blob in S3
     - Test save entity stores reference in DynamoDB
     - Test load entity retrieves blob from S3
     - Test round-trip preserves data
     - _Requirements: 7.2, 7.3, 8.3, 8.4_
   
-  - [ ] 20.7 Test combined JSON blob + blob reference end-to-end
+  - [x] 20.7 Test combined JSON blob + blob reference end-to-end
     - Test save serializes to JSON then stores as blob
     - Test load retrieves blob then deserializes JSON
     - Test round-trip preserves complex object
     - _Requirements: 10.1, 10.2_
   
-  - [ ] 20.8 Test format strings with advanced types
+  - [x] 20.8 Test format strings with advanced types
     - Test query with Dictionary parameter
     - Test query with HashSet parameter
     - Test update expression with List parameter
     - Test empty collection throws clear error
     - _Requirements: 16.1, 16.2, 16.3, 16.5_
 
-- [ ] 21. Update documentation and examples
+- [x] 21. Update documentation and examples
   - Add examples for Map, Set, and List properties
   - Add examples for TTL properties
   - Add examples for JSON blob serialization

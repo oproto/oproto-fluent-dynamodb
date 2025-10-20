@@ -26,6 +26,7 @@ Learn the essential features you'll use every day.
 ### 🎯 Advanced Topics
 Explore advanced patterns and optimizations.
 
+- **[Advanced Type System](advanced-topics/AdvancedTypes.md)** - Maps, Sets, Lists, TTL, JSON blobs, and blob storage
 - **[Composite Entities](advanced-topics/CompositeEntities.md)** - Multi-item and related entities
 - **[Global Secondary Indexes](advanced-topics/GlobalSecondaryIndexes.md)** - GSI configuration and querying
 - **[STS Integration](advanced-topics/STSIntegration.md)** - Custom client support for multi-tenancy
@@ -39,6 +40,12 @@ Detailed reference documentation for attributes, format specifiers, and troubles
 - **[Format Specifiers](reference/FormatSpecifiers.md)** - Format specifier reference
 - **[Error Handling](reference/ErrorHandling.md)** - Exception handling patterns
 - **[Troubleshooting](reference/Troubleshooting.md)** - Common issues and solutions
+- **[Advanced Types Migration](reference/AdvancedTypesMigration.md)** - Migrate to advanced types
+
+### 💡 Examples
+Practical code examples for common scenarios.
+
+- **[Advanced Types Examples](examples/AdvancedTypesExamples.md)** - Maps, Sets, Lists, TTL, JSON, and blob storage examples
 
 ### 📑 Additional Resources
 
@@ -63,6 +70,15 @@ Detailed reference documentation for attributes, format specifiers, and troubles
 
 **Use expression formatting**
 → [Expression Formatting](core-features/ExpressionFormatting.md)
+
+**Use advanced types (Maps, Sets, Lists, TTL)**
+→ [Advanced Type System](advanced-topics/AdvancedTypes.md)
+
+**See practical examples**
+→ [Advanced Types Examples](examples/AdvancedTypesExamples.md)
+
+**Migrate existing entities**
+→ [Advanced Types Migration](reference/AdvancedTypesMigration.md)
 
 **Work with complex entities**
 → [Composite Entities](advanced-topics/CompositeEntities.md)

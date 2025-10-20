@@ -16,3 +16,4 @@ This section provides detailed reference documentation for Oproto.FluentDynamoDb
 2. [Format Specifiers](FormatSpecifiers.md) - Complete format specifier reference
 3. [Error Handling](ErrorHandling.md) - Exception handling patterns
 4. [Troubleshooting](Troubleshooting.md) - Common issues and solutions
+5. [Advanced Types Migration](AdvancedTypesMigration.md) - Guide for migrating to advanced types

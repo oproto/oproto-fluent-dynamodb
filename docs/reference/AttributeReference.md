@@ -761,17 +761,312 @@ This attribute is currently informational and used for:
 
 ---
 
+## [TimeToLive]
+
+Marks a property as a Time-To-Live (TTL) field for automatic item expiration.
+
+### Purpose
+
+Enables DynamoDB's TTL feature, which automatically deletes items after a specified time. The property value is stored as Unix epoch seconds (number of seconds since January 1, 1970 UTC).
+
+### Parameters
+
+None
+
+### Supported Types
+
+- `DateTime` or `DateTime?`
+- `DateTimeOffset` or `DateTimeOffset?`
+
+### Example
+
+```csharp
+[DynamoDbTable("sessions")]
+public partial class Session
+{
+    [DynamoDbAttribute("session_id")]
+    public string SessionId { get; set; }
+    
+    [DynamoDbAttribute("ttl")]
+    [TimeToLive]
+    public DateTime? ExpiresAt { get; set; }
+}
+
+// Usage
+var session = new Session
+{
+    SessionId = "sess-123",
+    ExpiresAt = DateTime.UtcNow.AddHours(1) // Expires in 1 hour
+};
+```
+
+### Important Notes
+
+- Only ONE TTL field is allowed per entity (DYNDB105 error if violated)
+- Must enable TTL on the table: `aws dynamodb update-time-to-live --table-name TABLE --time-to-live-specification "Enabled=true, AttributeName=ttl"`
+- DynamoDB typically deletes expired items within 48 hours
+- Use UTC times to avoid timezone issues
+- Cannot be combined with `[JsonBlob]` or `[BlobReference]` (DYNDB104 error)
+
+### See Also
+
+- [Advanced Types Guide](../advanced-topics/AdvancedTypes.md#time-to-live-ttl-fields)
+- [Advanced Types Examples](../examples/AdvancedTypesExamples.md#ttl-examples)
+
+---
+
+## [DynamoDbMap]
+
+Marks a property for explicit conversion to a DynamoDB Map (M) type.
+
+### Purpose
+
+Converts custom objects to nested DynamoDB Map structures. The nested type must be marked with `[DynamoDbEntity]` to generate required mapping code, ensuring AOT compatibility without reflection.
+
+### Parameters
+
+None
+
+### Example
+
+```csharp
+// Nested type MUST have [DynamoDbEntity]
+[DynamoDbEntity]
+public partial class Address
+{
+    [DynamoDbAttribute("street")]
+    public string Street { get; set; }
+    
+    [DynamoDbAttribute("city")]
+    public string City { get; set; }
+}
+
+[DynamoDbTable("customers")]
+public partial class Customer
+{
+    [DynamoDbAttribute("pk")]
+    public string CustomerId { get; set; }
+    
+    [DynamoDbAttribute("address")]
+    [DynamoDbMap]
+    public Address ShippingAddress { get; set; }
+}
+```
+
+### Important Notes
+
+- Nested type MUST be marked with `[DynamoDbEntity]` (DYNDB107 error if missing)
+- Uses compile-time generated methods instead of reflection for AOT compatibility
+- Nested types can themselves contain maps, creating deep hierarchies
+- `Dictionary<string, string>` and `Dictionary<string, AttributeValue>` don't need this attribute
+
+### See Also
+
+- [Advanced Types Guide](../advanced-topics/AdvancedTypes.md#maps)
+- [Advanced Types Examples](../examples/AdvancedTypesExamples.md#map-examples)
+
+---
+
+## [JsonBlob]
+
+Marks a property for JSON serialization before storing in DynamoDB.
+
+### Purpose
+
+Serializes complex objects to JSON strings for storage in DynamoDB string attributes. Supports both System.Text.Json (AOT-compatible) and Newtonsoft.Json.
+
+### Parameters
+
+None
+
+### Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `InlineThreshold` | `int?` | `null` | Maximum size (bytes) before using external blob storage |
+
+### Example
+
+```csharp
+// Configure serializer at assembly level
+[assembly: DynamoDbJsonSerializer(JsonSerializerType.SystemTextJson)]
+
+public class DocumentContent
+{
+    public string Title { get; set; }
+    public string Body { get; set; }
+    public Dictionary<string, string> Metadata { get; set; }
+}
+
+[DynamoDbTable("documents")]
+public partial class Document
+{
+    [DynamoDbAttribute("doc_id")]
+    public string DocumentId { get; set; }
+    
+    [DynamoDbAttribute("content")]
+    [JsonBlob]
+    public DocumentContent Content { get; set; }
+}
+```
+
+### Package Requirements
+
+Must reference one of:
+- `Oproto.FluentDynamoDb.SystemTextJson` (recommended for AOT)
+- `Oproto.FluentDynamoDb.NewtonsoftJson` (limited AOT support)
+
+### Important Notes
+
+- Requires JSON serializer package reference (DYNDB102 error if missing)
+- System.Text.Json generates `JsonSerializerContext` for full AOT support
+- Newtonsoft.Json uses runtime reflection with limited AOT support
+- Can be combined with `[BlobReference]` for large objects
+- Cannot be combined with `[TimeToLive]` (DYNDB104 error)
+
+### See Also
+
+- [Advanced Types Guide](../advanced-topics/AdvancedTypes.md#json-blob-serialization)
+- [Advanced Types Examples](../examples/AdvancedTypesExamples.md#json-blob-examples)
+
+---
+
+## [BlobReference]
+
+Marks a property for external blob storage with only a reference in DynamoDB.
+
+### Purpose
+
+Stores large data externally (e.g., S3) with only a reference key in DynamoDB. Useful for data larger than DynamoDB's 400KB item limit.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `provider` | `BlobProvider` | Yes | Blob storage provider (S3 or Custom) |
+
+### Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `BucketName` | `string?` | `null` | S3 bucket name |
+| `KeyPrefix` | `string?` | `null` | S3 key prefix |
+| `ProviderType` | `Type?` | `null` | Custom provider type |
+
+### Example
+
+```csharp
+[DynamoDbTable("files")]
+public partial class FileMetadata
+{
+    [DynamoDbAttribute("file_id")]
+    public string FileId { get; set; }
+    
+    [DynamoDbAttribute("data_ref")]
+    [BlobReference(BlobProvider.S3, BucketName = "my-files", KeyPrefix = "uploads")]
+    public byte[] Data { get; set; }
+}
+
+// Setup
+var s3Client = new AmazonS3Client();
+var blobProvider = new S3BlobProvider(s3Client, "my-files", "uploads");
+
+// Save (async methods required for blob operations)
+var item = await FileMetadata.ToDynamoDbAsync(file, blobProvider);
+
+// Load
+var loaded = await FileMetadata.FromDynamoDbAsync<FileMetadata>(item, blobProvider);
+```
+
+### Package Requirements
+
+Must reference a blob provider package:
+- `Oproto.FluentDynamoDb.BlobStorage.S3`
+
+### Important Notes
+
+- Requires blob provider package reference (DYNDB103 error if missing)
+- Generates async `ToDynamoDbAsync` and `FromDynamoDbAsync` methods
+- Can be combined with `[JsonBlob]` to serialize then store externally
+- Cannot be combined with `[TimeToLive]` (DYNDB104 error)
+- Blob provider must be passed to async methods
+
+### See Also
+
+- [Advanced Types Guide](../advanced-topics/AdvancedTypes.md#external-blob-storage)
+- [Advanced Types Examples](../examples/AdvancedTypesExamples.md#blob-reference-examples)
+
+---
+
+## [DynamoDbJsonSerializer]
+
+Assembly-level attribute to configure the JSON serializer for `[JsonBlob]` properties.
+
+### Purpose
+
+Specifies which JSON serializer to use when multiple serializer packages are referenced.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `serializerType` | `JsonSerializerType` | Yes | SystemTextJson or NewtonsoftJson |
+
+### Example
+
+```csharp
+// At assembly level (typically in a separate file or at top of Program.cs)
+[assembly: DynamoDbJsonSerializer(JsonSerializerType.SystemTextJson)]
+
+namespace MyApp
+{
+    // Your entities...
+}
+```
+
+### Serializer Types
+
+| Type | AOT Support | Notes |
+|------|-------------|-------|
+| `SystemTextJson` | ✅ Full | Recommended for AOT projects |
+| `NewtonsoftJson` | ⚠️ Limited | Uses runtime reflection |
+
+### Important Notes
+
+- Only needed when both serializer packages are referenced
+- If only one package is referenced, it's used automatically
+- Applies to all `[JsonBlob]` properties in the assembly
+
+### See Also
+
+- [Advanced Types Guide](../advanced-topics/AdvancedTypes.md#json-blob-serialization)
+- [AOT Compatibility](../advanced-topics/AdvancedTypes.md#aot-compatibility)
+
+---
+
 ## Summary
 
 These attributes work together to define your DynamoDB entity schema:
 
+### Core Attributes
 1. **[DynamoDbTable]**: Required on every entity class
 2. **[DynamoDbAttribute]**: Required on every persisted property
 3. **[PartitionKey]** and **[SortKey]**: Define table keys
 4. **[GlobalSecondaryIndex]**: Enable alternative query patterns
+
+### Composite Key Attributes
 5. **[Computed]** and **[Extracted]**: Handle composite keys
 6. **[RelatedEntity]**: Enable composite entity patterns
-7. **[Queryable]**: Document query capabilities
+
+### Advanced Type Attributes
+7. **[TimeToLive]**: Automatic item expiration
+8. **[DynamoDbMap]**: Nested object mapping
+9. **[JsonBlob]**: JSON serialization
+10. **[BlobReference]**: External blob storage
+11. **[DynamoDbJsonSerializer]**: Configure JSON serializer (assembly-level)
+
+### Metadata Attributes
+12. **[Queryable]**: Document query capabilities
 
 The source generator reads these attributes at compile time and generates type-safe code for working with DynamoDB.
 
