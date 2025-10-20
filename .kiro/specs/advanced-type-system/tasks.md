@@ -197,8 +197,8 @@
     - _Requirements: 4.4, 12.2_
 
 
-- [ ] 10. Create JSON serialization packages
-  - [ ] 10.1 Create Oproto.FluentDynamoDb.SystemTextJson package
+- [x] 10. Create JSON serialization packages
+  - [x] 10.1 Create Oproto.FluentDynamoDb.SystemTextJson package
     - Create new .NET 8 project
     - Reference System.Text.Json package
     - Create SystemTextJsonSerializer utility class
@@ -206,7 +206,7 @@
     - Implement Deserialize method using JsonSerializerContext
     - _Requirements: 5.2, 6.1_
   
-  - [ ] 10.2 Create Oproto.FluentDynamoDb.NewtonsoftJson package
+  - [x] 10.2 Create Oproto.FluentDynamoDb.NewtonsoftJson package
     - Create new .NET 8 project
     - Reference Newtonsoft.Json package
     - Create NewtonsoftJsonSerializer utility class
