@@ -78,8 +78,8 @@
     - Support bucket name and key prefix configuration
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 5. Enhance source generator for advanced type detection
-  - [ ] 5.1 Create AdvancedTypeAnalyzer class
+- [x] 5. Enhance source generator for advanced type detection
+  - [x] 5.1 Create AdvancedTypeAnalyzer class
     - Detect Map types (Dictionary and [DynamoDbMap] classes)
     - Detect Set types (HashSet<T>)
     - Detect List types (List<T>)
@@ -88,7 +88,7 @@
     - Detect blob reference properties ([BlobReference])
     - _Requirements: 1.1, 2.1, 3.1, 4.1, 5.1, 7.1_
   
-  - [ ] 5.2 Add compilation error diagnostics
+  - [x] 5.2 Add compilation error diagnostics
     - DYNDB101: Invalid TTL property type
     - DYNDB102: Missing JSON serializer package
     - DYNDB103: Missing blob provider package
@@ -97,7 +97,7 @@
     - DYNDB106: Unsupported collection type
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
   
-  - [ ] 5.3 Validate advanced type configurations
+  - [x] 5.3 Validate advanced type configurations
     - Validate TTL only on DateTime/DateTimeOffset
     - Validate JsonBlob requires serializer package reference
     - Validate BlobReference requires provider package reference

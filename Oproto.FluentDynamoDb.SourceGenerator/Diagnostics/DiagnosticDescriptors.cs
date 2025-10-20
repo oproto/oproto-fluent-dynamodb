@@ -438,4 +438,78 @@ public static class DiagnosticDescriptors
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "Computed key formats should produce valid DynamoDB key values.");
+
+    // Advanced Type System Diagnostics (DYNDB101-DYNDB106)
+
+    /// <summary>
+    /// Error when [TimeToLive] is used on a non-DateTime property.
+    /// </summary>
+    public static readonly DiagnosticDescriptor InvalidTtlType = new(
+        "DYNDB101",
+        "Invalid TTL property type",
+        "[TimeToLive] can only be used on DateTime or DateTimeOffset properties. Property '{0}' is type '{1}'",
+        "DynamoDb.AdvancedTypes",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "TTL properties must be DateTime or DateTimeOffset to support Unix epoch conversion.");
+
+    /// <summary>
+    /// Error when [JsonBlob] is used without referencing a JSON serializer package.
+    /// </summary>
+    public static readonly DiagnosticDescriptor MissingJsonSerializer = new(
+        "DYNDB102",
+        "Missing JSON serializer package",
+        "[JsonBlob] on property '{0}' requires referencing either Oproto.FluentDynamoDb.SystemTextJson or Oproto.FluentDynamoDb.NewtonsoftJson",
+        "DynamoDb.AdvancedTypes",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "JSON blob serialization requires a JSON serializer package reference.");
+
+    /// <summary>
+    /// Error when [BlobReference] is used without referencing a blob provider package.
+    /// </summary>
+    public static readonly DiagnosticDescriptor MissingBlobProvider = new(
+        "DYNDB103",
+        "Missing blob provider package",
+        "[BlobReference] on property '{0}' requires referencing a blob provider package like Oproto.FluentDynamoDb.BlobStorage.S3",
+        "DynamoDb.AdvancedTypes",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Blob reference storage requires a blob provider package reference.");
+
+    /// <summary>
+    /// Error when incompatible attributes are combined on a property.
+    /// </summary>
+    public static readonly DiagnosticDescriptor IncompatibleAttributes = new(
+        "DYNDB104",
+        "Incompatible attribute combination",
+        "Property '{0}' has incompatible attribute combination: {1}",
+        "DynamoDb.AdvancedTypes",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Certain attribute combinations are not supported together.");
+
+    /// <summary>
+    /// Error when multiple properties have [TimeToLive] attribute.
+    /// </summary>
+    public static readonly DiagnosticDescriptor MultipleTtlFields = new(
+        "DYNDB105",
+        "Multiple TTL fields",
+        "Entity '{0}' has multiple [TimeToLive] properties. Only one TTL field is allowed per entity",
+        "DynamoDb.AdvancedTypes",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "DynamoDB entities can only have one TTL field.");
+
+    /// <summary>
+    /// Error when an unsupported collection type is used.
+    /// </summary>
+    public static readonly DiagnosticDescriptor UnsupportedCollectionType = new(
+        "DYNDB106",
+        "Unsupported collection type",
+        "Property '{0}' has unsupported collection type '{1}'. Use Dictionary<string, T>, HashSet<T>, or List<T>",
+        "DynamoDb.AdvancedTypes",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Only specific collection types are supported for DynamoDB mapping.");
 }

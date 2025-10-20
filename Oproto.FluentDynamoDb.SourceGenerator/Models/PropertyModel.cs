@@ -96,4 +96,9 @@ public class PropertyModel
     /// Gets a value indicating whether this property is read-only (computed or extracted).
     /// </summary>
     public bool IsReadOnly => IsComputed || IsExtracted;
+
+    /// <summary>
+    /// Gets or sets the advanced type information for this property.
+    /// </summary>
+    public AdvancedTypeInfo? AdvancedType { get; set; }
 }

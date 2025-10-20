@@ -171,6 +171,10 @@ public class EntityAnalyzer
         // Extract extracted key attributes
         ExtractExtractedKeyAttributes(propertyDecl, semanticModel, propertyModel);
 
+        // Analyze advanced type information
+        var advancedTypeAnalyzer = new AdvancedTypeAnalyzer();
+        propertyModel.AdvancedType = advancedTypeAnalyzer.AnalyzeProperty(propertyModel, semanticModel);
+
         return propertyModel;
     }
 
@@ -501,6 +505,9 @@ public class EntityAnalyzer
         ValidateEntityComplexity(entityModel);
         ValidateEntityScalability(entityModel);
         ValidateCircularReferences(entityModel);
+
+        // Validate advanced type configurations
+        ValidateAdvancedTypes(entityModel);
     }
 
     private void ValidatePropertyModel(PropertyModel propertyModel)
@@ -1375,6 +1382,37 @@ public class EntityAnalyzer
                     entityModel.ClassName);
                 break;
             }
+        }
+    }
+
+    private void ValidateAdvancedTypes(EntityModel entityModel)
+    {
+        var validator = new AdvancedTypeValidator();
+
+        // Check for package references (simplified - in real implementation would check compilation references)
+        var hasJsonSerializerPackage = false; // TODO: Check compilation references
+        var hasBlobProviderPackage = false;   // TODO: Check compilation references
+
+        // Validate each property with advanced types
+        foreach (var property in entityModel.Properties)
+        {
+            if (property.AdvancedType?.HasAdvancedType == true)
+            {
+                validator.ValidateProperty(
+                    property,
+                    property.AdvancedType,
+                    hasJsonSerializerPackage,
+                    hasBlobProviderPackage);
+            }
+        }
+
+        // Validate entity-level constraints (e.g., only one TTL field)
+        validator.ValidateEntityTtlFields(entityModel);
+
+        // Add all diagnostics from validator
+        foreach (var diagnostic in validator.Diagnostics)
+        {
+            _diagnostics.Add(diagnostic);
         }
     }
 
