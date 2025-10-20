@@ -299,32 +299,32 @@
     - Generate error for invalid combinations
     - _Requirements: 10.4_
 
-- [ ] 14. Add error handling and diagnostics
-  - [ ] 14.1 Generate try-catch blocks for Map conversions
+- [x] 14. Add error handling and diagnostics
+  - [x] 14.1 Generate try-catch blocks for Map conversions
     - Wrap map conversion code in try-catch
     - Include property name and nested property path in errors
     - Throw DynamoDbMappingException with context
     - _Requirements: 18.1_
   
-  - [ ] 14.2 Generate try-catch blocks for Set conversions
+  - [x] 14.2 Generate try-catch blocks for Set conversions
     - Wrap set conversion code in try-catch
     - Detect and report duplicate value errors
     - Throw DynamoDbMappingException with context
     - _Requirements: 18.2_
   
-  - [ ] 14.3 Generate try-catch blocks for JSON serialization
+  - [x] 14.3 Generate try-catch blocks for JSON serialization
     - Wrap serialization/deserialization in try-catch
     - Include property name and type in error messages
     - Throw DynamoDbMappingException with context
     - _Requirements: 18.3_
   
-  - [ ] 14.4 Generate try-catch blocks for blob operations
+  - [x] 14.4 Generate try-catch blocks for blob operations
     - Wrap blob storage operations in try-catch
     - Include reference key and provider type in errors
     - Throw DynamoDbMappingException with context
     - _Requirements: 18.4_
   
-  - [ ] 14.5 Generate validation for TTL conversions
+  - [x] 14.5 Generate validation for TTL conversions
     - Validate DateTime is within valid Unix epoch range
     - Include invalid value in error message
     - Throw DynamoDbMappingException with context

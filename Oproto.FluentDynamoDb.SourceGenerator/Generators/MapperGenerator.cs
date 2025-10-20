@@ -222,7 +222,7 @@ public static class MapperGenerator
         // Handle TTL properties (Time-To-Live)
         if (property.AdvancedType?.IsTtl == true)
         {
-            GenerateTtlPropertyToAttributeValue(sb, property);
+            GenerateTtlPropertyToAttributeValue(sb, property, entity);
             return;
         }
 
@@ -236,14 +236,14 @@ public static class MapperGenerator
         // Handle Map properties (Dictionary types)
         if (property.AdvancedType?.IsMap == true)
         {
-            GenerateMapPropertyToAttributeValue(sb, property);
+            GenerateMapPropertyToAttributeValue(sb, property, entity);
             return;
         }
 
         // Handle collection properties differently for single-item entities
         if (property.IsCollection)
         {
-            GenerateCollectionPropertyToAttributeValue(sb, property);
+            GenerateCollectionPropertyToAttributeValue(sb, property, entity);
             return;
         }
 
@@ -283,7 +283,7 @@ public static class MapperGenerator
         // Handle TTL properties (Time-To-Live)
         if (property.AdvancedType?.IsTtl == true)
         {
-            GenerateTtlPropertyToAttributeValue(sb, property);
+            GenerateTtlPropertyToAttributeValue(sb, property, entity);
             return;
         }
 
@@ -297,14 +297,14 @@ public static class MapperGenerator
         // Handle Map properties (Dictionary types)
         if (property.AdvancedType?.IsMap == true)
         {
-            GenerateMapPropertyToAttributeValue(sb, property);
+            GenerateMapPropertyToAttributeValue(sb, property, entity);
             return;
         }
 
         // Handle collection properties differently for single-item entities
         if (property.IsCollection)
         {
-            GenerateCollectionPropertyToAttributeValue(sb, property);
+            GenerateCollectionPropertyToAttributeValue(sb, property, entity);
             return;
         }
 
@@ -393,7 +393,10 @@ public static class MapperGenerator
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        new AttributeValue {{ S = \"<blob data>\" }},");
         sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
-        sb.AppendLine("                        ex);");
+        sb.AppendLine("                        ex)");
+        sb.AppendLine($"                        .WithContext(\"BlobProviderType\", blobProvider.GetType().Name)");
+        sb.AppendLine($"                        .WithContext(\"SuggestedKey\", suggestedKey)");
+        sb.AppendLine($"                        .WithContext(\"Operation\", \"BlobStorage\");");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
     }
@@ -479,7 +482,7 @@ public static class MapperGenerator
         sb.AppendLine("            }");
     }
 
-    private static void GenerateTtlPropertyToAttributeValue(StringBuilder sb, PropertyModel property)
+    private static void GenerateTtlPropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
@@ -495,17 +498,63 @@ public static class MapperGenerator
             {
                 sb.AppendLine($"            if (typedEntity.{propertyName}.HasValue)");
                 sb.AppendLine("            {");
-                sb.AppendLine("                var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);");
-                sb.AppendLine($"                var seconds = (long)(typedEntity.{propertyName}.Value.ToUniversalTime() - epoch).TotalSeconds;");
-                sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ N = seconds.ToString() }};");
+                sb.AppendLine("                try");
+                sb.AppendLine("                {");
+                sb.AppendLine("                    var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);");
+                sb.AppendLine($"                    var dateTimeUtc = typedEntity.{propertyName}.Value.ToUniversalTime();");
+                sb.AppendLine("                    // Validate DateTime is within valid Unix epoch range");
+                sb.AppendLine("                    if (dateTimeUtc < epoch)");
+                sb.AppendLine("                    {");
+                sb.AppendLine($"                        throw new ArgumentOutOfRangeException(nameof(typedEntity.{propertyName}), $\"DateTime value {{dateTimeUtc}} is before Unix epoch (1970-01-01). TTL values must be after 1970-01-01.\");");
+                sb.AppendLine("                    }");
+                sb.AppendLine("                    if (dateTimeUtc > new DateTime(2038, 1, 19, 3, 14, 7, DateTimeKind.Utc))");
+                sb.AppendLine("                    {");
+                sb.AppendLine($"                        throw new ArgumentOutOfRangeException(nameof(typedEntity.{propertyName}), $\"DateTime value {{dateTimeUtc}} exceeds maximum Unix timestamp (2038-01-19). Consider using DateTimeOffset for dates beyond 2038.\");");
+                sb.AppendLine("                    }");
+                sb.AppendLine("                    var seconds = (long)(dateTimeUtc - epoch).TotalSeconds;");
+                sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ N = seconds.ToString() }};");
+                sb.AppendLine("                }");
+                sb.AppendLine("                catch (Exception ex)");
+                sb.AppendLine("                {");
+                sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+                sb.AppendLine($"                        typeof({entity.ClassName}),");
+                sb.AppendLine($"                        \"{propertyName}\",");
+                sb.AppendLine($"                        new AttributeValue {{ S = typedEntity.{propertyName}.Value.ToString(\"O\") }},");
+                sb.AppendLine($"                        typeof({propertyType}),");
+                sb.AppendLine("                        ex)");
+                sb.AppendLine($"                        .WithContext(\"TtlValue\", typedEntity.{propertyName}.Value.ToString(\"O\"))");
+                sb.AppendLine($"                        .WithContext(\"Operation\", \"TtlConversion\");");
+                sb.AppendLine("                }");
                 sb.AppendLine("            }");
             }
             else
             {
+                sb.AppendLine("            try");
                 sb.AppendLine("            {");
                 sb.AppendLine("                var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);");
-                sb.AppendLine($"                var seconds = (long)(typedEntity.{propertyName}.ToUniversalTime() - epoch).TotalSeconds;");
+                sb.AppendLine($"                var dateTimeUtc = typedEntity.{propertyName}.ToUniversalTime();");
+                sb.AppendLine("                // Validate DateTime is within valid Unix epoch range");
+                sb.AppendLine("                if (dateTimeUtc < epoch)");
+                sb.AppendLine("                {");
+                sb.AppendLine($"                    throw new ArgumentOutOfRangeException(nameof(typedEntity.{propertyName}), $\"DateTime value {{dateTimeUtc}} is before Unix epoch (1970-01-01). TTL values must be after 1970-01-01.\");");
+                sb.AppendLine("                }");
+                sb.AppendLine("                if (dateTimeUtc > new DateTime(2038, 1, 19, 3, 14, 7, DateTimeKind.Utc))");
+                sb.AppendLine("                {");
+                sb.AppendLine($"                    throw new ArgumentOutOfRangeException(nameof(typedEntity.{propertyName}), $\"DateTime value {{dateTimeUtc}} exceeds maximum Unix timestamp (2038-01-19). Consider using DateTimeOffset for dates beyond 2038.\");");
+                sb.AppendLine("                }");
+                sb.AppendLine("                var seconds = (long)(dateTimeUtc - epoch).TotalSeconds;");
                 sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ N = seconds.ToString() }};");
+                sb.AppendLine("            }");
+                sb.AppendLine("            catch (Exception ex)");
+                sb.AppendLine("            {");
+                sb.AppendLine($"                throw DynamoDbMappingException.PropertyConversionFailed(");
+                sb.AppendLine($"                    typeof({entity.ClassName}),");
+                sb.AppendLine($"                    \"{propertyName}\",");
+                sb.AppendLine($"                    new AttributeValue {{ S = typedEntity.{propertyName}.ToString(\"O\") }},");
+                sb.AppendLine($"                    typeof({propertyType}),");
+                sb.AppendLine("                    ex)");
+                sb.AppendLine($"                    .WithContext(\"TtlValue\", typedEntity.{propertyName}.ToString(\"O\"))");
+                sb.AppendLine($"                    .WithContext(\"Operation\", \"TtlConversion\");");
                 sb.AppendLine("            }");
             }
         }
@@ -516,15 +565,51 @@ public static class MapperGenerator
             {
                 sb.AppendLine($"            if (typedEntity.{propertyName}.HasValue)");
                 sb.AppendLine("            {");
-                sb.AppendLine($"                var seconds = typedEntity.{propertyName}.Value.ToUnixTimeSeconds();");
-                sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ N = seconds.ToString() }};");
+                sb.AppendLine("                try");
+                sb.AppendLine("                {");
+                sb.AppendLine("                    // Validate DateTimeOffset is within valid Unix epoch range");
+                sb.AppendLine($"                    if (typedEntity.{propertyName}.Value < DateTimeOffset.UnixEpoch)");
+                sb.AppendLine("                    {");
+                sb.AppendLine($"                        throw new ArgumentOutOfRangeException(nameof(typedEntity.{propertyName}), $\"DateTimeOffset value {{typedEntity.{propertyName}.Value}} is before Unix epoch (1970-01-01). TTL values must be after 1970-01-01.\");");
+                sb.AppendLine("                    }");
+                sb.AppendLine($"                    var seconds = typedEntity.{propertyName}.Value.ToUnixTimeSeconds();");
+                sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ N = seconds.ToString() }};");
+                sb.AppendLine("                }");
+                sb.AppendLine("                catch (Exception ex)");
+                sb.AppendLine("                {");
+                sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+                sb.AppendLine($"                        typeof({entity.ClassName}),");
+                sb.AppendLine($"                        \"{propertyName}\",");
+                sb.AppendLine($"                        new AttributeValue {{ S = typedEntity.{propertyName}.Value.ToString(\"O\") }},");
+                sb.AppendLine($"                        typeof({propertyType}),");
+                sb.AppendLine("                        ex)");
+                sb.AppendLine($"                        .WithContext(\"TtlValue\", typedEntity.{propertyName}.Value.ToString(\"O\"))");
+                sb.AppendLine($"                        .WithContext(\"Operation\", \"TtlConversion\");");
+                sb.AppendLine("                }");
                 sb.AppendLine("            }");
             }
             else
             {
+                sb.AppendLine("            try");
                 sb.AppendLine("            {");
+                sb.AppendLine("                // Validate DateTimeOffset is within valid Unix epoch range");
+                sb.AppendLine($"                if (typedEntity.{propertyName} < DateTimeOffset.UnixEpoch)");
+                sb.AppendLine("                {");
+                sb.AppendLine($"                    throw new ArgumentOutOfRangeException(nameof(typedEntity.{propertyName}), $\"DateTimeOffset value {{typedEntity.{propertyName}}} is before Unix epoch (1970-01-01). TTL values must be after 1970-01-01.\");");
+                sb.AppendLine("                }");
                 sb.AppendLine($"                var seconds = typedEntity.{propertyName}.ToUnixTimeSeconds();");
                 sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ N = seconds.ToString() }};");
+                sb.AppendLine("            }");
+                sb.AppendLine("            catch (Exception ex)");
+                sb.AppendLine("            {");
+                sb.AppendLine($"                throw DynamoDbMappingException.PropertyConversionFailed(");
+                sb.AppendLine($"                    typeof({entity.ClassName}),");
+                sb.AppendLine($"                    \"{propertyName}\",");
+                sb.AppendLine($"                    new AttributeValue {{ S = typedEntity.{propertyName}.ToString(\"O\") }},");
+                sb.AppendLine($"                    typeof({propertyType}),");
+                sb.AppendLine("                    ex)");
+                sb.AppendLine($"                    .WithContext(\"TtlValue\", typedEntity.{propertyName}.ToString(\"O\"))");
+                sb.AppendLine($"                    .WithContext(\"Operation\", \"TtlConversion\");");
                 sb.AppendLine("            }");
             }
         }
@@ -535,6 +620,7 @@ public static class MapperGenerator
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
         var serializerType = property.AdvancedType?.JsonSerializerType;
+        var baseType = GetBaseType(property.PropertyType);
 
         sb.AppendLine($"            // Serialize JSON blob property {propertyName}");
 
@@ -542,11 +628,47 @@ public static class MapperGenerator
         {
             sb.AppendLine($"            if (typedEntity.{propertyName} != null)");
             sb.AppendLine("            {");
+            sb.AppendLine("                try");
+            sb.AppendLine("                {");
 
             if (serializerType == "SystemTextJson")
             {
                 // Use System.Text.Json with generated JsonSerializerContext
-                var baseType = GetBaseType(property.PropertyType);
+                sb.AppendLine($"                    var json = System.Text.Json.JsonSerializer.Serialize(");
+                sb.AppendLine($"                        typedEntity.{propertyName},");
+                sb.AppendLine($"                        {entity.ClassName}JsonContext.Default.{baseType});");
+                sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
+            }
+            else if (serializerType == "NewtonsoftJson")
+            {
+                // Use Newtonsoft.Json
+                sb.AppendLine($"                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(typedEntity.{propertyName});");
+                sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
+            }
+
+            sb.AppendLine("                }");
+            sb.AppendLine("                catch (Exception ex)");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+            sb.AppendLine($"                        typeof({entity.ClassName}),");
+            sb.AppendLine($"                        \"{propertyName}\",");
+            sb.AppendLine($"                        new AttributeValue {{ S = \"<json serialization failed>\" }},");
+            sb.AppendLine($"                        typeof({property.PropertyType}),");
+            sb.AppendLine("                        ex)");
+            sb.AppendLine($"                        .WithContext(\"SerializerType\", \"{serializerType}\")");
+            sb.AppendLine($"                        .WithContext(\"PropertyType\", \"{baseType}\")");
+            sb.AppendLine($"                        .WithContext(\"Operation\", \"JsonSerialization\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("            }");
+        }
+        else
+        {
+            sb.AppendLine("            try");
+            sb.AppendLine("            {");
+
+            if (serializerType == "SystemTextJson")
+            {
+                // Use System.Text.Json with generated JsonSerializerContext
                 sb.AppendLine($"                var json = System.Text.Json.JsonSerializer.Serialize(");
                 sb.AppendLine($"                    typedEntity.{propertyName},");
                 sb.AppendLine($"                    {entity.ClassName}JsonContext.Default.{baseType});");
@@ -560,24 +682,18 @@ public static class MapperGenerator
             }
 
             sb.AppendLine("            }");
-        }
-        else
-        {
-            if (serializerType == "SystemTextJson")
-            {
-                // Use System.Text.Json with generated JsonSerializerContext
-                var baseType = GetBaseType(property.PropertyType);
-                sb.AppendLine($"            var json = System.Text.Json.JsonSerializer.Serialize(");
-                sb.AppendLine($"                typedEntity.{propertyName},");
-                sb.AppendLine($"                {entity.ClassName}JsonContext.Default.{baseType});");
-                sb.AppendLine($"            item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
-            }
-            else if (serializerType == "NewtonsoftJson")
-            {
-                // Use Newtonsoft.Json
-                sb.AppendLine($"            var json = Newtonsoft.Json.JsonConvert.SerializeObject(typedEntity.{propertyName});");
-                sb.AppendLine($"            item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
-            }
+            sb.AppendLine("            catch (Exception ex)");
+            sb.AppendLine("            {");
+            sb.AppendLine($"                throw DynamoDbMappingException.PropertyConversionFailed(");
+            sb.AppendLine($"                    typeof({entity.ClassName}),");
+            sb.AppendLine($"                    \"{propertyName}\",");
+            sb.AppendLine($"                    new AttributeValue {{ S = \"<json serialization failed>\" }},");
+            sb.AppendLine($"                    typeof({property.PropertyType}),");
+            sb.AppendLine("                    ex)");
+            sb.AppendLine($"                    .WithContext(\"SerializerType\", \"{serializerType}\")");
+            sb.AppendLine($"                    .WithContext(\"PropertyType\", \"{baseType}\")");
+            sb.AppendLine($"                    .WithContext(\"Operation\", \"JsonSerialization\");");
+            sb.AppendLine("            }");
         }
     }
 
@@ -619,7 +735,9 @@ public static class MapperGenerator
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
         sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
-        sb.AppendLine("                        ex);");
+        sb.AppendLine("                        ex)");
+        sb.AppendLine($"                        .WithContext(\"TtlValue\", {propertyName.ToLowerInvariant()}Value.N ?? \"<null>\")");
+        sb.AppendLine($"                        .WithContext(\"Operation\", \"TtlDeserialization\");");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
     }
@@ -662,12 +780,15 @@ public static class MapperGenerator
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
         sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
-        sb.AppendLine($"                        ex);");
+        sb.AppendLine("                        ex)");
+        sb.AppendLine($"                        .WithContext(\"SerializerType\", \"{serializerType}\")");
+        sb.AppendLine($"                        .WithContext(\"PropertyType\", \"{baseType}\")");
+        sb.AppendLine($"                        .WithContext(\"Operation\", \"JsonDeserialization\");");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
     }
 
-    private static void GenerateMapPropertyToAttributeValue(StringBuilder sb, PropertyModel property)
+    private static void GenerateMapPropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
@@ -683,12 +804,26 @@ public static class MapperGenerator
             // Dictionary<string, string> - simple string map
             sb.AppendLine($"            if (typedEntity.{propertyName} != null && typedEntity.{propertyName}.Count > 0)");
             sb.AppendLine("            {");
-            sb.AppendLine($"                var {propertyName.ToLowerInvariant()}Map = new Dictionary<string, AttributeValue>();");
-            sb.AppendLine($"                foreach (var kvp in typedEntity.{propertyName})");
+            sb.AppendLine("                try");
             sb.AppendLine("                {");
-            sb.AppendLine($"                    {propertyName.ToLowerInvariant()}Map[kvp.Key] = new AttributeValue {{ S = kvp.Value }};");
+            sb.AppendLine($"                    var {propertyName.ToLowerInvariant()}Map = new Dictionary<string, AttributeValue>();");
+            sb.AppendLine($"                    foreach (var kvp in typedEntity.{propertyName})");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Map[kvp.Key] = new AttributeValue {{ S = kvp.Value }};");
+            sb.AppendLine("                    }");
+            sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ M = {propertyName.ToLowerInvariant()}Map }};");
             sb.AppendLine("                }");
-            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ M = {propertyName.ToLowerInvariant()}Map }};");
+            sb.AppendLine("                catch (Exception ex)");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+            sb.AppendLine($"                        typeof({entity.ClassName}),");
+            sb.AppendLine($"                        \"{propertyName}\",");
+            sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
+            sb.AppendLine($"                        typeof({propertyType}),");
+            sb.AppendLine("                        ex)");
+            sb.AppendLine($"                        .WithContext(\"MapType\", \"Dictionary<string, string>\")");
+            sb.AppendLine($"                        .WithContext(\"Operation\", \"ToDynamoDb\");");
+            sb.AppendLine("                }");
             sb.AppendLine("            }");
         }
         // Check if it's Dictionary<string, AttributeValue>
@@ -698,7 +833,21 @@ public static class MapperGenerator
             // Dictionary<string, AttributeValue> - direct map
             sb.AppendLine($"            if (typedEntity.{propertyName} != null && typedEntity.{propertyName}.Count > 0)");
             sb.AppendLine("            {");
-            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ M = typedEntity.{propertyName} }};");
+            sb.AppendLine("                try");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ M = typedEntity.{propertyName} }};");
+            sb.AppendLine("                }");
+            sb.AppendLine("                catch (Exception ex)");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+            sb.AppendLine($"                        typeof({entity.ClassName}),");
+            sb.AppendLine($"                        \"{propertyName}\",");
+            sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
+            sb.AppendLine($"                        typeof({propertyType}),");
+            sb.AppendLine("                        ex)");
+            sb.AppendLine($"                        .WithContext(\"MapType\", \"Dictionary<string, AttributeValue>\")");
+            sb.AppendLine($"                        .WithContext(\"Operation\", \"ToDynamoDb\");");
+            sb.AppendLine("                }");
             sb.AppendLine("            }");
         }
         else
@@ -707,17 +856,32 @@ public static class MapperGenerator
             // The nested type must also be marked with [DynamoDbEntity] to have its own mapping generated
             sb.AppendLine($"            if (typedEntity.{propertyName} != null)");
             sb.AppendLine("            {");
-            sb.AppendLine($"                // Convert nested entity to map using its generated ToDynamoDb method");
-            sb.AppendLine($"                var {propertyName.ToLowerInvariant()}Map = {propertyType}.ToDynamoDb(typedEntity.{propertyName});");
-            sb.AppendLine($"                if ({propertyName.ToLowerInvariant()}Map != null && {propertyName.ToLowerInvariant()}Map.Count > 0)");
+            sb.AppendLine("                try");
             sb.AppendLine("                {");
-            sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ M = {propertyName.ToLowerInvariant()}Map }};");
+            sb.AppendLine($"                    // Convert nested entity to map using its generated ToDynamoDb method");
+            sb.AppendLine($"                    var {propertyName.ToLowerInvariant()}Map = {propertyType}.ToDynamoDb(typedEntity.{propertyName});");
+            sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Map != null && {propertyName.ToLowerInvariant()}Map.Count > 0)");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        item[\"{attributeName}\"] = new AttributeValue {{ M = {propertyName.ToLowerInvariant()}Map }};");
+            sb.AppendLine("                    }");
+            sb.AppendLine("                }");
+            sb.AppendLine("                catch (Exception ex)");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+            sb.AppendLine($"                        typeof({entity.ClassName}),");
+            sb.AppendLine($"                        \"{propertyName}\",");
+            sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
+            sb.AppendLine($"                        typeof({propertyType}),");
+            sb.AppendLine("                        ex)");
+            sb.AppendLine($"                        .WithContext(\"MapType\", \"CustomObject\")");
+            sb.AppendLine($"                        .WithContext(\"NestedType\", \"{propertyType}\")");
+            sb.AppendLine($"                        .WithContext(\"Operation\", \"ToDynamoDb\");");
             sb.AppendLine("                }");
             sb.AppendLine("            }");
         }
     }
 
-    private static void GenerateCollectionPropertyToAttributeValue(StringBuilder sb, PropertyModel property)
+    private static void GenerateCollectionPropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
@@ -734,67 +898,103 @@ public static class MapperGenerator
         if (isSet)
         {
             // Generate Set-specific code (SS, NS, or BS)
-            GenerateSetPropertyToAttributeValue(sb, property, attributeName, propertyName, collectionElementType);
+            GenerateSetPropertyToAttributeValue(sb, property, entity, attributeName, propertyName, collectionElementType);
         }
         else
         {
             // Generate List-specific code (L)
-            GenerateListPropertyToAttributeValue(sb, property, attributeName, propertyName, collectionElementType);
+            GenerateListPropertyToAttributeValue(sb, property, entity, attributeName, propertyName, collectionElementType);
         }
 
         sb.AppendLine("            }");
     }
 
-    private static void GenerateSetPropertyToAttributeValue(StringBuilder sb, PropertyModel property, string attributeName, string propertyName, string collectionElementType)
+    private static void GenerateSetPropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity, string attributeName, string propertyName, string collectionElementType)
     {
         var baseElementType = GetBaseType(collectionElementType);
+
+        sb.AppendLine("                try");
+        sb.AppendLine("                {");
 
         if (baseElementType == "string" || baseElementType == "System.String")
         {
             // String Set (SS)
-            sb.AppendLine($"                // Convert HashSet<string> to DynamoDB String Set (SS)");
-            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
-            sb.AppendLine("                {");
-            sb.AppendLine($"                    SS = typedEntity.{propertyName}.ToList()");
-            sb.AppendLine("                };");
+            sb.AppendLine($"                    // Convert HashSet<string> to DynamoDB String Set (SS)");
+            sb.AppendLine($"                    var setList = typedEntity.{propertyName}.ToList();");
+            sb.AppendLine("                    // Check for duplicates (DynamoDB Sets cannot have duplicates)");
+            sb.AppendLine($"                    if (setList.Count != setList.Distinct().Count())");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        throw new InvalidOperationException(\"Set contains duplicate values. DynamoDB Sets must have unique values.\");");
+            sb.AppendLine("                    }");
+            sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ SS = setList }};");
         }
         else if (IsNumericType(baseElementType))
         {
             // Number Set (NS)
-            sb.AppendLine($"                // Convert HashSet<{baseElementType}> to DynamoDB Number Set (NS)");
-            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
-            sb.AppendLine("                {");
-            sb.AppendLine($"                    NS = typedEntity.{propertyName}.Select(x => x.ToString()).ToList()");
-            sb.AppendLine("                };");
+            sb.AppendLine($"                    // Convert HashSet<{baseElementType}> to DynamoDB Number Set (NS)");
+            sb.AppendLine($"                    var setList = typedEntity.{propertyName}.Select(x => x.ToString()).ToList();");
+            sb.AppendLine("                    // Check for duplicates (DynamoDB Sets cannot have duplicates)");
+            sb.AppendLine($"                    if (setList.Count != setList.Distinct().Count())");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        throw new InvalidOperationException(\"Set contains duplicate values after conversion. DynamoDB Sets must have unique values.\");");
+            sb.AppendLine("                    }");
+            sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ NS = setList }};");
         }
         else if (baseElementType == "byte[]" || baseElementType == "System.Byte[]")
         {
             // Binary Set (BS)
-            sb.AppendLine($"                // Convert HashSet<byte[]> to DynamoDB Binary Set (BS)");
-            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
-            sb.AppendLine("                {");
-            sb.AppendLine($"                    BS = typedEntity.{propertyName}.Select(x => new MemoryStream(x)).ToList()");
-            sb.AppendLine("                };");
+            sb.AppendLine($"                    // Convert HashSet<byte[]> to DynamoDB Binary Set (BS)");
+            sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        BS = typedEntity.{propertyName}.Select(x => new MemoryStream(x)).ToList()");
+            sb.AppendLine("                    };");
         }
         else
         {
             // Unsupported Set element type - this should be caught by validation
-            sb.AppendLine($"                // ERROR: Unsupported Set element type: {baseElementType}");
-            sb.AppendLine($"                // DynamoDB Sets only support string, number, and binary types");
-            sb.AppendLine($"                throw new NotSupportedException($\"HashSet<{baseElementType}> is not supported. Use HashSet<string>, HashSet<int>, HashSet<decimal>, or HashSet<byte[]>\");");
+            sb.AppendLine($"                    // ERROR: Unsupported Set element type: {baseElementType}");
+            sb.AppendLine($"                    // DynamoDB Sets only support string, number, and binary types");
+            sb.AppendLine($"                    throw new NotSupportedException($\"HashSet<{baseElementType}> is not supported. Use HashSet<string>, HashSet<int>, HashSet<decimal>, or HashSet<byte[]>\");");
         }
+
+        sb.AppendLine("                }");
+        sb.AppendLine("                catch (Exception ex)");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
+        sb.AppendLine($"                        \"{propertyName}\",");
+        sb.AppendLine($"                        new AttributeValue {{ SS = new List<string>() }},");
+        sb.AppendLine($"                        typeof({property.PropertyType}),");
+        sb.AppendLine("                        ex)");
+        sb.AppendLine($"                        .WithContext(\"SetType\", \"{baseElementType}\")");
+        sb.AppendLine($"                        .WithContext(\"Operation\", \"ToDynamoDb\");");
+        sb.AppendLine("                }");
     }
 
-    private static void GenerateListPropertyToAttributeValue(StringBuilder sb, PropertyModel property, string attributeName, string propertyName, string collectionElementType)
+    private static void GenerateListPropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity, string attributeName, string propertyName, string collectionElementType)
     {
         var baseElementType = GetBaseType(collectionElementType);
 
-        // Use List (L) for all List types
-        sb.AppendLine($"                // Convert List<{baseElementType}> to DynamoDB List (L)");
-        sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
+        sb.AppendLine("                try");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    L = typedEntity.{propertyName}.Select(x => {GetToAttributeValueExpressionForCollectionElement(collectionElementType, "x")}).ToList()");
-        sb.AppendLine("                };");
+        // Use List (L) for all List types
+        sb.AppendLine($"                    // Convert List<{baseElementType}> to DynamoDB List (L)");
+        sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue");
+        sb.AppendLine("                    {");
+        sb.AppendLine($"                        L = typedEntity.{propertyName}.Select(x => {GetToAttributeValueExpressionForCollectionElement(collectionElementType, "x")}).ToList()");
+        sb.AppendLine("                    };");
+        sb.AppendLine("                }");
+        sb.AppendLine("                catch (Exception ex)");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
+        sb.AppendLine($"                        \"{propertyName}\",");
+        sb.AppendLine($"                        new AttributeValue {{ L = new List<AttributeValue>() }},");
+        sb.AppendLine($"                        typeof({property.PropertyType}),");
+        sb.AppendLine("                        ex)");
+        sb.AppendLine($"                        .WithContext(\"ListElementType\", \"{baseElementType}\")");
+        sb.AppendLine($"                        .WithContext(\"Operation\", \"ToDynamoDb\");");
+        sb.AppendLine("                }");
     }
 
     private static string GetToAttributeValueExpression(PropertyModel property, string valueExpression)
