@@ -215,35 +215,35 @@
     - Add documentation about limited AOT support
     - _Requirements: 5.3, 6.2_
 
-- [ ] 11. Generate mapping code for JSON blob properties
-  - [ ] 11.1 Detect JSON serializer package reference
+- [x] 11. Generate mapping code for JSON blob properties
+  - [x] 11.1 Detect JSON serializer package reference
     - Check if SystemTextJson package is referenced
     - Check if NewtonsoftJson package is referenced
     - Check for assembly-level DynamoDbJsonSerializer attribute
     - Determine which serializer to use
     - _Requirements: 5.2, 5.3, 5.4_
   
-  - [ ] 11.2 Generate JsonSerializerContext for System.Text.Json
+  - [x] 11.2 Generate JsonSerializerContext for System.Text.Json
     - Create context class for each entity with JSON blob properties
     - Add JsonSerializable attributes for each JSON blob type
     - Make context partial for AOT source generation
     - _Requirements: 6.1, 6.5_
   
-  - [ ] 11.3 Generate ToDynamoDb code for JSON blob properties (System.Text.Json)
+  - [x] 11.3 Generate ToDynamoDb code for JSON blob properties (System.Text.Json)
     - Check for null values
     - Serialize using generated JsonSerializerContext
     - Create S AttributeValue with JSON string
     - Omit attribute if null
     - _Requirements: 5.1, 5.2, 6.1_
   
-  - [ ] 11.4 Generate ToDynamoDb code for JSON blob properties (Newtonsoft.Json)
+  - [x] 11.4 Generate ToDynamoDb code for JSON blob properties (Newtonsoft.Json)
     - Check for null values
     - Serialize using NewtonsoftJsonSerializer
     - Create S AttributeValue with JSON string
     - Omit attribute if null
     - _Requirements: 5.1, 5.3_
   
-  - [ ] 11.5 Generate FromDynamoDb code for JSON blob properties
+  - [x] 11.5 Generate FromDynamoDb code for JSON blob properties
     - Deserialize using appropriate serializer
     - Handle missing attributes gracefully
     - Provide clear error messages on deserialization failure

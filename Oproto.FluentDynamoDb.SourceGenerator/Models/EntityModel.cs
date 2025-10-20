@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Oproto.FluentDynamoDb.SourceGenerator.Models;
@@ -51,6 +52,16 @@ public class EntityModel
     /// Gets or sets the original class declaration syntax node.
     /// </summary>
     public ClassDeclarationSyntax? ClassDeclaration { get; set; }
+
+    /// <summary>
+    /// Gets or sets the semantic model for accessing compilation information.
+    /// </summary>
+    public SemanticModel? SemanticModel { get; set; }
+
+    /// <summary>
+    /// Gets or sets the JSON serializer configuration information.
+    /// </summary>
+    public Oproto.FluentDynamoDb.SourceGenerator.Analysis.JsonSerializerInfo? JsonSerializerInfo { get; set; }
 
     /// <summary>
     /// Gets the partition key property, if any.

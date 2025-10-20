@@ -43,8 +43,13 @@ public class EntityAnalyzer
         {
             ClassName = classSymbol.Name,
             Namespace = classSymbol.ContainingNamespace.ToDisplayString(),
-            ClassDeclaration = classDecl
+            ClassDeclaration = classDecl,
+            SemanticModel = semanticModel
         };
+
+        // Detect JSON serializer configuration
+        var jsonSerializerInfo = JsonSerializerDetector.DetectJsonSerializer(semanticModel.Compilation);
+        entityModel.JsonSerializerInfo = jsonSerializerInfo;
 
         // Extract table information
         if (!ExtractTableInfo(classDecl, semanticModel, entityModel))
@@ -1389,9 +1394,16 @@ public class EntityAnalyzer
     {
         var validator = new AdvancedTypeValidator();
 
-        // Check for package references (simplified - in real implementation would check compilation references)
-        var hasJsonSerializerPackage = false; // TODO: Check compilation references
-        var hasBlobProviderPackage = false;   // TODO: Check compilation references
+        // Check for package references using semantic model
+        var compilation = entityModel.SemanticModel?.Compilation;
+        var hasJsonSerializerPackage = false;
+        var hasBlobProviderPackage = false;
+        
+        if (compilation != null)
+        {
+            hasJsonSerializerPackage = HasJsonSerializerPackage(compilation);
+            hasBlobProviderPackage = HasBlobProviderPackage(compilation);
+        }
 
         // Validate each property with advanced types
         foreach (var property in entityModel.Properties)
@@ -1414,6 +1426,29 @@ public class EntityAnalyzer
         {
             _diagnostics.Add(diagnostic);
         }
+    }
+
+    private bool HasJsonSerializerPackage(Compilation compilation)
+    {
+        // Check for System.Text.Json package
+        var hasSystemTextJson = compilation.ReferencedAssemblyNames
+            .Any(a => a.Name.Equals("Oproto.FluentDynamoDb.SystemTextJson", StringComparison.OrdinalIgnoreCase));
+
+        // Check for Newtonsoft.Json package
+        var hasNewtonsoftJson = compilation.ReferencedAssemblyNames
+            .Any(a => a.Name.Equals("Oproto.FluentDynamoDb.NewtonsoftJson", StringComparison.OrdinalIgnoreCase));
+
+        return hasSystemTextJson || hasNewtonsoftJson;
+    }
+
+    private bool HasBlobProviderPackage(Compilation compilation)
+    {
+        // Check for S3 blob provider package
+        var hasS3Provider = compilation.ReferencedAssemblyNames
+            .Any(a => a.Name.Equals("Oproto.FluentDynamoDb.BlobStorage.S3", StringComparison.OrdinalIgnoreCase));
+
+        // Could add checks for other blob provider packages here
+        return hasS3Provider;
     }
 
     private void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, params object[] messageArgs)

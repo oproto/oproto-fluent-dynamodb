@@ -136,7 +136,7 @@ public static class MapperGenerator
         // Generate property mappings for all properties
         foreach (var property in entity.Properties.Where(p => p.HasAttributeMapping))
         {
-            GeneratePropertyToAttributeValue(sb, property);
+            GeneratePropertyToAttributeValue(sb, property, entity);
         }
 
         sb.AppendLine();
@@ -144,7 +144,7 @@ public static class MapperGenerator
         sb.AppendLine("        }");
     }
 
-    private static void GeneratePropertyToAttributeValue(StringBuilder sb, PropertyModel property)
+    private static void GeneratePropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
@@ -153,6 +153,13 @@ public static class MapperGenerator
         if (property.AdvancedType?.IsTtl == true)
         {
             GenerateTtlPropertyToAttributeValue(sb, property);
+            return;
+        }
+
+        // Handle JSON blob properties
+        if (property.AdvancedType?.IsJsonBlob == true)
+        {
+            GenerateJsonBlobPropertyToAttributeValue(sb, property, entity);
             return;
         }
 
@@ -235,6 +242,57 @@ public static class MapperGenerator
         }
     }
 
+    private static void GenerateJsonBlobPropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+        var serializerType = property.AdvancedType?.JsonSerializerType;
+
+        sb.AppendLine($"            // Serialize JSON blob property {propertyName}");
+
+        if (property.IsNullable)
+        {
+            sb.AppendLine($"            if (typedEntity.{propertyName} != null)");
+            sb.AppendLine("            {");
+
+            if (serializerType == "SystemTextJson")
+            {
+                // Use System.Text.Json with generated JsonSerializerContext
+                var baseType = GetBaseType(property.PropertyType);
+                sb.AppendLine($"                var json = System.Text.Json.JsonSerializer.Serialize(");
+                sb.AppendLine($"                    typedEntity.{propertyName},");
+                sb.AppendLine($"                    {entity.ClassName}JsonContext.Default.{baseType});");
+                sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
+            }
+            else if (serializerType == "NewtonsoftJson")
+            {
+                // Use Newtonsoft.Json
+                sb.AppendLine($"                var json = Newtonsoft.Json.JsonConvert.SerializeObject(typedEntity.{propertyName});");
+                sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
+            }
+
+            sb.AppendLine("            }");
+        }
+        else
+        {
+            if (serializerType == "SystemTextJson")
+            {
+                // Use System.Text.Json with generated JsonSerializerContext
+                var baseType = GetBaseType(property.PropertyType);
+                sb.AppendLine($"            var json = System.Text.Json.JsonSerializer.Serialize(");
+                sb.AppendLine($"                typedEntity.{propertyName},");
+                sb.AppendLine($"                {entity.ClassName}JsonContext.Default.{baseType});");
+                sb.AppendLine($"            item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
+            }
+            else if (serializerType == "NewtonsoftJson")
+            {
+                // Use Newtonsoft.Json
+                sb.AppendLine($"            var json = Newtonsoft.Json.JsonConvert.SerializeObject(typedEntity.{propertyName});");
+                sb.AppendLine($"            item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
+            }
+        }
+    }
+
     private static void GenerateTtlPropertyFromAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
     {
         var attributeName = property.AttributeName;
@@ -274,6 +332,49 @@ public static class MapperGenerator
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
         sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
         sb.AppendLine("                        ex);");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+    }
+
+    private static void GenerateJsonBlobPropertyFromAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+        var propertyType = property.PropertyType;
+        var baseType = GetBaseType(propertyType);
+        var serializerType = property.AdvancedType?.JsonSerializerType;
+
+        sb.AppendLine($"            // Deserialize JSON blob property {propertyName}");
+        sb.AppendLine($"            if (item.TryGetValue(\"{attributeName}\", out var {propertyName.ToLowerInvariant()}Value))");
+        sb.AppendLine("            {");
+        sb.AppendLine("                try");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.S != null)");
+        sb.AppendLine("                    {");
+
+        if (serializerType == "SystemTextJson")
+        {
+            // Use System.Text.Json with generated JsonSerializerContext
+            sb.AppendLine($"                        entity.{propertyName} = System.Text.Json.JsonSerializer.Deserialize(");
+            sb.AppendLine($"                            {propertyName.ToLowerInvariant()}Value.S,");
+            sb.AppendLine($"                            {entity.ClassName}JsonContext.Default.{baseType});");
+        }
+        else if (serializerType == "NewtonsoftJson")
+        {
+            // Use Newtonsoft.Json
+            sb.AppendLine($"                        entity.{propertyName} = Newtonsoft.Json.JsonConvert.DeserializeObject<{baseType}>({propertyName.ToLowerInvariant()}Value.S);");
+        }
+
+        sb.AppendLine("                    }");
+        sb.AppendLine("                }");
+        sb.AppendLine("                catch (Exception ex)");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
+        sb.AppendLine($"                        \"{propertyName}\",");
+        sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
+        sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
+        sb.AppendLine($"                        ex);");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
     }
@@ -483,6 +584,13 @@ public static class MapperGenerator
         if (property.AdvancedType?.IsTtl == true)
         {
             GenerateTtlPropertyFromAttributeValue(sb, property, entity);
+            return;
+        }
+
+        // Handle JSON blob properties
+        if (property.AdvancedType?.IsJsonBlob == true)
+        {
+            GenerateJsonBlobPropertyFromAttributeValue(sb, property, entity);
             return;
         }
 
