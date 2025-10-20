@@ -106,28 +106,30 @@
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 4.5_
 
 - [ ] 6. Generate mapping code for Map properties
-  - [ ] 6.1 Generate ToDynamoDb code for Dictionary<string, string>
+  - [x] 6.1 Generate ToDynamoDb code for Dictionary<string, string>
     - Check for null and empty collections
     - Create AttributeValue map with string values
     - Omit attribute if collection is empty
     - _Requirements: 1.1, 1.4, 15.1_
   
-  - [ ] 6.2 Generate ToDynamoDb code for Dictionary<string, AttributeValue>
+  - [x] 6.2 Generate ToDynamoDb code for Dictionary<string, AttributeValue>
     - Check for null and empty collections
     - Use dictionary directly as map
     - Omit attribute if collection is empty
     - _Requirements: 1.1, 1.4, 15.1_
   
-  - [ ] 6.3 Generate ToDynamoDb code for custom objects with [DynamoDbMap]
-    - Recursively map object properties to nested map
+  - [x] 6.3 Generate ToDynamoDb code for custom objects with [DynamoDbMap]
+    - Call nested type's generated ToDynamoDb method (NO REFLECTION)
+    - Nested type must be marked with [DynamoDbEntity] to generate mapping code
     - Handle null properties within the map
     - Omit entire map if all properties are null
+    - Generate DYNDB107 diagnostic if nested type missing [DynamoDbEntity]
     - _Requirements: 1.3, 1.4, 15.1_
   
-  - [ ] 6.4 Generate FromDynamoDb code for all Map types
+  - [x] 6.4 Generate FromDynamoDb code for all Map types
     - Reconstruct Dictionary<string, string> from M attribute
     - Reconstruct Dictionary<string, AttributeValue> from M attribute
-    - Reconstruct custom objects from nested maps
+    - Call nested type's generated FromDynamoDb method for custom objects (NO REFLECTION)
     - Handle missing attributes gracefully
     - _Requirements: 1.5, 12.2_
 

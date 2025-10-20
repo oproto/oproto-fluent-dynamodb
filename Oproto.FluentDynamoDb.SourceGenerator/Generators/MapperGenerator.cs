@@ -149,6 +149,13 @@ public static class MapperGenerator
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
 
+        // Handle Map properties (Dictionary types)
+        if (property.AdvancedType?.IsMap == true)
+        {
+            GenerateMapPropertyToAttributeValue(sb, property);
+            return;
+        }
+
         // Handle collection properties differently for single-item entities
         if (property.IsCollection)
         {
@@ -167,6 +174,56 @@ public static class MapperGenerator
         else
         {
             sb.AppendLine($"            item[\"{attributeName}\"] = {GetToAttributeValueExpression(property, $"typedEntity.{propertyName}")};");
+        }
+    }
+
+    private static void GenerateMapPropertyToAttributeValue(StringBuilder sb, PropertyModel property)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+        var propertyType = property.PropertyType;
+
+        sb.AppendLine($"            // Convert Map property {propertyName} to DynamoDB Map (M)");
+        sb.AppendLine($"            // Note: Custom types use nested ToDynamoDb calls (NO REFLECTION) for AOT compatibility");
+
+        // Check if it's Dictionary<string, string>
+        if (propertyType.Contains("Dictionary<string, string>") || 
+            propertyType.Contains("Dictionary<System.String, System.String>"))
+        {
+            // Dictionary<string, string> - simple string map
+            sb.AppendLine($"            if (typedEntity.{propertyName} != null && typedEntity.{propertyName}.Count > 0)");
+            sb.AppendLine("            {");
+            sb.AppendLine($"                var {propertyName.ToLowerInvariant()}Map = new Dictionary<string, AttributeValue>();");
+            sb.AppendLine($"                foreach (var kvp in typedEntity.{propertyName})");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    {propertyName.ToLowerInvariant()}Map[kvp.Key] = new AttributeValue {{ S = kvp.Value }};");
+            sb.AppendLine("                }");
+            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ M = {propertyName.ToLowerInvariant()}Map }};");
+            sb.AppendLine("            }");
+        }
+        // Check if it's Dictionary<string, AttributeValue>
+        else if (propertyType.Contains("Dictionary<string, AttributeValue>") ||
+                 propertyType.Contains("Dictionary<System.String, Amazon.DynamoDBv2.Model.AttributeValue>"))
+        {
+            // Dictionary<string, AttributeValue> - direct map
+            sb.AppendLine($"            if (typedEntity.{propertyName} != null && typedEntity.{propertyName}.Count > 0)");
+            sb.AppendLine("            {");
+            sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ M = typedEntity.{propertyName} }};");
+            sb.AppendLine("            }");
+        }
+        else
+        {
+            // Custom object with [DynamoDbMap] - use nested ToDynamoDb call
+            // The nested type must also be marked with [DynamoDbEntity] to have its own mapping generated
+            sb.AppendLine($"            if (typedEntity.{propertyName} != null)");
+            sb.AppendLine("            {");
+            sb.AppendLine($"                // Convert nested entity to map using its generated ToDynamoDb method");
+            sb.AppendLine($"                var {propertyName.ToLowerInvariant()}Map = {propertyType}.ToDynamoDb(typedEntity.{propertyName});");
+            sb.AppendLine($"                if ({propertyName.ToLowerInvariant()}Map != null && {propertyName.ToLowerInvariant()}Map.Count > 0)");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ M = {propertyName.ToLowerInvariant()}Map }};");
+            sb.AppendLine("                }");
+            sb.AppendLine("            }");
         }
     }
 
@@ -282,6 +339,13 @@ public static class MapperGenerator
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
 
+        // Handle Map properties (Dictionary types)
+        if (property.AdvancedType?.IsMap == true)
+        {
+            GenerateMapPropertyFromAttributeValue(sb, property, entity);
+            return;
+        }
+
         if (property.IsCollection)
         {
             GenerateCollectionPropertyFromAttributeValue(sb, property, entity);
@@ -301,6 +365,59 @@ public static class MapperGenerator
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
         sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
+        sb.AppendLine("                        ex);");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+    }
+
+    private static void GenerateMapPropertyFromAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+        var propertyType = property.PropertyType;
+
+        sb.AppendLine($"            // Convert Map property {propertyName} from DynamoDB Map (M)");
+        sb.AppendLine($"            // Note: Custom types use nested FromDynamoDb calls (NO REFLECTION) for AOT compatibility");
+        sb.AppendLine($"            if (item.TryGetValue(\"{attributeName}\", out var {propertyName.ToLowerInvariant()}Value))");
+        sb.AppendLine("            {");
+        sb.AppendLine("                try");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.M != null && {propertyName.ToLowerInvariant()}Value.M.Count > 0)");
+        sb.AppendLine("                    {");
+
+        // Check if it's Dictionary<string, string>
+        if (propertyType.Contains("Dictionary<string, string>") || 
+            propertyType.Contains("Dictionary<System.String, System.String>"))
+        {
+            // Dictionary<string, string> - reconstruct from string map
+            sb.AppendLine($"                        entity.{propertyName} = {propertyName.ToLowerInvariant()}Value.M.ToDictionary(");
+            sb.AppendLine("                            kvp => kvp.Key,");
+            sb.AppendLine("                            kvp => kvp.Value.S);");
+        }
+        // Check if it's Dictionary<string, AttributeValue>
+        else if (propertyType.Contains("Dictionary<string, AttributeValue>") ||
+                 propertyType.Contains("Dictionary<System.String, Amazon.DynamoDBv2.Model.AttributeValue>"))
+        {
+            // Dictionary<string, AttributeValue> - direct assignment
+            sb.AppendLine($"                        entity.{propertyName} = {propertyName.ToLowerInvariant()}Value.M;");
+        }
+        else
+        {
+            // Custom object with [DynamoDbMap] - use nested FromDynamoDb call
+            // The nested type must also be marked with [DynamoDbEntity] to have its own mapping generated
+            sb.AppendLine($"                        // Convert map back to nested entity using its generated FromDynamoDb method");
+            sb.AppendLine($"                        entity.{propertyName} = {propertyType}.FromDynamoDb<{propertyType}>({propertyName.ToLowerInvariant()}Value.M);");
+        }
+
+        sb.AppendLine("                    }");
+        sb.AppendLine("                }");
+        sb.AppendLine("                catch (Exception ex)");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
+        sb.AppendLine($"                        \"{propertyName}\",");
+        sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
+        sb.AppendLine($"                        typeof({property.PropertyType}),");
         sb.AppendLine("                        ex);");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
@@ -367,11 +484,11 @@ public static class MapperGenerator
         sb.AppendLine("                        ex);");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
-        sb.AppendLine("            else");
-        sb.AppendLine("            {");
-        sb.AppendLine($"                // Initialize empty collection if no data found");
-        sb.AppendLine($"                entity.{propertyName} = new {property.PropertyType}();");
-        sb.AppendLine("            }");
+            sb.AppendLine("            else");
+            sb.AppendLine("            {");
+            sb.AppendLine($"                // Initialize empty collection if no data found");
+            sb.AppendLine($"                entity.{propertyName} = new {property.PropertyType}();");
+            sb.AppendLine("            }");
     }
 
     private static string GetFromAttributeValueExpression(PropertyModel property, string valueExpression)

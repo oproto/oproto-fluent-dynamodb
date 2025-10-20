@@ -512,4 +512,16 @@ public static class DiagnosticDescriptors
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         description: "Only specific collection types are supported for DynamoDB mapping.");
+
+    /// <summary>
+    /// Error when [DynamoDbMap] is used on a custom type that isn't marked with [DynamoDbEntity].
+    /// </summary>
+    public static readonly DiagnosticDescriptor NestedMapTypeMissingEntity = new(
+        "DYNDB107",
+        "Nested map type missing [DynamoDbEntity]",
+        "Property '{0}' with [DynamoDbMap] has type '{1}' which must be marked with [DynamoDbEntity] to generate mapping code. Nested map types require source-generated ToDynamoDb/FromDynamoDb methods to maintain AOT compatibility.",
+        "DynamoDb.AdvancedTypes",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Custom types used with [DynamoDbMap] must be marked with [DynamoDbEntity] to generate the required mapping methods. This ensures AOT compatibility by avoiding reflection.");
 }

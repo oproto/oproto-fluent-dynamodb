@@ -51,11 +51,14 @@ Oproto.FluentDynamoDb.BlobStorage.S3/            # S3 blob provider (.NET 8)
 ### Design Principles
 
 1. **Zero Runtime Reflection**: All type conversions generated at compile-time (System.Text.Json fully AOT-compatible)
+   - Nested map types use source-generated `ToDynamoDb`/`FromDynamoDb` methods instead of reflection
+   - Custom types with `[DynamoDbMap]` must be marked with `[DynamoDbEntity]` to generate required methods
 2. **Fail Fast**: Validate at compile-time where possible, runtime with clear errors otherwise
 3. **Optional Dependencies**: Core library remains lightweight, advanced features in separate packages
 4. **Empty Collection Safety**: Automatically handle DynamoDB's empty collection restriction
 5. **Consistent API**: Advanced types work seamlessly with existing format string support
 6. **Attributes in .NET Standard 2.0**: Separate attributes project for source generator compatibility
+7. **Composable Mapping**: Nested types can contain their own maps, sets, and lists, creating deep hierarchies without reflection
 
 ### AOT Compatibility Matrix
 
@@ -87,9 +90,25 @@ public class DynamoDbMapAttribute : Attribute
 {
     // Explicit marker for complex object -> Map conversion
     // Without this, Dictionary<string, string> uses default conversion
-    // With this, custom objects are recursively mapped
+    // With this, custom objects are recursively mapped using their generated ToDynamoDb/FromDynamoDb methods
+    
+    // IMPORTANT: The nested type MUST also be marked with [DynamoDbEntity] to generate its own mapping code
+    // This ensures AOT compatibility by avoiding reflection - we use nested source-generated calls instead
 }
 ```
+
+**Nested Map Type Requirements:**
+
+When using `[DynamoDbMap]` on a property with a custom type, the nested type must:
+1. Be marked with `[DynamoDbEntity]` to trigger source generation
+2. Have properties marked with `[DynamoDbAttribute]` for mapping
+3. Implement the `IDynamoDbEntity` interface (via partial class)
+
+This approach maintains AOT compatibility by:
+- **No Reflection**: Uses compile-time generated `ToDynamoDb`/`FromDynamoDb` methods
+- **Type Safety**: Compiler validates nested type has required methods
+- **Composability**: Nested types can themselves contain maps, creating deep hierarchies
+- **Performance**: Direct method calls instead of reflection overhead
 
 #### JsonBlobAttribute
 ```csharp
@@ -491,7 +510,18 @@ public partial class Product
     public ProductAttributes Attributes { get; set; }
 }
 
-// Generated ToDynamoDb
+// Nested type must also be marked with [DynamoDbEntity] for source generation
+[DynamoDbEntity]
+public partial class ProductAttributes
+{
+    [DynamoDbAttribute("color")]
+    public string Color { get; set; }
+    
+    [DynamoDbAttribute("size")]
+    public int? Size { get; set; }
+}
+
+// Generated ToDynamoDb for Product
 public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)
     where TSelf : IDynamoDbEntity
 {
@@ -511,23 +541,21 @@ public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)
         item["metadata"] = new AttributeValue { M = metadataMap };
     }
     
-    // Complex object map
+    // Complex object map - uses nested type's generated ToDynamoDb method
     if (typedEntity.Attributes != null)
     {
-        var attributesMap = new Dictionary<string, AttributeValue>();
-        if (!string.IsNullOrEmpty(typedEntity.Attributes.Color))
-            attributesMap["color"] = new AttributeValue { S = typedEntity.Attributes.Color };
-        if (typedEntity.Attributes.Size.HasValue)
-            attributesMap["size"] = new AttributeValue { N = typedEntity.Attributes.Size.Value.ToString() };
-        
-        if (attributesMap.Count > 0)
+        // Convert nested entity to map using its generated ToDynamoDb method
+        var attributesMap = ProductAttributes.ToDynamoDb(typedEntity.Attributes);
+        if (attributesMap != null && attributesMap.Count > 0)
+        {
             item["attributes"] = new AttributeValue { M = attributesMap };
+        }
     }
     
     return item;
 }
 
-// Generated FromDynamoDb
+// Generated FromDynamoDb for Product
 public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)
     where TSelf : IDynamoDbEntity
 {
@@ -544,15 +572,43 @@ public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)
             kvp => kvp.Value.S);
     }
     
-    // Complex object map
+    // Complex object map - uses nested type's generated FromDynamoDb method
     if (item.TryGetValue("attributes", out var attributesValue) && attributesValue.M != null)
     {
-        entity.Attributes = new ProductAttributes();
-        if (attributesValue.M.TryGetValue("color", out var colorValue))
-            entity.Attributes.Color = colorValue.S;
-        if (attributesValue.M.TryGetValue("size", out var sizeValue))
-            entity.Attributes.Size = int.Parse(sizeValue.N);
+        // Convert map back to nested entity using its generated FromDynamoDb method
+        entity.Attributes = ProductAttributes.FromDynamoDb<ProductAttributes>(attributesValue.M);
     }
+    
+    return (TSelf)(object)entity;
+}
+
+// Generated ToDynamoDb for ProductAttributes (nested type)
+public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)
+    where TSelf : IDynamoDbEntity
+{
+    var typedEntity = (ProductAttributes)(object)entity;
+    var item = new Dictionary<string, AttributeValue>();
+    
+    if (!string.IsNullOrEmpty(typedEntity.Color))
+        item["color"] = new AttributeValue { S = typedEntity.Color };
+    
+    if (typedEntity.Size.HasValue)
+        item["size"] = new AttributeValue { N = typedEntity.Size.Value.ToString() };
+    
+    return item;
+}
+
+// Generated FromDynamoDb for ProductAttributes (nested type)
+public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)
+    where TSelf : IDynamoDbEntity
+{
+    var entity = new ProductAttributes();
+    
+    if (item.TryGetValue("color", out var colorValue))
+        entity.Color = colorValue.S;
+    
+    if (item.TryGetValue("size", out var sizeValue))
+        entity.Size = int.Parse(sizeValue.N);
     
     return (TSelf)(object)entity;
 }
