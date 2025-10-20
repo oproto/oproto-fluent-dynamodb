@@ -403,15 +403,15 @@
     - Test returns false for missing blob
     - _Requirements: 9.4_
 
-- [ ] 18. Write unit tests for JSON serialization
-  - [ ] 18.1 Test System.Text.Json serialization
+- [x] 18. Write unit tests for JSON serialization
+  - [x] 18.1 Test System.Text.Json serialization
     - Test Serialize produces valid JSON
     - Test Deserialize reconstructs object correctly
     - Test round-trip preserves data
     - Test works with JsonSerializerContext
     - _Requirements: 5.2, 6.1_
   
-  - [ ] 18.2 Test Newtonsoft.Json serialization
+  - [x] 18.2 Test Newtonsoft.Json serialization
     - Test Serialize produces valid JSON
     - Test Deserialize reconstructs object correctly
     - Test round-trip preserves data
