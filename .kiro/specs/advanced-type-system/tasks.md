@@ -249,14 +249,14 @@
     - Provide clear error messages on deserialization failure
     - _Requirements: 5.5, 6.4, 18.3_
 
-- [ ] 12. Generate mapping code for blob reference properties
-  - [ ] 12.1 Generate async ToDynamoDb method signature
+- [x] 12. Generate mapping code for blob reference properties
+  - [x] 12.1 Generate async ToDynamoDb method signature
     - Add IBlobStorageProvider parameter
     - Add CancellationToken parameter
     - Return Task<Dictionary<string, AttributeValue>>
     - _Requirements: 7.2, 9.3_
   
-  - [ ] 12.2 Generate ToDynamoDb code for blob reference properties
+  - [x] 12.2 Generate ToDynamoDb code for blob reference properties
     - Check for null values
     - Convert property to stream
     - Call blobProvider.StoreAsync with suggested key
@@ -264,13 +264,13 @@
     - Omit attribute if null
     - _Requirements: 7.1, 7.2, 7.4_
   
-  - [ ] 12.3 Generate async FromDynamoDb method signature
+  - [x] 12.3 Generate async FromDynamoDb method signature
     - Add IBlobStorageProvider parameter
     - Add CancellationToken parameter
     - Return Task<TSelf>
     - _Requirements: 7.3, 9.3_
   
-  - [ ] 12.4 Generate FromDynamoDb code for blob reference properties
+  - [x] 12.4 Generate FromDynamoDb code for blob reference properties
     - Read reference key from S AttributeValue
     - Call blobProvider.RetrieveAsync with reference key
     - Convert stream back to property type

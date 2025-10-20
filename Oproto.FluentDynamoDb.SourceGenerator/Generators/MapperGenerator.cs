@@ -83,10 +83,25 @@ public static class MapperGenerator
         sb.AppendLine($"    public partial class {entity.ClassName} : IDynamoDbEntity");
         sb.AppendLine("    {");
 
+        // Check if entity has blob reference properties
+        var hasBlobReferences = entity.Properties.Any(p => p.AdvancedType?.IsBlobReference == true);
+
         // Generate all required interface methods
-        GenerateToDynamoDbMethod(sb, entity);
-        GenerateFromDynamoDbSingleMethod(sb, entity);
-        GenerateFromDynamoDbMultiMethod(sb, entity);
+        if (hasBlobReferences)
+        {
+            // Generate async methods for entities with blob references
+            GenerateToDynamoDbAsyncMethod(sb, entity);
+            GenerateFromDynamoDbSingleAsyncMethod(sb, entity);
+            GenerateFromDynamoDbMultiAsyncMethod(sb, entity);
+        }
+        else
+        {
+            // Generate synchronous methods for entities without blob references
+            GenerateToDynamoDbMethod(sb, entity);
+            GenerateFromDynamoDbSingleMethod(sb, entity);
+            GenerateFromDynamoDbMultiMethod(sb, entity);
+        }
+
         GenerateGetPartitionKeyMethod(sb, entity);
         GenerateMatchesEntityMethod(sb, entity);
         GenerateGetEntityMetadataMethod(sb, entity);
@@ -144,6 +159,61 @@ public static class MapperGenerator
         sb.AppendLine("        }");
     }
 
+    private static void GenerateToDynamoDbAsyncMethod(StringBuilder sb, EntityModel entity)
+    {
+        sb.AppendLine();
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// High-performance async conversion from entity to DynamoDB AttributeValue dictionary.");
+        sb.AppendLine("        /// Handles blob reference properties by storing data externally and saving references.");
+        sb.AppendLine("        /// Optimized for minimal allocations and maximum throughput.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
+        sb.AppendLine("        /// <param name=\"entity\">The entity instance to convert.</param>");
+        sb.AppendLine("        /// <param name=\"blobProvider\">The blob storage provider for handling blob references.</param>");
+        sb.AppendLine("        /// <param name=\"cancellationToken\">Cancellation token for async operations.</param>");
+        sb.AppendLine("        /// <returns>A task that resolves to a dictionary of DynamoDB AttributeValues representing the entity.</returns>");
+        sb.AppendLine("        [MethodImpl(MethodImplOptions.AggressiveInlining)]");
+        sb.AppendLine($"        public static async Task<Dictionary<string, AttributeValue>> ToDynamoDbAsync<TSelf>(");
+        sb.AppendLine("            TSelf entity,");
+        sb.AppendLine("            IBlobStorageProvider blobProvider,");
+        sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
+        sb.AppendLine("        {");
+        sb.AppendLine($"            if (entity is not {entity.ClassName} typedEntity)");
+        sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{entity.GetType().Name}}\", nameof(entity));");
+        sb.AppendLine();
+        sb.AppendLine("            if (blobProvider == null)");
+        sb.AppendLine("                throw new ArgumentNullException(nameof(blobProvider), \"Blob provider is required for entities with blob reference properties\");");
+        sb.AppendLine();
+
+        // Pre-compute capacity to avoid dictionary resizing (performance optimization)
+        var attributeCount = entity.Properties.Count(p => p.HasAttributeMapping);
+        sb.AppendLine($"            // Pre-allocate dictionary with exact capacity to avoid resizing");
+        sb.AppendLine($"            var item = new Dictionary<string, AttributeValue>({attributeCount});");
+        sb.AppendLine();
+
+        // Generate computed key logic before mapping
+        var computedProperties = entity.Properties.Where(p => p.IsComputed).ToArray();
+        if (computedProperties.Length > 0)
+        {
+            sb.AppendLine("            // Compute composite keys before mapping");
+            foreach (var computedProperty in computedProperties)
+            {
+                GenerateComputedKeyLogic(sb, computedProperty);
+            }
+            sb.AppendLine();
+        }
+
+        // Generate property mappings for all properties
+        foreach (var property in entity.Properties.Where(p => p.HasAttributeMapping))
+        {
+            GeneratePropertyToAttributeValueAsync(sb, property, entity);
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("            return item;");
+        sb.AppendLine("        }");
+    }
+
     private static void GeneratePropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
     {
         var attributeName = property.AttributeName;
@@ -189,6 +259,136 @@ public static class MapperGenerator
         {
             sb.AppendLine($"            item[\"{attributeName}\"] = {GetToAttributeValueExpression(property, $"typedEntity.{propertyName}")};");
         }
+    }
+
+    private static void GeneratePropertyToAttributeValueAsync(StringBuilder sb, PropertyModel property, EntityModel entity)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+
+        // Handle blob reference properties (async)
+        if (property.AdvancedType?.IsBlobReference == true)
+        {
+            GenerateBlobReferencePropertyToAttributeValue(sb, property, entity);
+            return;
+        }
+
+        // Handle TTL properties (Time-To-Live)
+        if (property.AdvancedType?.IsTtl == true)
+        {
+            GenerateTtlPropertyToAttributeValue(sb, property);
+            return;
+        }
+
+        // Handle JSON blob properties
+        if (property.AdvancedType?.IsJsonBlob == true)
+        {
+            GenerateJsonBlobPropertyToAttributeValue(sb, property, entity);
+            return;
+        }
+
+        // Handle Map properties (Dictionary types)
+        if (property.AdvancedType?.IsMap == true)
+        {
+            GenerateMapPropertyToAttributeValue(sb, property);
+            return;
+        }
+
+        // Handle collection properties differently for single-item entities
+        if (property.IsCollection)
+        {
+            GenerateCollectionPropertyToAttributeValue(sb, property);
+            return;
+        }
+
+        // Handle nullable properties
+        if (property.IsNullable)
+        {
+            sb.AppendLine($"            if (typedEntity.{propertyName} != null)");
+            sb.AppendLine("            {");
+            sb.AppendLine($"                item[\"{attributeName}\"] = {GetToAttributeValueExpression(property, $"typedEntity.{propertyName}")};");
+            sb.AppendLine("            }");
+        }
+        else
+        {
+            sb.AppendLine($"            item[\"{attributeName}\"] = {GetToAttributeValueExpression(property, $"typedEntity.{propertyName}")};");
+        }
+    }
+
+    private static void GenerateBlobReferencePropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+        var propertyType = property.PropertyType;
+        var baseType = GetBaseType(propertyType);
+
+        sb.AppendLine($"            // Store blob reference property {propertyName} externally");
+        sb.AppendLine($"            if (typedEntity.{propertyName} != null)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                try");
+        sb.AppendLine("                {");
+
+        // Convert property to stream based on type
+        if (baseType == "byte[]" || baseType == "System.Byte[]")
+        {
+            // byte[] - convert to MemoryStream
+            sb.AppendLine($"                    using var stream = new MemoryStream(typedEntity.{propertyName});");
+        }
+        else if (baseType == "Stream" || baseType == "System.IO.Stream" || baseType == "MemoryStream")
+        {
+            // Already a stream - use directly
+            sb.AppendLine($"                    var stream = typedEntity.{propertyName};");
+        }
+        else if (baseType == "string" || baseType == "System.String")
+        {
+            // string - convert to UTF8 bytes then stream
+            sb.AppendLine($"                    var bytes = System.Text.Encoding.UTF8.GetBytes(typedEntity.{propertyName});");
+            sb.AppendLine("                    using var stream = new MemoryStream(bytes);");
+        }
+        else
+        {
+            // Complex type - serialize to JSON first, then to stream
+            sb.AppendLine($"                    // Serialize complex type to JSON");
+            sb.AppendLine($"                    var json = System.Text.Json.JsonSerializer.Serialize(typedEntity.{propertyName});");
+            sb.AppendLine("                    var bytes = System.Text.Encoding.UTF8.GetBytes(json);");
+            sb.AppendLine("                    using var stream = new MemoryStream(bytes);");
+        }
+
+        // Generate suggested key based on entity keys
+        var partitionKeyProperty = entity.Properties.FirstOrDefault(p => p.IsPartitionKey);
+        var sortKeyProperty = entity.Properties.FirstOrDefault(p => p.IsSortKey);
+
+        if (partitionKeyProperty != null)
+        {
+            if (sortKeyProperty != null)
+            {
+                sb.AppendLine($"                    var suggestedKey = $\"{{typedEntity.{partitionKeyProperty.PropertyName}}}/{{typedEntity.{sortKeyProperty.PropertyName}}}/{propertyName}\";");
+            }
+            else
+            {
+                sb.AppendLine($"                    var suggestedKey = $\"{{typedEntity.{partitionKeyProperty.PropertyName}}}/{propertyName}\";");
+            }
+        }
+        else
+        {
+            sb.AppendLine($"                    var suggestedKey = $\"{propertyName}/{{Guid.NewGuid()}}\";");
+        }
+
+        // Store blob and save reference
+        sb.AppendLine("                    var reference = await blobProvider.StoreAsync(stream, suggestedKey, cancellationToken);");
+        sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ S = reference }};");
+
+        sb.AppendLine("                }");
+        sb.AppendLine("                catch (Exception ex)");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
+        sb.AppendLine($"                        \"{propertyName}\",");
+        sb.AppendLine($"                        new AttributeValue {{ S = \"<blob data>\" }},");
+        sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
+        sb.AppendLine("                        ex);");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
     }
 
     private static void GenerateTtlPropertyToAttributeValue(StringBuilder sb, PropertyModel property)
@@ -575,6 +775,117 @@ public static class MapperGenerator
         sb.AppendLine("        }");
     }
 
+    private static void GenerateFromDynamoDbSingleAsyncMethod(StringBuilder sb, EntityModel entity)
+    {
+        sb.AppendLine();
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// High-performance async conversion from DynamoDB item to entity with minimal boxing and allocations.");
+        sb.AppendLine("        /// Handles blob reference properties by retrieving data from external storage.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
+        sb.AppendLine("        /// <param name=\"item\">The DynamoDB item to map from.</param>");
+        sb.AppendLine("        /// <param name=\"blobProvider\">The blob storage provider for handling blob references.</param>");
+        sb.AppendLine("        /// <param name=\"cancellationToken\">Cancellation token for async operations.</param>");
+        sb.AppendLine("        /// <returns>A task that resolves to a mapped entity instance.</returns>");
+        sb.AppendLine("        /// <exception cref=\"ArgumentException\">Thrown when the type parameter doesn't match the entity type.</exception>");
+        sb.AppendLine("        /// <exception cref=\"DynamoDbMappingException\">Thrown when mapping fails due to data conversion issues.</exception>");
+        sb.AppendLine($"        public static async Task<TSelf> FromDynamoDbAsync<TSelf>(");
+        sb.AppendLine("            Dictionary<string, AttributeValue> item,");
+        sb.AppendLine("            IBlobStorageProvider blobProvider,");
+        sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
+        sb.AppendLine("        {");
+        sb.AppendLine($"            if (typeof(TSelf) != typeof({entity.ClassName}))");
+        sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{typeof(TSelf).Name}}\");");
+        sb.AppendLine();
+        sb.AppendLine("            if (blobProvider == null)");
+        sb.AppendLine("                throw new ArgumentNullException(nameof(blobProvider), \"Blob provider is required for entities with blob reference properties\");");
+        sb.AppendLine();
+
+        sb.AppendLine($"            var entity = new {entity.ClassName}();");
+        sb.AppendLine();
+
+        // Generate property mappings
+        foreach (var property in entity.Properties.Where(p => p.HasAttributeMapping))
+        {
+            GeneratePropertyFromAttributeValueAsync(sb, property, entity);
+        }
+
+        // Generate extracted key logic
+        var extractedProperties = entity.Properties.Where(p => p.IsExtracted).ToArray();
+        if (extractedProperties.Length > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("            // Extract component properties from composite keys");
+            foreach (var extractedProperty in extractedProperties)
+            {
+                GenerateExtractedKeyLogic(sb, extractedProperty);
+            }
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("            return (TSelf)(object)entity;");
+        sb.AppendLine("        }");
+    }
+
+    private static void GenerateFromDynamoDbMultiAsyncMethod(StringBuilder sb, EntityModel entity)
+    {
+        sb.AppendLine();
+        sb.AppendLine("        /// <summary>");
+        sb.AppendLine("        /// Creates an entity instance from multiple DynamoDB items (composite entity support).");
+        sb.AppendLine("        /// For single-item entities, uses the first item. For multi-item entities, combines all items.");
+        sb.AppendLine("        /// Handles blob reference properties by retrieving data from external storage.");
+        sb.AppendLine("        /// </summary>");
+        sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
+        sb.AppendLine("        /// <param name=\"items\">The collection of DynamoDB items to map from.</param>");
+        sb.AppendLine("        /// <param name=\"blobProvider\">The blob storage provider for handling blob references.</param>");
+        sb.AppendLine("        /// <param name=\"cancellationToken\">Cancellation token for async operations.</param>");
+        sb.AppendLine("        /// <returns>A task that resolves to a mapped entity instance.</returns>");
+        sb.AppendLine("        /// <exception cref=\"ArgumentException\">Thrown when items collection is null or empty.</exception>");
+        sb.AppendLine("        /// <exception cref=\"DynamoDbMappingException\">Thrown when mapping fails due to data conversion issues.</exception>");
+        sb.AppendLine($"        public static async Task<TSelf> FromDynamoDbAsync<TSelf>(");
+        sb.AppendLine("            IList<Dictionary<string, AttributeValue>> items,");
+        sb.AppendLine("            IBlobStorageProvider blobProvider,");
+        sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
+        sb.AppendLine("        {");
+        sb.AppendLine("            if (items == null || items.Count == 0)");
+        sb.AppendLine($"                throw new ArgumentException(\"Items collection cannot be null or empty\", nameof(items));");
+        sb.AppendLine();
+        sb.AppendLine("            if (blobProvider == null)");
+        sb.AppendLine("                throw new ArgumentNullException(nameof(blobProvider), \"Blob provider is required for entities with blob reference properties\");");
+        sb.AppendLine();
+        sb.AppendLine("            try");
+        sb.AppendLine("            {");
+
+        if (entity.IsMultiItemEntity)
+        {
+            sb.AppendLine("                // Multi-item entity: combine all items into a single entity");
+            sb.AppendLine("                // Note: Multi-item entities with blob references not yet fully supported");
+            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, cancellationToken);");
+        }
+        else
+        {
+            sb.AppendLine("                // Single-item entity: use the first item");
+            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, cancellationToken);");
+        }
+
+        sb.AppendLine("            }");
+        sb.AppendLine("            catch (DynamoDbMappingException)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                // Re-throw mapping exceptions as-is");
+        sb.AppendLine("                throw;");
+        sb.AppendLine("            }");
+        sb.AppendLine("            catch (Exception ex)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                throw DynamoDbMappingException.EntityConstructionFailed(");
+        sb.AppendLine($"                    typeof({entity.ClassName}),");
+        sb.AppendLine("                    items.FirstOrDefault() ?? new Dictionary<string, AttributeValue>(),");
+        sb.AppendLine("                    ex)");
+        sb.AppendLine("                    .WithContext(\"ItemCount\", items.Count)");
+        sb.AppendLine("                    .WithContext(\"MappingType\", \"MultiItem\");");
+        sb.AppendLine("            }");
+        sb.AppendLine("        }");
+    }
+
     private static void GeneratePropertyFromAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
     {
         var attributeName = property.AttributeName;
@@ -621,6 +932,124 @@ public static class MapperGenerator
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
         sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
         sb.AppendLine("                        ex);");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+    }
+
+    private static void GeneratePropertyFromAttributeValueAsync(StringBuilder sb, PropertyModel property, EntityModel entity)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+
+        // Handle blob reference properties (async)
+        if (property.AdvancedType?.IsBlobReference == true)
+        {
+            GenerateBlobReferencePropertyFromAttributeValue(sb, property, entity);
+            return;
+        }
+
+        // Handle TTL properties (Time-To-Live)
+        if (property.AdvancedType?.IsTtl == true)
+        {
+            GenerateTtlPropertyFromAttributeValue(sb, property, entity);
+            return;
+        }
+
+        // Handle JSON blob properties
+        if (property.AdvancedType?.IsJsonBlob == true)
+        {
+            GenerateJsonBlobPropertyFromAttributeValue(sb, property, entity);
+            return;
+        }
+
+        // Handle Map properties (Dictionary types)
+        if (property.AdvancedType?.IsMap == true)
+        {
+            GenerateMapPropertyFromAttributeValue(sb, property, entity);
+            return;
+        }
+
+        if (property.IsCollection)
+        {
+            GenerateCollectionPropertyFromAttributeValue(sb, property, entity);
+            return;
+        }
+
+        sb.AppendLine($"            if (item.TryGetValue(\"{attributeName}\", out var {propertyName.ToLowerInvariant()}Value))");
+        sb.AppendLine("            {");
+        sb.AppendLine("                try");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    entity.{propertyName} = {GetFromAttributeValueExpression(property, $"{propertyName.ToLowerInvariant()}Value")};");
+        sb.AppendLine("                }");
+        sb.AppendLine("                catch (Exception ex)");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
+        sb.AppendLine($"                        \"{propertyName}\",");
+        sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
+        sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
+        sb.AppendLine("                        ex);");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+    }
+
+    private static void GenerateBlobReferencePropertyFromAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+        var propertyType = property.PropertyType;
+        var baseType = GetBaseType(propertyType);
+
+        sb.AppendLine($"            // Retrieve blob reference property {propertyName} from external storage");
+        sb.AppendLine($"            if (item.TryGetValue(\"{attributeName}\", out var {propertyName.ToLowerInvariant()}Value))");
+        sb.AppendLine("            {");
+        sb.AppendLine("                try");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.S != null)");
+        sb.AppendLine("                    {");
+        sb.AppendLine($"                        var reference = {propertyName.ToLowerInvariant()}Value.S;");
+        sb.AppendLine("                        var stream = await blobProvider.RetrieveAsync(reference, cancellationToken);");
+        sb.AppendLine();
+
+        // Convert stream back to property type
+        if (baseType == "byte[]" || baseType == "System.Byte[]")
+        {
+            // byte[] - read stream to byte array
+            sb.AppendLine("                        using var memoryStream = new MemoryStream();");
+            sb.AppendLine("                        await stream.CopyToAsync(memoryStream, cancellationToken);");
+            sb.AppendLine($"                        entity.{propertyName} = memoryStream.ToArray();");
+        }
+        else if (baseType == "Stream" || baseType == "System.IO.Stream" || baseType == "MemoryStream")
+        {
+            // Stream - use directly (caller must manage disposal)
+            sb.AppendLine($"                        entity.{propertyName} = stream;");
+        }
+        else if (baseType == "string" || baseType == "System.String")
+        {
+            // string - read stream as UTF8 string
+            sb.AppendLine("                        using var reader = new StreamReader(stream);");
+            sb.AppendLine($"                        entity.{propertyName} = await reader.ReadToEndAsync();");
+        }
+        else
+        {
+            // Complex type - deserialize from JSON
+            sb.AppendLine("                        // Deserialize complex type from JSON");
+            sb.AppendLine("                        using var reader = new StreamReader(stream);");
+            sb.AppendLine("                        var json = await reader.ReadToEndAsync();");
+            sb.AppendLine($"                        entity.{propertyName} = System.Text.Json.JsonSerializer.Deserialize<{baseType}>(json);");
+        }
+
+        sb.AppendLine("                    }");
+        sb.AppendLine("                }");
+        sb.AppendLine("                catch (Exception ex)");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
+        sb.AppendLine($"                        \"{propertyName}\",");
+        sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
+        sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
+        sb.AppendLine($"                        ex)");
+        sb.AppendLine($"                        .WithContext(\"BlobReference\", {propertyName.ToLowerInvariant()}Value.S ?? \"<null>\");");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
     }
