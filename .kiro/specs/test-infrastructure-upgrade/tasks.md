@@ -189,15 +189,15 @@
     - Add compilation verification to each test
     - _Requirements: 4.1_
 
-- [ ] 10. Create semantic assertion utilities
-  - [ ] 10.1 Create SemanticAssertions class
+- [x] 10. Create semantic assertion utilities
+  - [x] 10.1 Create SemanticAssertions class
     - Implement ShouldContainMethod extension
     - Implement ShouldContainAssignment extension
     - Implement ShouldUseLinqMethod extension
     - Implement ShouldReferenceType extension
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
   
-  - [ ] 10.2 Add helpful error messages
+  - [x] 10.2 Add helpful error messages
     - Include available methods when method not found
     - Show context when assertion fails
     - _Requirements: 5.5_
