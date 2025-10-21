@@ -53,38 +53,38 @@
     - Convert item to entity using FromDynamoDb
     - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4. Write integration tests for HashSet types
-  - [ ] 4.1 Create HashSetIntegrationTests class
+- [x] 4. Write integration tests for HashSet types
+  - [x] 4.1 Create HashSetIntegrationTests class
     - Inherit from IntegrationTestBase
     - Add Collection attribute for DynamoDB Local
     - Create test table in InitializeAsync
     - _Requirements: 2.1, 3.1_
   
-  - [ ] 4.2 Test HashSet<int> round-trip
+  - [x] 4.2 Test HashSet<int> round-trip
     - Create entity with HashSet<int> values
     - Save and load entity
     - Verify all values preserved
     - _Requirements: 3.1_
   
-  - [ ] 4.3 Test HashSet<string> round-trip
+  - [x] 4.3 Test HashSet<string> round-trip
     - Create entity with HashSet<string> values
     - Save and load entity
     - Verify all values preserved
     - _Requirements: 3.1_
   
-  - [ ] 4.4 Test HashSet<byte[]> round-trip
+  - [x] 4.4 Test HashSet<byte[]> round-trip
     - Create entity with HashSet<byte[]> values
     - Save and load entity
     - Verify all values preserved
     - _Requirements: 3.1_
   
-  - [ ] 4.5 Test HashSet null handling
+  - [x] 4.5 Test HashSet null handling
     - Create entity with null HashSet property
     - Save and load entity
     - Verify null is preserved
     - _Requirements: 3.4_
   
-  - [ ] 4.6 Test HashSet empty collection handling
+  - [x] 4.6 Test HashSet empty collection handling
     - Create entity with empty HashSet
     - Verify empty set is omitted from DynamoDB item
     - _Requirements: 3.5_

@@ -1483,23 +1483,28 @@ public static class MapperGenerator
         sb.AppendLine("            else");
         sb.AppendLine("            {");
         sb.AppendLine($"                // Initialize empty collection if no data found");
-        sb.AppendLine($"                entity.{propertyName} = new {property.PropertyType}();");
+        // Strip nullable marker from property type for instantiation
+        var nonNullablePropertyType = property.PropertyType.TrimEnd('?');
+        sb.AppendLine($"                entity.{propertyName} = new {nonNullablePropertyType}();");
         sb.AppendLine("            }");
     }
 
     private static void GenerateSetPropertyFromAttributeValue(StringBuilder sb, PropertyModel property, string propertyName, string baseElementType)
     {
+        // Strip nullable marker from property type for instantiation
+        var nonNullablePropertyType = property.PropertyType.TrimEnd('?');
+        
         if (baseElementType == "string" || baseElementType == "System.String")
         {
             // String Set (SS)
             sb.AppendLine($"                    // Convert DynamoDB String Set (SS) to HashSet<string>");
             sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.SS != null && {propertyName.ToLowerInvariant()}Value.SS.Count > 0)");
             sb.AppendLine("                    {");
-            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}({propertyName.ToLowerInvariant()}Value.SS);");
+            sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}({propertyName.ToLowerInvariant()}Value.SS);");
             sb.AppendLine("                    }");
             sb.AppendLine("                    else");
             sb.AppendLine("                    {");
-            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}();");
+            sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}();");
             sb.AppendLine("                    }");
         }
         else if (IsNumericType(baseElementType))
@@ -1508,11 +1513,11 @@ public static class MapperGenerator
             sb.AppendLine($"                    // Convert DynamoDB Number Set (NS) to HashSet<{baseElementType}>");
             sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.NS != null && {propertyName.ToLowerInvariant()}Value.NS.Count > 0)");
             sb.AppendLine("                    {");
-            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}({propertyName.ToLowerInvariant()}Value.NS.Select({GetNumericConversionExpression(baseElementType)}));");
+            sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}({propertyName.ToLowerInvariant()}Value.NS.Select({GetNumericConversionExpression(baseElementType)}));");
             sb.AppendLine("                    }");
             sb.AppendLine("                    else");
             sb.AppendLine("                    {");
-            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}();");
+            sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}();");
             sb.AppendLine("                    }");
         }
         else if (baseElementType == "byte[]" || baseElementType == "System.Byte[]")
@@ -1521,11 +1526,11 @@ public static class MapperGenerator
             sb.AppendLine($"                    // Convert DynamoDB Binary Set (BS) to HashSet<byte[]>");
             sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.BS != null && {propertyName.ToLowerInvariant()}Value.BS.Count > 0)");
             sb.AppendLine("                    {");
-            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}({propertyName.ToLowerInvariant()}Value.BS.Select(x => x.ToArray()));");
+            sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}({propertyName.ToLowerInvariant()}Value.BS.Select(x => x.ToArray()));");
             sb.AppendLine("                    }");
             sb.AppendLine("                    else");
             sb.AppendLine("                    {");
-            sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}();");
+            sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}();");
             sb.AppendLine("                    }");
         }
         else
@@ -1545,12 +1550,14 @@ public static class MapperGenerator
         sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.L != null && {propertyName.ToLowerInvariant()}Value.L.Count > 0)");
         sb.AppendLine("                    {");
         
+        // Strip nullable marker from property type for instantiation
+        var nonNullablePropertyType = property.PropertyType.TrimEnd('?');
         var conversionExpression = GetFromAttributeValueExpressionForCollectionElement(baseElementType);
-        sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}({propertyName.ToLowerInvariant()}Value.L.Select({conversionExpression}));");
+        sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}({propertyName.ToLowerInvariant()}Value.L.Select({conversionExpression}));");
         sb.AppendLine("                    }");
         sb.AppendLine("                    else");
         sb.AppendLine("                    {");
-        sb.AppendLine($"                        entity.{propertyName} = new {property.PropertyType}();");
+        sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}();");
         sb.AppendLine("                    }");
     }
     
