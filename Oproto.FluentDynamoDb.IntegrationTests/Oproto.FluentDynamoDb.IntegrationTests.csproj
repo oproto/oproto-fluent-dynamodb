@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>12.0</LangVersion>
+
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Test Framework -->
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0"/>
+        <PackageReference Include="xunit" Version="2.4.2"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="6.0.0">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        
+        <!-- Assertions - Using 7.x to avoid Apache 2.0 licensing issues -->
+        <PackageReference Include="FluentAssertions" Version="6.12.1" />
+        
+        <!-- AWS SDK for DynamoDB -->
+        <PackageReference Include="AWSSDK.DynamoDBv2" Version="[4.0.0,5.0.0)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Reference to main library -->
+        <ProjectReference Include="..\Oproto.FluentDynamoDb\Oproto.FluentDynamoDb.csproj" />
+        
+        <!-- Reference to attributes for entity definitions -->
+        <ProjectReference Include="..\Oproto.FluentDynamoDb.Attributes\Oproto.FluentDynamoDb.Attributes.csproj" />
+    </ItemGroup>
+
+    <!-- Include source generator as analyzer for compile-time generation -->
+    <ItemGroup Condition="'$(DesignTimeBuild)' != 'true'">
+        <Analyzer Include="..\Oproto.FluentDynamoDb.SourceGenerator\bin\$(Configuration)\netstandard2.0\Oproto.FluentDynamoDb.SourceGenerator.dll" 
+                  Condition="Exists('..\Oproto.FluentDynamoDb.SourceGenerator\bin\$(Configuration)\netstandard2.0\Oproto.FluentDynamoDb.SourceGenerator.dll')" />
+    </ItemGroup>
+
+    <!-- Build source generator before integration tests -->
+    <Target Name="BuildSourceGenerator" BeforeTargets="BeforeBuild;BeforeCompile" Condition="'$(DesignTimeBuild)' != 'true'">
+        <MSBuild Projects="..\Oproto.FluentDynamoDb.SourceGenerator\Oproto.FluentDynamoDb.SourceGenerator.csproj" 
+                 Targets="Build" 
+                 Properties="Configuration=$(Configuration);TargetFramework=netstandard2.0" />
+    </Target>
+
+</Project>

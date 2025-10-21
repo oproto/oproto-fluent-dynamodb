@@ -1,0 +1,2 @@
+# Infrastructure folder
+# Contains DynamoDB Local fixture and test base classes

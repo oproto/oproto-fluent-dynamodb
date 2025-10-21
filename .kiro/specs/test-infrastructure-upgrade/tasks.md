@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Create integration test project structure
+- [x] 1. Create integration test project structure
   - Create Oproto.FluentDynamoDb.IntegrationTests project targeting .NET 8
   - Add references to AWSSDK.DynamoDBv2, xUnit
   - Add FluentAssertions version 7.x (NOT 8.0+) to avoid Apache 2.0 licensing issues
