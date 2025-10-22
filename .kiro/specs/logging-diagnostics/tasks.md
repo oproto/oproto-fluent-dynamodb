@@ -219,13 +219,13 @@
     - Test event IDs are in correct ranges
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 10. Write unit tests for MEL adapter
-  - [ ] 10.1 Test MicrosoftExtensionsLoggingAdapter log level mapping
+- [x] 10. Write unit tests for MEL adapter
+  - [x] 10.1 Test MicrosoftExtensionsLoggingAdapter log level mapping
     - Test each log level maps correctly
     - Test IsEnabled delegates to ILogger
     - _Requirements: 5.2_
   
-  - [ ] 10.2 Test MicrosoftExtensionsLoggingAdapter log methods
+  - [x] 10.2 Test MicrosoftExtensionsLoggingAdapter log methods
     - Test LogTrace calls ILogger.LogTrace
     - Test LogDebug calls ILogger.LogDebug
     - Test LogInformation calls ILogger.LogInformation
@@ -234,16 +234,16 @@
     - Test LogCritical calls ILogger.LogCritical
     - _Requirements: 5.1, 5.3_
   
-  - [ ] 10.3 Test MicrosoftExtensionsLoggingAdapter event ID preservation
+  - [x] 10.3 Test MicrosoftExtensionsLoggingAdapter event ID preservation
     - Test event IDs are passed to ILogger
     - _Requirements: 5.3, 11.5_
   
-  - [ ] 10.4 Test MicrosoftExtensionsLoggingAdapter exception logging
+  - [x] 10.4 Test MicrosoftExtensionsLoggingAdapter exception logging
     - Test exceptions are passed to ILogger
     - Test exception context is preserved
     - _Requirements: 5.5_
   
-  - [ ] 10.5 Test extension methods
+  - [x] 10.5 Test extension methods
     - Test ToDynamoDbLogger on ILogger
     - Test ToDynamoDbLogger on ILoggerFactory
     - _Requirements: 5.1_
