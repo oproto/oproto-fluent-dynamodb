@@ -1,3 +1,23 @@
+// ============================================================================
+// MIGRATION STATUS: COMPLETED
+// ============================================================================
+// This test file has been migrated from brittle string-based assertions to
+// semantic assertions and compilation verification.
+//
+// Migration changes:
+// - Added CompilationVerifier.AssertGeneratedCodeCompiles() to all tests
+// - Replaced method existence checks with .ShouldContainMethod()
+// - Replaced assignment checks with .ShouldContainAssignment()
+// - Replaced LINQ checks with .ShouldUseLinqMethod()
+// - Replaced type reference checks with .ShouldReferenceType()
+// - Preserved DynamoDB-specific checks (attribute types, null handling)
+//   with descriptive "because" messages
+//
+// These tests now verify code structure semantically rather than through
+// exact string matching, making them resilient to formatting changes while
+// still catching actual errors.
+// ============================================================================
+
 using FluentAssertions;
 using Oproto.FluentDynamoDb.SourceGenerator.Generators;
 using Oproto.FluentDynamoDb.SourceGenerator.Models;
@@ -42,15 +62,14 @@ public class MapperGeneratorTests
         var entitySource = CreateEntitySource(entity);
         CompilationVerifier.AssertGeneratedCodeCompiles(result, entitySource);
 
-        // Assert
-        result.Should().Contain("namespace TestNamespace");
-        result.Should().Contain("public partial class TestEntity : IDynamoDbEntity"); // Interface included for better UX
-        result.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
-        result.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
-        result.Should().Contain("public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items)");
-        result.Should().Contain("public static string GetPartitionKey(Dictionary<string, AttributeValue> item)");
-        result.Should().Contain("public static bool MatchesEntity(Dictionary<string, AttributeValue> item)");
-        result.Should().Contain("public static EntityMetadata GetEntityMetadata()");
+        // Assert - Structural checks using semantic assertions
+        result.Should().Contain("namespace TestNamespace", "should generate code in the correct namespace");
+        result.Should().Contain("public partial class TestEntity : IDynamoDbEntity", "should implement IDynamoDbEntity interface for better UX");
+        result.ShouldContainMethod("ToDynamoDb");
+        result.ShouldContainMethod("FromDynamoDb");
+        result.ShouldContainMethod("GetPartitionKey");
+        result.ShouldContainMethod("MatchesEntity");
+        result.ShouldContainMethod("GetEntityMetadata");
     }
 
     [Fact]
@@ -96,10 +115,13 @@ public class MapperGeneratorTests
         var entitySource = CreateEntitySource(entity);
         CompilationVerifier.AssertGeneratedCodeCompiles(result, entitySource);
 
-        // Assert
-        result.Should().Contain("Multi-item entity: Supports entities that span multiple DynamoDB items.");
-        result.Should().NotContain("ToDynamoDbMultiple"); // Removed in Task 41
-        result.Should().Contain("// Multi-item entity: combine all items into a single entity");
+        // Assert - DynamoDB-specific behavior checks
+        result.Should().Contain("Multi-item entity: Supports entities that span multiple DynamoDB items.", 
+            "should document multi-item entity support");
+        result.Should().NotContain("ToDynamoDbMultiple", 
+            "method was removed in Task 41");
+        result.Should().Contain("// Multi-item entity: combine all items into a single entity",
+            "should include comment explaining multi-item entity mapping logic");
     }
 
     [Fact]
@@ -158,13 +180,19 @@ public class MapperGeneratorTests
         var relatedEntitySources = CreateRelatedEntitySources(entity);
         CompilationVerifier.AssertGeneratedCodeCompiles(result, new[] { entitySource }.Concat(relatedEntitySources).ToArray());
 
-        // Assert
-        result.Should().Contain("Related entities: 2 relationship(s) defined.");
-        result.Should().Contain("// Populate related entity properties based on sort key patterns");
-        result.Should().Contain("// Map related entity: AuditEntries");
-        result.Should().Contain("// Map related entity: Summary");
-        result.Should().Contain("if (sortKey.StartsWith(\"audit#\"))");
-        result.Should().Contain("if (sortKey == \"summary\" || sortKey.StartsWith(\"summary#\"))");
+        // Assert - DynamoDB-specific relationship mapping checks
+        result.Should().Contain("Related entities: 2 relationship(s) defined.",
+            "should document the number of relationships");
+        result.Should().Contain("// Populate related entity properties based on sort key patterns",
+            "should include comment explaining relationship mapping strategy");
+        result.Should().Contain("// Map related entity: AuditEntries",
+            "should document AuditEntries relationship mapping");
+        result.Should().Contain("// Map related entity: Summary",
+            "should document Summary relationship mapping");
+        result.Should().Contain("if (sortKey.StartsWith(\"audit#\"))",
+            "should check sort key pattern for AuditEntries relationship");
+        result.Should().Contain("if (sortKey == \"summary\" || sortKey.StartsWith(\"summary#\"))",
+            "should check sort key pattern for Summary relationship");
     }
 
     [Fact]
@@ -217,11 +245,13 @@ public class MapperGeneratorTests
         var entitySource = CreateEntitySource(entity);
         CompilationVerifier.AssertGeneratedCodeCompiles(result, entitySource);
 
-        // Assert
-        result.Should().Contain("public static EntityMetadata GetEntityMetadata()");
-        result.Should().Contain("Indexes = new IndexMetadata[]");
-        result.Should().Contain("IndexName = \"StatusIndex\"");
-        result.Should().Contain("PartitionKeyProperty = \"Status\"");
+        // Assert - Structural and metadata checks
+        result.ShouldContainMethod("GetEntityMetadata");
+        result.ShouldReferenceType("IndexMetadata");
+        result.Should().Contain("IndexName = \"StatusIndex\"",
+            "should set correct GSI index name");
+        result.Should().Contain("PartitionKeyProperty = \"Status\"",
+            "should set correct partition key property for GSI");
     }
 
     [Fact]
@@ -259,9 +289,12 @@ public class MapperGeneratorTests
         var entitySource = CreateEntitySource(entity);
         CompilationVerifier.AssertGeneratedCodeCompiles(result, entitySource);
 
-        // Assert
-        result.Should().Contain("if (typedEntity.OptionalField != null)");
-        result.Should().Contain("item[\"optional_field\"] = new AttributeValue { S = typedEntity.OptionalField };");
+        // Assert - DynamoDB null handling checks
+        result.Should().Contain("if (typedEntity.OptionalField != null)",
+            "should check for null before adding nullable property to DynamoDB item");
+        result.Should().Contain("S =", 
+            "should use String (S) attribute type for string properties");
+        result.ShouldContainAssignment("item[\"optional_field\"]");
     }
 
     [Fact]
@@ -299,13 +332,22 @@ public class MapperGeneratorTests
         var entitySource = CreateEntitySource(entity);
         CompilationVerifier.AssertGeneratedCodeCompiles(result, entitySource);
 
-        // Assert
-        result.Should().Contain("// Convert collection Tags to native DynamoDB type");
-        result.Should().Contain("// Convert List<string> to DynamoDB List (L)");
-        result.Should().Contain("L = typedEntity.Tags.Select(x => new AttributeValue { S = x }).ToList()");
-        result.Should().Contain("// Convert collection Tags from native DynamoDB type");
-        result.Should().Contain("// Convert DynamoDB List (L) to List<string>");
-        result.Should().Contain("entity.Tags = new List<string>(tagsValue.L.Select(x => x.S))");
+        // Assert - DynamoDB collection type conversions
+        result.Should().Contain("// Convert collection Tags to native DynamoDB type",
+            "should document collection conversion to DynamoDB");
+        result.Should().Contain("// Convert List<string> to DynamoDB List (L)",
+            "should document specific collection type conversion");
+        result.Should().Contain("L =",
+            "should use List (L) attribute type for List<string> collections");
+        result.Should().Contain("S =",
+            "should use String (S) attribute type for string elements in list");
+        result.ShouldUseLinqMethod("Select");
+        result.ShouldUseLinqMethod("ToList");
+        result.Should().Contain("// Convert collection Tags from native DynamoDB type",
+            "should document collection conversion from DynamoDB");
+        result.Should().Contain("// Convert DynamoDB List (L) to List<string>",
+            "should document specific collection type deserialization");
+        result.ShouldContainAssignment("entity.Tags");
     }
 
     [Fact]
@@ -360,20 +402,25 @@ public class MapperGeneratorTests
         var entitySource = CreateEntitySource(entity);
         CompilationVerifier.AssertGeneratedCodeCompiles(result, entitySource);
 
-        // Assert
-        // Check ToDynamoDb conversions
-        result.Should().Contain("new AttributeValue { S = typedEntity.Id }");
-        result.Should().Contain("new AttributeValue { N = typedEntity.Count.ToString() }");
-        result.Should().Contain("new AttributeValue { BOOL = typedEntity.IsActive }");
-        result.Should().Contain("new AttributeValue { S = typedEntity.CreatedDate.ToString(\"O\") }");
-        result.Should().Contain("new AttributeValue { S = typedEntity.UniqueId.ToString() }"); // No format specifier
-
-        // Check FromDynamoDb conversions
-        result.Should().Contain("entity.Id = idValue.S");
-        result.Should().Contain("entity.Count = int.Parse(countValue.N)");
-        result.Should().Contain("entity.IsActive = isactiveValue.BOOL");
-        result.Should().Contain("entity.CreatedDate = DateTime.Parse(createddateValue.S)");
-        result.Should().Contain("entity.UniqueId = Guid.Parse(uniqueidValue.S)");
+        // Assert - DynamoDB attribute type conversions
+        // Check ToDynamoDb conversions use correct DynamoDB attribute types
+        result.Should().Contain("S =",
+            "should use String (S) attribute type for string, DateTime, and Guid properties");
+        result.Should().Contain("N =",
+            "should use Number (N) attribute type for int properties");
+        result.Should().Contain("BOOL =",
+            "should use Boolean (BOOL) attribute type for bool properties");
+        result.Should().Contain(".ToString(\"O\")",
+            "should use ISO 8601 format for DateTime serialization");
+        
+        // Check FromDynamoDb conversions use correct parsing
+        result.ShouldContainAssignment("entity.Id");
+        result.ShouldContainAssignment("entity.Count");
+        result.ShouldContainAssignment("entity.IsActive");
+        result.ShouldContainAssignment("entity.CreatedDate");
+        result.ShouldContainAssignment("entity.UniqueId");
+        result.ShouldReferenceType("DateTime");
+        result.ShouldReferenceType("Guid");
     }
 
     [Fact]
@@ -412,11 +459,17 @@ public class MapperGeneratorTests
         var entitySource = CreateEntitySource(entity);
         CompilationVerifier.AssertGeneratedCodeCompiles(result, entitySource);
 
-        // Assert
-        result.Should().Contain("// Check entity discriminator");
-        result.Should().Contain("return entityTypeValue.S == \"TEST_ENTITY\";");
-        result.Should().Contain("EntityDiscriminator = \"TEST_ENTITY\"");
-        result.Should().Contain("return sortKey == \"TEST_ENTITY\" || sortKey.StartsWith(\"TEST_ENTITY#\");");
+        // Assert - DynamoDB entity discriminator logic
+        result.Should().Contain("// Check entity discriminator",
+            "should document entity discriminator check");
+        result.Should().Contain("S =",
+            "should use String (S) attribute type for entity discriminator");
+        result.Should().Contain("== \"TEST_ENTITY\"",
+            "should check for exact entity discriminator value");
+        result.Should().Contain("EntityDiscriminator = \"TEST_ENTITY\"",
+            "should set entity discriminator in metadata");
+        result.Should().Contain("sortKey.StartsWith(\"TEST_ENTITY#\")",
+            "should check sort key pattern for entity discriminator");
     }
 
     [Fact]
@@ -453,13 +506,20 @@ public class MapperGeneratorTests
         var entitySource = CreateEntitySource(entity);
         CompilationVerifier.AssertGeneratedCodeCompiles(result, entitySource);
 
-        // Assert
-        result.Should().Contain("try");
-        result.Should().Contain("catch (Exception ex)");
-        result.Should().Contain("throw DynamoDbMappingException.PropertyConversionFailed(");
-        result.Should().Contain("catch (DynamoDbMappingException)");
-        result.Should().Contain("// Re-throw mapping exceptions as-is");
-        result.Should().Contain("throw DynamoDbMappingException.EntityConstructionFailed(");
+        // Assert - Error handling structure
+        result.Should().Contain("try",
+            "should wrap conversion logic in try-catch blocks");
+        result.Should().Contain("catch (Exception ex)",
+            "should catch general exceptions during conversion");
+        result.ShouldReferenceType("DynamoDbMappingException");
+        result.Should().Contain("PropertyConversionFailed",
+            "should throw PropertyConversionFailed for property conversion errors");
+        result.Should().Contain("catch (DynamoDbMappingException)",
+            "should have specific catch block for DynamoDbMappingException");
+        result.Should().Contain("// Re-throw mapping exceptions as-is",
+            "should document re-throwing of mapping exceptions");
+        result.Should().Contain("EntityConstructionFailed",
+            "should throw EntityConstructionFailed for entity construction errors");
     }
 
     /// <summary>

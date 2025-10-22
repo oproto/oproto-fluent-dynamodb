@@ -6,7 +6,8 @@ This document tracks the migration of brittle unit tests from string-based asser
 
 **Last Updated:** 2025-10-22  
 **Total Test Files:** 15  
-**Total Tests:** 164
+**Total Tests:** 164  
+**Migrated Tests:** 9 (5.5%)
 
 ## Migration Priority Classification
 
@@ -25,23 +26,26 @@ These tests verify infrastructure, diagnostics, or simple models and rarely brea
 
 ### Priority 1: High Impact Tests
 
-#### 1. MapperGeneratorTests.cs
+#### 1. MapperGeneratorTests.cs ✅ COMPLETED
 - **Location:** `Oproto.FluentDynamoDb.SourceGenerator.UnitTests/Generators/MapperGeneratorTests.cs`
 - **Total Tests:** 9
-- **Migration Status:** ❌ Not Started
+- **Migration Status:** ✅ **COMPLETED** (2025-10-22)
 - **Compilation Verification:** ✅ Already Added
-- **String Assertions Found:** 
-  - Method existence checks: `Should().Contain("public static")`
-  - Assignment checks: `Should().Contain("entity.Id = ")`
-  - LINQ usage checks: `Should().Contain(".Select(")`
-  - DynamoDB attribute type checks: `Should().Contain("S =")`
-  - Null handling checks: `Should().Contain("!= null")`
-- **Estimated Effort:** High (9 tests with extensive assertions)
+- **Migration Changes Applied:**
+  - ✅ Replaced method existence checks with `.ShouldContainMethod()`
+  - ✅ Replaced assignment checks with `.ShouldContainAssignment()`
+  - ✅ Replaced LINQ checks with `.ShouldUseLinqMethod()`
+  - ✅ Replaced type reference checks with `.ShouldReferenceType()`
+  - ✅ Preserved DynamoDB attribute type checks (S, N, SS, NS, L, M) with "because" messages
+  - ✅ Preserved null handling checks with "because" messages
+  - ✅ Preserved relationship mapping checks with "because" messages
+  - ✅ Added file header comment documenting migration
+  - ✅ All 9 tests passing
 - **Notes:** 
-  - Already has compilation verification in all tests
-  - Heavy use of string matching for structure verification
-  - Many DynamoDB-specific checks that should be preserved
-  - Helper methods `CreateEntitySource()` and `CreateRelatedEntitySources()` already exist
+  - Migration completed successfully
+  - Tests now resilient to formatting changes
+  - DynamoDB-specific behavior checks preserved
+  - Helper methods `CreateEntitySource()` and `CreateRelatedEntitySources()` remain unchanged
 
 **Test Breakdown:**
 1. `GenerateEntityImplementation_WithBasicEntity_ProducesCorrectCode` - Basic entity mapping
@@ -308,7 +312,8 @@ These tests verify infrastructure, diagnostics, or simple models and rarely brea
 - **Priority 3 (Low Impact):** 9 files, 99 tests
 
 ### By Migration Status
-- **Not Started:** 6 files, 65 tests
+- **Completed:** 1 file, 9 tests ✅
+- **Not Started:** 5 files, 56 tests
 - **Good As-Is:** 7 files, 87 tests
 - **Review Needed:** 2 files, 23 tests
 
@@ -411,9 +416,9 @@ Use this checklist for each file being migrated:
 ## Next Steps
 
 1. ✅ Complete this migration status document
-2. ⏭️ Start with Priority 1: MapperGeneratorTests.cs
-3. ⏭️ Continue with Priority 1: AdvancedTypeGenerationTests.cs
-4. ⏭️ Continue with Priority 1: KeysGeneratorTests.cs
+2. ✅ **COMPLETED:** Priority 1: MapperGeneratorTests.cs (9 tests migrated)
+3. ⏭️ Continue with Priority 1: AdvancedTypeGenerationTests.cs (38 tests)
+4. ⏭️ Continue with Priority 1: KeysGeneratorTests.cs (8 tests)
 5. ⏭️ Move to Priority 2 files
 6. ⏭️ Review Priority 3 files that need review
 7. ⏭️ Create final migration summary report

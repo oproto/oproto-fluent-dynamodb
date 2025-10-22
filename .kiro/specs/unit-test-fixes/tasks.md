@@ -6,32 +6,32 @@
   - Document the baseline: number of tests per file, types of assertions used
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 2. Migrate MapperGeneratorTests.cs (High Priority)
-- [ ] 2.1 Add compilation verification to all tests in MapperGeneratorTests.cs
+- [x] 2. Migrate MapperGeneratorTests.cs (High Priority)
+- [x] 2.1 Add compilation verification to all tests in MapperGeneratorTests.cs
   - Add `CompilationVerifier.AssertGeneratedCodeCompiles(code, source)` after diagnostic checks
   - Ensure all tests compile successfully
   - _Requirements: 2.1, 2.2, 2.4_
 
-- [ ] 2.2 Replace structural assertions with semantic assertions in MapperGeneratorTests.cs
+- [x] 2.2 Replace structural assertions with semantic assertions in MapperGeneratorTests.cs
   - Replace method existence checks with `.ShouldContainMethod()`
   - Replace assignment checks with `.ShouldContainAssignment()`
   - Replace LINQ checks with `.ShouldUseLinqMethod()`
   - Replace type reference checks with `.ShouldReferenceType()`
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 2.3 Preserve DynamoDB-specific checks in MapperGeneratorTests.cs
+- [x] 2.3 Preserve DynamoDB-specific checks in MapperGeneratorTests.cs
   - Keep string checks for DynamoDB attribute types (S, N, SS, NS, L, M)
   - Keep string checks for null handling patterns
   - Add descriptive "because" messages to all retained string checks
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ] 2.4 Validate MapperGeneratorTests.cs migration
+- [x] 2.4 Validate MapperGeneratorTests.cs migration
   - Run all tests to ensure they pass
   - Intentionally modify generated code formatting to verify tests still pass
   - Intentionally break generated code to verify tests catch errors
   - _Requirements: 8.1, 8.2, 8.4_
 
-- [ ] 2.5 Document MapperGeneratorTests.cs migration
+- [x] 2.5 Document MapperGeneratorTests.cs migration
   - Add file header comment indicating migration is complete
   - Update migration tracking document
   - _Requirements: 5.1, 5.4_
