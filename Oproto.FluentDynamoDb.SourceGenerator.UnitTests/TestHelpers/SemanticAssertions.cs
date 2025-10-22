@@ -280,6 +280,131 @@ public static class SemanticAssertions
     }
 
     /// <summary>
+    /// Asserts that the source code contains a class with the specified name.
+    /// </summary>
+    /// <param name="sourceCode">The source code to analyze</param>
+    /// <param name="className">The name of the class to find</param>
+    /// <param name="because">Optional explanation of why this assertion is important</param>
+    /// <exception cref="SemanticAssertionException">Thrown when the class is not found</exception>
+    public static void ShouldContainClass(
+        this string sourceCode,
+        string className,
+        string because = "")
+    {
+        var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
+        var root = syntaxTree.GetRoot();
+
+        var classes = root.DescendantNodes()
+            .OfType<ClassDeclarationSyntax>()
+            .ToList();
+
+        var hasClass = classes.Any(c => c.Identifier.Text == className);
+
+        if (!hasClass)
+        {
+            var availableClasses = classes
+                .Select(c => c.Identifier.Text)
+                .Distinct()
+                .OrderBy(name => name)
+                .ToList();
+
+            var errorMessage = new StringBuilder();
+            errorMessage.AppendLine($"Expected source code to contain class '{className}'");
+            
+            if (!string.IsNullOrWhiteSpace(because))
+            {
+                errorMessage.AppendLine($"Because: {because}");
+            }
+            
+            errorMessage.AppendLine();
+            
+            if (availableClasses.Any())
+            {
+                errorMessage.AppendLine("Available classes:");
+                foreach (var cls in availableClasses)
+                {
+                    errorMessage.AppendLine($"  - {cls}");
+                }
+            }
+            else
+            {
+                errorMessage.AppendLine("No classes found in the source code.");
+            }
+
+            errorMessage.AppendLine();
+            errorMessage.AppendLine("Source code context:");
+            errorMessage.AppendLine(GetSourceContext(sourceCode, 10));
+
+            throw new SemanticAssertionException(errorMessage.ToString());
+        }
+    }
+
+    /// <summary>
+    /// Asserts that the source code contains a constant field with the specified name.
+    /// </summary>
+    /// <param name="sourceCode">The source code to analyze</param>
+    /// <param name="constantName">The name of the constant to find</param>
+    /// <param name="because">Optional explanation of why this assertion is important</param>
+    /// <exception cref="SemanticAssertionException">Thrown when the constant is not found</exception>
+    public static void ShouldContainConstant(
+        this string sourceCode,
+        string constantName,
+        string because = "")
+    {
+        var syntaxTree = CSharpSyntaxTree.ParseText(sourceCode);
+        var root = syntaxTree.GetRoot();
+
+        var fields = root.DescendantNodes()
+            .OfType<FieldDeclarationSyntax>()
+            .ToList();
+
+        var constants = fields
+            .Where(f => f.Modifiers.Any(m => m.IsKind(SyntaxKind.ConstKeyword)))
+            .SelectMany(f => f.Declaration.Variables)
+            .ToList();
+
+        var hasConstant = constants.Any(c => c.Identifier.Text == constantName);
+
+        if (!hasConstant)
+        {
+            var availableConstants = constants
+                .Select(c => c.Identifier.Text)
+                .Distinct()
+                .OrderBy(name => name)
+                .ToList();
+
+            var errorMessage = new StringBuilder();
+            errorMessage.AppendLine($"Expected source code to contain constant '{constantName}'");
+            
+            if (!string.IsNullOrWhiteSpace(because))
+            {
+                errorMessage.AppendLine($"Because: {because}");
+            }
+            
+            errorMessage.AppendLine();
+            
+            if (availableConstants.Any())
+            {
+                errorMessage.AppendLine("Available constants:");
+                foreach (var constant in availableConstants)
+                {
+                    errorMessage.AppendLine($"  - {constant}");
+                }
+            }
+            else
+            {
+                errorMessage.AppendLine("No constants found in the source code.");
+            }
+
+            errorMessage.AppendLine();
+            errorMessage.AppendLine("Source code context:");
+            errorMessage.AppendLine(GetSourceContext(sourceCode, 10));
+
+            throw new SemanticAssertionException(errorMessage.ToString());
+        }
+    }
+
+    /// <summary>
     /// Gets a truncated context of the source code for error messages.
     /// </summary>
     private static string GetSourceContext(string sourceCode, int maxLines)

@@ -7,7 +7,7 @@ This document tracks the migration of brittle unit tests from string-based asser
 **Last Updated:** 2025-10-22  
 **Total Test Files:** 15  
 **Total Tests:** 164  
-**Migrated Tests:** 55 (33.5%)
+**Migrated Tests:** 61 (37.2%)
 
 ## Migration Priority Classification
 
@@ -140,28 +140,39 @@ These tests verify infrastructure, diagnostics, or simple models and rarely brea
 
 ### Priority 2: Medium Impact Tests
 
-#### 4. FieldsGeneratorTests.cs
+#### 4. FieldsGeneratorTests.cs ✅ COMPLETED
 - **Location:** `Oproto.FluentDynamoDb.SourceGenerator.UnitTests/Generators/FieldsGeneratorTests.cs`
 - **Total Tests:** 6
-- **Migration Status:** ❌ Not Started
+- **Migration Status:** ✅ **COMPLETED** (2025-10-22)
 - **Compilation Verification:** ✅ Already Added
-- **String Assertions Found:**
-  - Constant field checks: `Should().Contain("public const string Id = \"pk\"")`
-  - Nested class checks: `Should().Contain("public static partial class TestGSIFields")`
-  - Reserved word handling: `Should().Contain("public const string @class")`
-- **Estimated Effort:** Low (6 tests, mostly constant values)
+- **Migration Changes Applied:**
+  - ✅ Compilation verification already present in all tests
+  - ✅ Added `.ShouldContainClass()` semantic assertion method to SemanticAssertions
+  - ✅ Added `.ShouldContainConstant()` semantic assertion method to SemanticAssertions
+  - ✅ Replaced class existence checks with `.ShouldContainClass()`
+  - ✅ Replaced constant field checks with `.ShouldContainConstant()`
+  - ✅ Preserved field constant value checks with "because" messages
+  - ✅ Preserved attribute name mapping checks with "because" messages
+  - ✅ Preserved reserved word handling checks with "because" messages
+  - ✅ Added file header comment documenting migration
+  - ✅ All 6 tests passing
 - **Notes:**
-  - Already has compilation verification in all tests
-  - Field constant values are DynamoDB attribute names and should be preserved
-  - Tests verify field name generation and GSI nested classes
+  - Migration completed successfully
+  - Tests now resilient to formatting changes
+  - DynamoDB-specific behavior checks preserved for:
+    - Field constant values (attribute name mappings)
+    - GSI nested class generation
+    - Reserved word escaping (@ prefix)
+    - XML documentation generation
+  - Extended SemanticAssertions with two new methods for class and constant verification
 
 **Test Breakdown:**
-1. `GenerateFieldsClass_WithBasicEntity_ProducesCorrectCode`
-2. `GenerateFieldsClass_WithGsiProperties_GeneratesNestedGsiClasses`
-3. `GenerateFieldsClass_WithReservedWords_HandlesCorrectly`
-4. `GenerateFieldsClass_WithNoAttributeMappings_GeneratesEmptyClass`
-5. `GenerateFieldsClass_WithComplexGsiName_GeneratesSafeClassName`
-6. `GenerateFieldsClass_WithMultipleGsis_GeneratesAllNestedClasses`
+1. `GenerateFieldsClass_WithBasicEntity_ProducesCorrectCode` - Basic field constants
+2. `GenerateFieldsClass_WithGsiProperties_GeneratesNestedGsiClasses` - GSI nested classes
+3. `GenerateFieldsClass_WithReservedWords_HandlesCorrectly` - Reserved word handling
+4. `GenerateFieldsClass_WithNoAttributeMappings_GeneratesEmptyClass` - Empty class generation
+5. `GenerateFieldsClass_WithComplexGsiName_GeneratesSafeClassName` - Safe class name generation
+6. `GenerateFieldsClass_WithMultipleGsis_GeneratesAllNestedClasses` - Multiple GSI classes
 
 ---
 
@@ -332,13 +343,13 @@ These tests verify infrastructure, diagnostics, or simple models and rarely brea
 - **Priority 3 (Low Impact):** 9 files, 99 tests
 
 ### By Migration Status
-- **Completed:** 3 files, 55 tests ✅
-- **Not Started:** 3 files, 10 tests
+- **Completed:** 4 files, 61 tests ✅
+- **Not Started:** 2 files, 4 tests
 - **Good As-Is:** 7 files, 87 tests
 - **Review Needed:** 2 files, 23 tests
 
 ### By Compilation Verification Status
-- **Already Added:** 3 files (MapperGeneratorTests, AdvancedTypeGenerationTests, KeysGeneratorTests, FieldsGeneratorTests)
+- **Already Added:** 4 files (MapperGeneratorTests, AdvancedTypeGenerationTests, KeysGeneratorTests, FieldsGeneratorTests)
 - **Needs Adding:** 2 files (DynamoDbSourceGeneratorTests, MapperGeneratorBugFixTests)
 - **Not Needed:** 10 files (diagnostic, model, and infrastructure tests)
 
@@ -439,6 +450,7 @@ Use this checklist for each file being migrated:
 2. ✅ **COMPLETED:** Priority 1: MapperGeneratorTests.cs (9 tests migrated)
 3. ✅ **COMPLETED:** Priority 1: AdvancedTypeGenerationTests.cs (38 tests migrated)
 4. ✅ **COMPLETED:** Priority 1: KeysGeneratorTests.cs (8 tests migrated)
-5. ⏭️ Move to Priority 2 files (FieldsGeneratorTests.cs, DynamoDbSourceGeneratorTests.cs, MapperGeneratorBugFixTests.cs)
-6. ⏭️ Review Priority 3 files that need review
-7. ⏭️ Create final migration summary report
+5. ✅ **COMPLETED:** Priority 2: FieldsGeneratorTests.cs (6 tests migrated)
+6. ⏭️ Move to remaining Priority 2 files (DynamoDbSourceGeneratorTests.cs, MapperGeneratorBugFixTests.cs)
+7. ⏭️ Review Priority 3 files that need review
+8. ⏭️ Create final migration summary report

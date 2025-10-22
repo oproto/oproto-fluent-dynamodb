@@ -1,3 +1,21 @@
+// ============================================================================
+// MIGRATION STATUS: COMPLETED
+// ============================================================================
+// This test file has been migrated from brittle string-based assertions to
+// semantic assertions and compilation verification.
+//
+// Migration changes:
+// - Compilation verification already present in all tests
+// - Replaced class existence checks with .ShouldContainClass()
+// - Replaced constant field checks with .ShouldContainConstant()
+// - Preserved field constant value checks with descriptive "because" messages
+// - Preserved attribute name mapping checks with descriptive "because" messages
+//
+// These tests now verify code structure semantically rather than through
+// exact string matching, making them resilient to formatting changes while
+// still catching actual errors.
+// ============================================================================
+
 using FluentAssertions;
 using Oproto.FluentDynamoDb.SourceGenerator.Generators;
 using Oproto.FluentDynamoDb.SourceGenerator.Models;
@@ -39,14 +57,18 @@ public class FieldsGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("namespace TestNamespace");
-        result.Should().Contain("public static partial class TestEntityFields");
-        result.Should().Contain("public const string Id = \"pk\";");
-        result.Should().Contain("public const string Name = \"name\";");
-        result.Should().Contain("/// <summary>");
-        result.Should().Contain("/// DynamoDB attribute name for Id property.");
-        result.Should().Contain("/// </summary>");
+        // Assert - Structural checks using semantic assertions
+        result.Should().Contain("namespace TestNamespace", "should generate code in the correct namespace");
+        result.ShouldContainClass("TestEntityFields");
+        result.ShouldContainConstant("Id");
+        result.ShouldContainConstant("Name");
+        
+        // Assert - DynamoDB-specific value checks
+        result.Should().Contain("public const string Id = \"pk\";", "should map Id property to pk attribute");
+        result.Should().Contain("public const string Name = \"name\";", "should map Name property to name attribute");
+        result.Should().Contain("/// <summary>", "should include XML documentation");
+        result.Should().Contain("/// DynamoDB attribute name for Id property.", "should document the attribute mapping");
+        result.Should().Contain("/// </summary>", "should close XML documentation");
     }
 
     [Fact]
@@ -110,11 +132,15 @@ public class FieldsGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static partial class TestGSIFields");
-        result.Should().Contain("public const string PartitionKey = \"gsi_pk\";");
-        result.Should().Contain("public const string SortKey = \"gsi_sk\";");
-        result.Should().Contain("/// Field name constants for TestGSI Global Secondary Index.");
+        // Assert - Structural checks using semantic assertions
+        result.ShouldContainClass("TestGSIFields");
+        result.ShouldContainConstant("PartitionKey");
+        result.ShouldContainConstant("SortKey");
+        
+        // Assert - DynamoDB-specific value checks
+        result.Should().Contain("public const string PartitionKey = \"gsi_pk\";", "should map GSI partition key to gsi_pk attribute");
+        result.Should().Contain("public const string SortKey = \"gsi_sk\";", "should map GSI sort key to gsi_sk attribute");
+        result.Should().Contain("/// Field name constants for TestGSI Global Secondary Index.", "should document the GSI purpose");
     }
 
     [Fact]
@@ -147,9 +173,9 @@ public class FieldsGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public const string @class = \"class_attr\";");
-        result.Should().Contain("public const string @COUNT = \"count_attr\";");
+        // Assert - DynamoDB-specific value checks (constants with @ prefix are still identifiable)
+        result.Should().Contain("public const string @class = \"class_attr\";", "should escape C# reserved word 'class' with @ prefix");
+        result.Should().Contain("public const string @COUNT = \"count_attr\";", "should escape DynamoDB reserved word 'COUNT' with @ prefix");
     }
 
     [Fact]
@@ -178,9 +204,11 @@ public class FieldsGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static partial class TestEntityFields");
-        result.Should().NotContain("public const string Id");
+        // Assert - Structural checks using semantic assertions
+        result.ShouldContainClass("TestEntityFields");
+        
+        // Assert - Verify no constants generated for unmapped properties
+        result.Should().NotContain("public const string Id", "should not generate constant for property without attribute mapping");
     }
 
     [Fact]
@@ -230,9 +258,12 @@ public class FieldsGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static partial class test_gsi_with_dashesFields");
-        result.Should().Contain("public const string PartitionKey = \"gsi_pk\";");
+        // Assert - Structural checks using semantic assertions
+        result.ShouldContainClass("test_gsi_with_dashesFields");
+        result.ShouldContainConstant("PartitionKey");
+        
+        // Assert - DynamoDB-specific value checks
+        result.Should().Contain("public const string PartitionKey = \"gsi_pk\";", "should map GSI partition key to gsi_pk attribute");
     }
 
     [Fact]
@@ -300,8 +331,8 @@ public class FieldsGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static partial class GSI1Fields");
-        result.Should().Contain("public static partial class GSI2Fields");
+        // Assert - Structural checks using semantic assertions
+        result.ShouldContainClass("GSI1Fields");
+        result.ShouldContainClass("GSI2Fields");
     }
 }
