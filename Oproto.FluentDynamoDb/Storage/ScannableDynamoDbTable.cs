@@ -41,6 +41,8 @@ internal class ScannableDynamoDbTable : IScannableDynamoDbTable
     /// Gets the underlying table instance, providing access to custom properties and methods.
     /// </summary>
     public DynamoDbTableBase UnderlyingTable => _table;
+    
+
 
     /// <summary>
     /// Gets a builder for GetItem operations (pass-through to underlying table).

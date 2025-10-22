@@ -21,15 +21,15 @@
     - Add XML documentation for each event ID
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 2. Enhance DynamoDbTableBase with logger support
-  - [ ] 2.1 Add Logger property to DynamoDbTableBase
+- [x] 2. Enhance DynamoDbTableBase with logger support
+  - [x] 2.1 Add Logger property to DynamoDbTableBase
     - Add protected IDynamoDbLogger Logger property
     - Update constructor to accept optional logger parameter
     - Default to NoOpLogger.Instance when null
     - Maintain existing constructor for backward compatibility
     - _Requirements: 6.1, 6.2, 6.3, 14.1, 14.3_
   
-  - [ ] 2.2 Update generated table classes to pass logger
+  - [x] 2.2 Update generated table classes to pass logger
     - Modify source generator to include logger parameter in generated constructors
     - Pass logger from table instance to generated mapping methods
     - Ensure backward compatibility with existing constructors

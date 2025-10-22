@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2;
+using Oproto.FluentDynamoDb.Logging;
 using Oproto.FluentDynamoDb.Requests;
 
 namespace Oproto.FluentDynamoDb.Storage;
@@ -8,14 +9,36 @@ namespace Oproto.FluentDynamoDb.Storage;
 /// </summary>
 public abstract class DynamoDbTableBase : IDynamoDbTable
 {
+    /// <summary>
+    /// Initializes a new instance of the DynamoDbTableBase class.
+    /// </summary>
+    /// <param name="client">The DynamoDB client.</param>
+    /// <param name="tableName">The name of the table.</param>
     public DynamoDbTableBase(IAmazonDynamoDB client, string tableName)
+        : this(client, tableName, null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the DynamoDbTableBase class with optional logger.
+    /// </summary>
+    /// <param name="client">The DynamoDB client.</param>
+    /// <param name="tableName">The name of the table.</param>
+    /// <param name="logger">Optional logger for DynamoDB operations. If null, uses a no-op logger.</param>
+    public DynamoDbTableBase(IAmazonDynamoDB client, string tableName, IDynamoDbLogger? logger)
     {
         DynamoDbClient = client;
         Name = tableName;
+        Logger = logger ?? NoOpLogger.Instance;
     }
 
     public IAmazonDynamoDB DynamoDbClient { get; private init; }
     public string Name { get; private init; }
+    
+    /// <summary>
+    /// Gets the logger for DynamoDB operations.
+    /// </summary>
+    protected IDynamoDbLogger Logger { get; private init; }
 
     /// <summary>
     /// Gets a builder for GetItem operations on this table.

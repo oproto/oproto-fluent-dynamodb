@@ -146,9 +146,10 @@ public static class MapperGenerator
         sb.AppendLine("        /// </summary>");
         sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
         sb.AppendLine("        /// <param name=\"entity\">The entity instance to convert.</param>");
+        sb.AppendLine("        /// <param name=\"logger\">Optional logger for DynamoDB operations. If null, no logging is performed.</param>");
         sb.AppendLine("        /// <returns>A dictionary of DynamoDB AttributeValues representing the entity.</returns>");
         sb.AppendLine("        [MethodImpl(MethodImplOptions.AggressiveInlining)]");
-        sb.AppendLine($"        public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity) where TSelf : IDynamoDbEntity");
+        sb.AppendLine($"        public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity, Logging.IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
         sb.AppendLine($"            if (entity is not {entity.ClassName} typedEntity)");
         sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{entity.GetType().Name}}\", nameof(entity));");
@@ -191,7 +192,7 @@ public static class MapperGenerator
         sb.AppendLine("        /// Use ToDynamoDbAsync instead.");
         sb.AppendLine("        /// </summary>");
         sb.AppendLine("        [MethodImpl(MethodImplOptions.AggressiveInlining)]");
-        sb.AppendLine($"        public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity) where TSelf : IDynamoDbEntity");
+        sb.AppendLine($"        public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity, Logging.IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
         sb.AppendLine($"            throw new NotSupportedException(");
         sb.AppendLine($"                \"{entity.ClassName} has blob reference properties and requires async methods. \" +");
@@ -206,7 +207,7 @@ public static class MapperGenerator
         sb.AppendLine("        /// Stub method for interface compliance. This entity has blob references and requires async methods.");
         sb.AppendLine("        /// Use FromDynamoDbAsync instead.");
         sb.AppendLine("        /// </summary>");
-        sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item) where TSelf : IDynamoDbEntity");
+        sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item, Logging.IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
         sb.AppendLine($"            throw new NotSupportedException(");
         sb.AppendLine($"                \"{entity.ClassName} has blob reference properties and requires async methods. \" +");
@@ -221,7 +222,7 @@ public static class MapperGenerator
         sb.AppendLine("        /// Stub method for interface compliance. This entity has blob references and requires async methods.");
         sb.AppendLine("        /// Use FromDynamoDbAsync instead.");
         sb.AppendLine("        /// </summary>");
-        sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items) where TSelf : IDynamoDbEntity");
+        sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items, Logging.IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
         sb.AppendLine($"            throw new NotSupportedException(");
         sb.AppendLine($"                \"{entity.ClassName} has blob reference properties and requires async methods. \" +");
@@ -240,12 +241,14 @@ public static class MapperGenerator
         sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
         sb.AppendLine("        /// <param name=\"entity\">The entity instance to convert.</param>");
         sb.AppendLine("        /// <param name=\"blobProvider\">The blob storage provider for handling blob references.</param>");
+        sb.AppendLine("        /// <param name=\"logger\">Optional logger for DynamoDB operations. If null, no logging is performed.</param>");
         sb.AppendLine("        /// <param name=\"cancellationToken\">Cancellation token for async operations.</param>");
         sb.AppendLine("        /// <returns>A task that resolves to a dictionary of DynamoDB AttributeValues representing the entity.</returns>");
         sb.AppendLine("        [MethodImpl(MethodImplOptions.AggressiveInlining)]");
         sb.AppendLine($"        public static async Task<Dictionary<string, AttributeValue>> ToDynamoDbAsync<TSelf>(");
         sb.AppendLine("            TSelf entity,");
         sb.AppendLine("            IBlobStorageProvider blobProvider,");
+        sb.AppendLine("            Logging.IDynamoDbLogger? logger = null,");
         sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
         sb.AppendLine($"            if (entity is not {entity.ClassName} typedEntity)");
@@ -1093,10 +1096,11 @@ public static class MapperGenerator
         sb.AppendLine("        /// </summary>");
         sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
         sb.AppendLine("        /// <param name=\"item\">The DynamoDB item to map from.</param>");
+        sb.AppendLine("        /// <param name=\"logger\">Optional logger for DynamoDB operations. If null, no logging is performed.</param>");
         sb.AppendLine("        /// <returns>A mapped entity instance.</returns>");
         sb.AppendLine("        /// <exception cref=\"ArgumentException\">Thrown when the type parameter doesn't match the entity type.</exception>");
         sb.AppendLine("        /// <exception cref=\"DynamoDbMappingException\">Thrown when mapping fails due to data conversion issues.</exception>");
-        sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item) where TSelf : IDynamoDbEntity");
+        sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item, Logging.IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
         sb.AppendLine($"            if (typeof(TSelf) != typeof({entity.ClassName}))");
         sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{typeof(TSelf).Name}}\");");
@@ -1138,6 +1142,7 @@ public static class MapperGenerator
         sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
         sb.AppendLine("        /// <param name=\"item\">The DynamoDB item to map from.</param>");
         sb.AppendLine("        /// <param name=\"blobProvider\">The blob storage provider for handling blob references.</param>");
+        sb.AppendLine("        /// <param name=\"logger\">Optional logger for DynamoDB operations. If null, no logging is performed.</param>");
         sb.AppendLine("        /// <param name=\"cancellationToken\">Cancellation token for async operations.</param>");
         sb.AppendLine("        /// <returns>A task that resolves to a mapped entity instance.</returns>");
         sb.AppendLine("        /// <exception cref=\"ArgumentException\">Thrown when the type parameter doesn't match the entity type.</exception>");
@@ -1145,6 +1150,7 @@ public static class MapperGenerator
         sb.AppendLine($"        public static async Task<TSelf> FromDynamoDbAsync<TSelf>(");
         sb.AppendLine("            Dictionary<string, AttributeValue> item,");
         sb.AppendLine("            IBlobStorageProvider blobProvider,");
+        sb.AppendLine("            Logging.IDynamoDbLogger? logger = null,");
         sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
         sb.AppendLine($"            if (typeof(TSelf) != typeof({entity.ClassName}))");
@@ -1191,6 +1197,7 @@ public static class MapperGenerator
         sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
         sb.AppendLine("        /// <param name=\"items\">The collection of DynamoDB items to map from.</param>");
         sb.AppendLine("        /// <param name=\"blobProvider\">The blob storage provider for handling blob references.</param>");
+        sb.AppendLine("        /// <param name=\"logger\">Optional logger for DynamoDB operations. If null, no logging is performed.</param>");
         sb.AppendLine("        /// <param name=\"cancellationToken\">Cancellation token for async operations.</param>");
         sb.AppendLine("        /// <returns>A task that resolves to a mapped entity instance.</returns>");
         sb.AppendLine("        /// <exception cref=\"ArgumentException\">Thrown when items collection is null or empty.</exception>");
@@ -1198,6 +1205,7 @@ public static class MapperGenerator
         sb.AppendLine($"        public static async Task<TSelf> FromDynamoDbAsync<TSelf>(");
         sb.AppendLine("            IList<Dictionary<string, AttributeValue>> items,");
         sb.AppendLine("            IBlobStorageProvider blobProvider,");
+        sb.AppendLine("            Logging.IDynamoDbLogger? logger = null,");
         sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
         sb.AppendLine("            if (items == null || items.Count == 0)");
@@ -1213,12 +1221,12 @@ public static class MapperGenerator
         {
             sb.AppendLine("                // Multi-item entity: combine all items into a single entity");
             sb.AppendLine("                // Note: Multi-item entities with blob references not yet fully supported");
-            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, cancellationToken);");
+            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, logger, cancellationToken);");
         }
         else
         {
             sb.AppendLine("                // Single-item entity: use the first item");
-            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, cancellationToken);");
+            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, logger, cancellationToken);");
         }
 
         sb.AppendLine("            }");
@@ -1713,10 +1721,11 @@ public static class MapperGenerator
         sb.AppendLine("        /// </summary>");
         sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
         sb.AppendLine("        /// <param name=\"items\">The collection of DynamoDB items to map from.</param>");
+        sb.AppendLine("        /// <param name=\"logger\">Optional logger for DynamoDB operations. If null, no logging is performed.</param>");
         sb.AppendLine("        /// <returns>A mapped entity instance.</returns>");
         sb.AppendLine("        /// <exception cref=\"ArgumentException\">Thrown when items collection is null or empty.</exception>");
         sb.AppendLine("        /// <exception cref=\"DynamoDbMappingException\">Thrown when mapping fails due to data conversion issues.</exception>");
-        sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items) where TSelf : IDynamoDbEntity");
+        sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items, Logging.IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
         sb.AppendLine("            if (items == null || items.Count == 0)");
         sb.AppendLine($"                throw new ArgumentException(\"Items collection cannot be null or empty\", nameof(items));");
@@ -1731,7 +1740,7 @@ public static class MapperGenerator
         else
         {
             sb.AppendLine("                // Single-item entity: use the first item");
-            sb.AppendLine("                return FromDynamoDb<TSelf>(items[0]);");
+            sb.AppendLine("                return FromDynamoDb<TSelf>(items[0], logger);");
         }
 
         sb.AppendLine("            }");
