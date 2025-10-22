@@ -160,17 +160,21 @@ public static class MapperGenerator
         sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{entity.GetType().Name}}\", nameof(entity));");
         sb.AppendLine();
 
+        // Wrap entire mapping operation in try-catch
+        sb.AppendLine("            try");
+        sb.AppendLine("            {");
+
         // Pre-compute capacity to avoid dictionary resizing (performance optimization)
         var attributeCount = entity.Properties.Count(p => p.HasAttributeMapping);
-        sb.AppendLine($"            // Pre-allocate dictionary with exact capacity to avoid resizing");
-        sb.AppendLine($"            var item = new Dictionary<string, AttributeValue>({attributeCount});");
+        sb.AppendLine($"                // Pre-allocate dictionary with exact capacity to avoid resizing");
+        sb.AppendLine($"                var item = new Dictionary<string, AttributeValue>({attributeCount});");
         sb.AppendLine();
 
         // Generate computed key logic before mapping
         var computedProperties = entity.Properties.Where(p => p.IsComputed).ToArray();
         if (computedProperties.Length > 0)
         {
-            sb.AppendLine("            // Compute composite keys before mapping");
+            sb.AppendLine("                // Compute composite keys before mapping");
             foreach (var computedProperty in computedProperties)
             {
                 GenerateComputedKeyLogic(sb, computedProperty);
@@ -190,7 +194,16 @@ public static class MapperGenerator
         sb.Append(LoggingCodeGenerator.GenerateToDynamoDbExitLogging(entity.ClassName, "item"));
         sb.AppendLine();
         
-        sb.AppendLine("            return item;");
+        sb.AppendLine("                return item;");
+        sb.AppendLine("            }");
+        sb.AppendLine("            catch (Exception ex)");
+        sb.AppendLine("            {");
+        
+        // Generate error logging
+        sb.Append(LoggingCodeGenerator.GenerateMappingErrorLogging(entity.ClassName, "", "ex"));
+        
+        sb.AppendLine("                throw;");
+        sb.AppendLine("            }");
         sb.AppendLine("        }");
     }
 
@@ -273,17 +286,21 @@ public static class MapperGenerator
         sb.AppendLine("                throw new ArgumentNullException(nameof(blobProvider), \"Blob provider is required for entities with blob reference properties\");");
         sb.AppendLine();
 
+        // Wrap entire mapping operation in try-catch
+        sb.AppendLine("            try");
+        sb.AppendLine("            {");
+
         // Pre-compute capacity to avoid dictionary resizing (performance optimization)
         var attributeCount = entity.Properties.Count(p => p.HasAttributeMapping);
-        sb.AppendLine($"            // Pre-allocate dictionary with exact capacity to avoid resizing");
-        sb.AppendLine($"            var item = new Dictionary<string, AttributeValue>({attributeCount});");
+        sb.AppendLine($"                // Pre-allocate dictionary with exact capacity to avoid resizing");
+        sb.AppendLine($"                var item = new Dictionary<string, AttributeValue>({attributeCount});");
         sb.AppendLine();
 
         // Generate computed key logic before mapping
         var computedProperties = entity.Properties.Where(p => p.IsComputed).ToArray();
         if (computedProperties.Length > 0)
         {
-            sb.AppendLine("            // Compute composite keys before mapping");
+            sb.AppendLine("                // Compute composite keys before mapping");
             foreach (var computedProperty in computedProperties)
             {
                 GenerateComputedKeyLogic(sb, computedProperty);
@@ -303,7 +320,16 @@ public static class MapperGenerator
         sb.Append(LoggingCodeGenerator.GenerateToDynamoDbExitLogging(entity.ClassName, "item"));
         sb.AppendLine();
         
-        sb.AppendLine("            return item;");
+        sb.AppendLine("                return item;");
+        sb.AppendLine("            }");
+        sb.AppendLine("            catch (Exception ex)");
+        sb.AppendLine("            {");
+        
+        // Generate error logging
+        sb.Append(LoggingCodeGenerator.GenerateMappingErrorLogging(entity.ClassName, "", "ex"));
+        
+        sb.AppendLine("                throw;");
+        sb.AppendLine("            }");
         sb.AppendLine("        }");
     }
 
@@ -509,7 +535,11 @@ public static class MapperGenerator
         sb.AppendLine("                }");
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        
+        // Generate error logging for blob storage
+        sb.Append(LoggingCodeGenerator.GenerateBlobStorageErrorLogging(propertyName, "suggestedKey", "Store", "ex"));
+        
+        sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
         sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        new AttributeValue {{ S = \"<blob data>\" }},");
@@ -590,7 +620,11 @@ public static class MapperGenerator
         sb.AppendLine("                }");
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        
+        // Generate error logging for combined JSON blob + blob storage
+        sb.Append(LoggingCodeGenerator.GenerateBlobStorageErrorLogging(propertyName, "suggestedKey", "Store", "ex"));
+        
+        sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
         sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        new AttributeValue {{ S = \"<json blob data>\" }},");
@@ -769,7 +803,11 @@ public static class MapperGenerator
             sb.AppendLine("                }");
             sb.AppendLine("                catch (Exception ex)");
             sb.AppendLine("                {");
-            sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+            
+            // Generate error logging for JSON serialization
+            sb.Append(LoggingCodeGenerator.GenerateJsonSerializationErrorLogging(propertyName, baseType, serializerType ?? "SystemTextJson", "ex"));
+            
+            sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
             sb.AppendLine($"                        typeof({entity.ClassName}),");
             sb.AppendLine($"                        \"{propertyName}\",");
             sb.AppendLine($"                        new AttributeValue {{ S = \"<json serialization failed>\" }},");
@@ -802,7 +840,11 @@ public static class MapperGenerator
             sb.AppendLine("            }");
             sb.AppendLine("            catch (Exception ex)");
             sb.AppendLine("            {");
-            sb.AppendLine($"                throw DynamoDbMappingException.PropertyConversionFailed(");
+            
+            // Generate error logging for JSON serialization
+            sb.Append(LoggingCodeGenerator.GenerateJsonSerializationErrorLogging(propertyName, baseType, serializerType ?? "SystemTextJson", "ex"));
+            
+            sb.AppendLine("                throw DynamoDbMappingException.PropertyConversionFailed(");
             sb.AppendLine($"                    typeof({entity.ClassName}),");
             sb.AppendLine($"                    \"{propertyName}\",");
             sb.AppendLine($"                    new AttributeValue {{ S = \"<json serialization failed>\" }},");
@@ -889,7 +931,11 @@ public static class MapperGenerator
         sb.AppendLine("                }");
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        
+        // Generate error logging for JSON deserialization
+        sb.Append(LoggingCodeGenerator.GenerateJsonSerializationErrorLogging(propertyName, baseType, serializerType ?? "SystemTextJson", "ex"));
+        
+        sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
         sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
@@ -931,7 +977,11 @@ public static class MapperGenerator
             sb.AppendLine("                }");
             sb.AppendLine("                catch (Exception ex)");
             sb.AppendLine("                {");
-            sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+            
+            // Generate error logging for Map conversion
+            sb.Append(LoggingCodeGenerator.GenerateConversionErrorLogging(propertyName, "Dictionary<string, string>", "DynamoDB Map", "ex"));
+            
+            sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
             sb.AppendLine($"                        typeof({entity.ClassName}),");
             sb.AppendLine($"                        \"{propertyName}\",");
             sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
@@ -957,7 +1007,11 @@ public static class MapperGenerator
             sb.AppendLine("                }");
             sb.AppendLine("                catch (Exception ex)");
             sb.AppendLine("                {");
-            sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+            
+            // Generate error logging for Map conversion
+            sb.Append(LoggingCodeGenerator.GenerateConversionErrorLogging(propertyName, "Dictionary<string, AttributeValue>", "DynamoDB Map", "ex"));
+            
+            sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
             sb.AppendLine($"                        typeof({entity.ClassName}),");
             sb.AppendLine($"                        \"{propertyName}\",");
             sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
@@ -988,7 +1042,11 @@ public static class MapperGenerator
             sb.AppendLine("                }");
             sb.AppendLine("                catch (Exception ex)");
             sb.AppendLine("                {");
-            sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+            
+            // Generate error logging for Map conversion
+            sb.Append(LoggingCodeGenerator.GenerateConversionErrorLogging(propertyName, propertyType, "DynamoDB Map", "ex"));
+            
+            sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
             sb.AppendLine($"                        typeof({entity.ClassName}),");
             sb.AppendLine($"                        \"{propertyName}\",");
             sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
@@ -1010,6 +1068,8 @@ public static class MapperGenerator
 
         sb.AppendLine($"            if (typedEntity.{propertyName} != null && typedEntity.{propertyName}.Count > 0)");
         sb.AppendLine("            {");
+        sb.AppendLine("                try");
+        sb.AppendLine("                {");
 
         // Check if this is a Set type (HashSet)
         var isSet = property.PropertyType.Contains("HashSet<") || 
@@ -1026,6 +1086,24 @@ public static class MapperGenerator
             GenerateListPropertyToAttributeValue(sb, property, entity, attributeName, propertyName, collectionElementType);
         }
 
+        sb.AppendLine("                }");
+        sb.AppendLine("                catch (Exception ex)");
+        sb.AppendLine("                {");
+        
+        // Generate error logging for collection conversion
+        var collectionType = isSet ? "Set" : "List";
+        sb.Append(LoggingCodeGenerator.GenerateConversionErrorLogging(propertyName, property.PropertyType, $"DynamoDB {collectionType}", "ex"));
+        
+        sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        sb.AppendLine($"                        typeof({entity.ClassName}),");
+        sb.AppendLine($"                        \"{propertyName}\",");
+        sb.AppendLine($"                        new AttributeValue {{ L = new List<AttributeValue>() }},");
+        sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
+        sb.AppendLine("                        ex)");
+        sb.AppendLine($"                        .WithContext(\"CollectionType\", \"{collectionType}\")");
+        sb.AppendLine($"                        .WithContext(\"ElementType\", \"{collectionElementType}\")");
+        sb.AppendLine($"                        .WithContext(\"Operation\", \"ToDynamoDb\");");
+        sb.AppendLine("                }");
         sb.AppendLine("            }");
     }
 
@@ -1162,7 +1240,11 @@ public static class MapperGenerator
         sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{typeof(TSelf).Name}}\");");
         sb.AppendLine();
 
-        sb.AppendLine($"            var entity = new {entity.ClassName}();");
+        // Wrap entire mapping operation in try-catch
+        sb.AppendLine("            try");
+        sb.AppendLine("            {");
+
+        sb.AppendLine($"                var entity = new {entity.ClassName}();");
         sb.AppendLine();
 
         // Generate property mappings
@@ -1176,7 +1258,7 @@ public static class MapperGenerator
         if (extractedProperties.Length > 0)
         {
             sb.AppendLine();
-            sb.AppendLine("            // Extract component properties from composite keys");
+            sb.AppendLine("                // Extract component properties from composite keys");
             foreach (var extractedProperty in extractedProperties)
             {
                 GenerateExtractedKeyLogic(sb, extractedProperty);
@@ -1189,7 +1271,16 @@ public static class MapperGenerator
         sb.Append(LoggingCodeGenerator.GenerateFromDynamoDbExitLogging(entity.ClassName));
         sb.AppendLine();
         
-        sb.AppendLine("            return (TSelf)(object)entity;");
+        sb.AppendLine("                return (TSelf)(object)entity;");
+        sb.AppendLine("            }");
+        sb.AppendLine("            catch (Exception ex)");
+        sb.AppendLine("            {");
+        
+        // Generate error logging
+        sb.Append(LoggingCodeGenerator.GenerateMappingErrorLogging(entity.ClassName, "", "ex"));
+        
+        sb.AppendLine("                throw;");
+        sb.AppendLine("            }");
         sb.AppendLine("        }");
     }
 
@@ -1226,7 +1317,11 @@ public static class MapperGenerator
         sb.AppendLine("                throw new ArgumentNullException(nameof(blobProvider), \"Blob provider is required for entities with blob reference properties\");");
         sb.AppendLine();
 
-        sb.AppendLine($"            var entity = new {entity.ClassName}();");
+        // Wrap entire mapping operation in try-catch
+        sb.AppendLine("            try");
+        sb.AppendLine("            {");
+
+        sb.AppendLine($"                var entity = new {entity.ClassName}();");
         sb.AppendLine();
 
         // Generate property mappings
@@ -1240,7 +1335,7 @@ public static class MapperGenerator
         if (extractedProperties.Length > 0)
         {
             sb.AppendLine();
-            sb.AppendLine("            // Extract component properties from composite keys");
+            sb.AppendLine("                // Extract component properties from composite keys");
             foreach (var extractedProperty in extractedProperties)
             {
                 GenerateExtractedKeyLogic(sb, extractedProperty);
@@ -1253,7 +1348,16 @@ public static class MapperGenerator
         sb.Append(LoggingCodeGenerator.GenerateFromDynamoDbExitLogging(entity.ClassName));
         sb.AppendLine();
         
-        sb.AppendLine("            return (TSelf)(object)entity;");
+        sb.AppendLine("                return (TSelf)(object)entity;");
+        sb.AppendLine("            }");
+        sb.AppendLine("            catch (Exception ex)");
+        sb.AppendLine("            {");
+        
+        // Generate error logging
+        sb.Append(LoggingCodeGenerator.GenerateMappingErrorLogging(entity.ClassName, "", "ex"));
+        
+        sb.AppendLine("                throw;");
+        sb.AppendLine("            }");
         sb.AppendLine("        }");
     }
 
@@ -1482,7 +1586,11 @@ public static class MapperGenerator
         sb.AppendLine("                }");
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        
+        // Generate error logging for blob retrieval
+        sb.Append(LoggingCodeGenerator.GenerateBlobStorageErrorLogging(propertyName, $"{propertyName.ToLowerInvariant()}Value.S ?? \"<null>\"", "Retrieve", "ex"));
+        
+        sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
         sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
@@ -1544,12 +1652,16 @@ public static class MapperGenerator
         sb.AppendLine("                }");
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        
+        // Generate error logging for combined JSON blob + blob retrieval
+        sb.Append(LoggingCodeGenerator.GenerateBlobStorageErrorLogging(propertyName, $"{propertyName.ToLowerInvariant()}Value.S ?? \"<null>\"", "Retrieve", "ex"));
+        
+        sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
         sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
         sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
-        sb.AppendLine($"                        ex)");
+        sb.AppendLine("                        ex)");
         sb.AppendLine($"                        .WithContext(\"CombinedJsonBlobAndBlobReference\", $\"Failed to retrieve or deserialize blob. Reference: {{{propertyName.ToLowerInvariant()}Value.S ?? \"<null>\"}}\");");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
@@ -1598,7 +1710,11 @@ public static class MapperGenerator
         sb.AppendLine("                }");
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        
+        // Generate error logging for Map conversion
+        sb.Append(LoggingCodeGenerator.GenerateConversionErrorLogging(propertyName, "DynamoDB Map", propertyType, "ex"));
+        
+        sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
         sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
@@ -1639,7 +1755,14 @@ public static class MapperGenerator
         sb.AppendLine("                }");
         sb.AppendLine("                catch (Exception ex)");
         sb.AppendLine("                {");
-        sb.AppendLine($"                    throw DynamoDbMappingException.PropertyConversionFailed(");
+        
+        // Generate error logging for collection conversion
+        var isSetType = property.PropertyType.Contains("HashSet<") || 
+                    property.PropertyType.Contains("System.Collections.Generic.HashSet<");
+        var collectionType = isSetType ? "Set" : "List";
+        sb.Append(LoggingCodeGenerator.GenerateConversionErrorLogging(propertyName, $"DynamoDB {collectionType}", property.PropertyType, "ex"));
+        
+        sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
         sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
