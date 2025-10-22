@@ -7,7 +7,7 @@ This document tracks the migration of brittle unit tests from string-based asser
 **Last Updated:** 2025-10-22  
 **Total Test Files:** 15  
 **Total Tests:** 164  
-**Migrated Tests:** 9 (5.5%)
+**Migrated Tests:** 47 (28.7%)
 
 ## Migration Priority Classification
 
@@ -60,33 +60,43 @@ These tests verify infrastructure, diagnostics, or simple models and rarely brea
 
 ---
 
-#### 2. AdvancedTypeGenerationTests.cs
+#### 2. AdvancedTypeGenerationTests.cs ✅ COMPLETED
 - **Location:** `Oproto.FluentDynamoDb.SourceGenerator.UnitTests/Generators/AdvancedTypeGenerationTests.cs`
 - **Total Tests:** 38
-- **Migration Status:** ❌ Not Started
+- **Migration Status:** ✅ **COMPLETED** (2025-10-22)
 - **Compilation Verification:** ✅ Already Added
-- **String Assertions Found:**
-  - Dictionary/Map conversion checks: `Should().Contain("M =")`
-  - HashSet/Set conversion checks: `Should().Contain("SS =")`
-  - List conversion checks: `Should().Contain("L =")`
-  - TTL conversion checks: `Should().Contain("epoch")`
-  - JSON serialization checks: `Should().Contain("JsonSerializer")`
-  - Blob reference checks: `Should().Contain("blobProvider")`
-- **Estimated Effort:** Very High (38 tests, complex type handling)
-- **Notes:**
-  - Already has compilation verification in all tests
-  - Tests organized by feature (Map, Set, List, TTL, JsonBlob, BlobReference, Diagnostics)
-  - Many DynamoDB-specific type conversion checks to preserve
-  - Helper method `GenerateCode()` with multiple configuration options
+- **Migration Changes Applied:**
+  - ✅ Compilation verification already present in all tests
+  - ✅ Replaced method existence checks with `.ShouldContainMethod()`
+  - ✅ Replaced assignment checks with `.ShouldContainAssignment()`
+  - ✅ Replaced LINQ checks with `.ShouldUseLinqMethod()`
+  - ✅ Replaced type reference checks with `.ShouldReferenceType()`
+  - ✅ Preserved DynamoDB attribute type checks (S, N, SS, NS, BS, L, M) with "because" messages
+  - ✅ Preserved null and empty collection handling checks with "because" messages
+  - ✅ Preserved JSON serialization checks with "because" messages
+  - ✅ Preserved blob storage checks with "because" messages
+  - ✅ Added file header comment documenting migration
+  - ✅ All 38 tests passing
+- **Notes:** 
+  - Migration completed successfully
+  - Tests now resilient to formatting changes
+  - DynamoDB-specific behavior checks preserved for:
+    - Dictionary/Map conversions (M attribute type)
+    - HashSet/Set conversions (SS, NS, BS attribute types)
+    - List conversions (L attribute type)
+    - TTL Unix epoch conversions (N attribute type)
+    - JSON blob serialization (System.Text.Json and Newtonsoft.Json)
+    - Blob reference storage (async methods, IBlobStorageProvider)
+  - Helper method `GenerateCode()` with multiple configuration options remains unchanged
 
 **Test Categories:**
-- Map Property Tests (Task 19.1): 4 tests
-- Set Property Tests (Task 19.2): 4 tests
-- List Property Tests (Task 19.3): 4 tests
-- TTL Property Tests (Task 19.4): 5 tests
-- JSON Blob Property Tests (Task 19.5): 10 tests
-- Blob Reference Property Tests (Task 19.6): 5 tests
-- Compilation Error Diagnostics Tests (Task 19.7): 6 tests
+- Map Property Tests (Task 19.1): 4 tests ✅
+- Set Property Tests (Task 19.2): 4 tests ✅
+- List Property Tests (Task 19.3): 4 tests ✅
+- TTL Property Tests (Task 19.4): 5 tests ✅
+- JSON Blob Property Tests (Task 19.5): 10 tests ✅
+- Blob Reference Property Tests (Task 19.6): 5 tests ✅
+- Compilation Error Diagnostics Tests (Task 19.7): 6 tests ✅
 
 ---
 
@@ -312,8 +322,8 @@ These tests verify infrastructure, diagnostics, or simple models and rarely brea
 - **Priority 3 (Low Impact):** 9 files, 99 tests
 
 ### By Migration Status
-- **Completed:** 1 file, 9 tests ✅
-- **Not Started:** 5 files, 56 tests
+- **Completed:** 2 files, 47 tests ✅
+- **Not Started:** 4 files, 18 tests
 - **Good As-Is:** 7 files, 87 tests
 - **Review Needed:** 2 files, 23 tests
 
@@ -417,7 +427,7 @@ Use this checklist for each file being migrated:
 
 1. ✅ Complete this migration status document
 2. ✅ **COMPLETED:** Priority 1: MapperGeneratorTests.cs (9 tests migrated)
-3. ⏭️ Continue with Priority 1: AdvancedTypeGenerationTests.cs (38 tests)
+3. ✅ **COMPLETED:** Priority 1: AdvancedTypeGenerationTests.cs (38 tests migrated)
 4. ⏭️ Continue with Priority 1: KeysGeneratorTests.cs (8 tests)
 5. ⏭️ Move to Priority 2 files
 6. ⏭️ Review Priority 3 files that need review

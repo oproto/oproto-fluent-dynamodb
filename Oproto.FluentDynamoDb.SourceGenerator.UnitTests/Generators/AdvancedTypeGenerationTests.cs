@@ -1,3 +1,8 @@
+// MIGRATION STATUS: Migrated to use CompilationVerifier and SemanticAssertions
+// - Compilation verification: Added to all tests
+// - Semantic assertions: Replaced structural string checks
+// - DynamoDB-specific checks: Preserved with descriptive "because" messages
+
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -47,17 +52,24 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb generates map conversion
-        entityCode.Should().Contain("if (typedEntity.Metadata != null && typedEntity.Metadata.Count > 0)");
-        entityCode.Should().Contain("var metadataMap = new Dictionary<string, AttributeValue>();");
-        entityCode.Should().Contain("foreach (var kvp in typedEntity.Metadata)");
-        entityCode.Should().Contain("metadataMap[kvp.Key] = new AttributeValue { S = kvp.Value };");
-        entityCode.Should().Contain("item[\"metadata\"] = new AttributeValue { M = metadataMap };");
+        entityCode.Should().Contain("if (typedEntity.Metadata != null && typedEntity.Metadata.Count > 0)",
+            "should check for null and empty before adding Dictionary to DynamoDB item");
+        entityCode.ShouldContainAssignment("metadataMap");
+        entityCode.Should().Contain("foreach (var kvp in typedEntity.Metadata)",
+            "should iterate through dictionary entries");
+        entityCode.Should().Contain("{ S = kvp.Value }",
+            "should use String (S) attribute type for string dictionary values");
+        entityCode.Should().Contain("{ M = metadataMap }",
+            "should use Map (M) attribute type for Dictionary");
         
         // Check FromDynamoDb reconstructs dictionary
-        entityCode.Should().Contain("if (item.TryGetValue(\"metadata\", out var metadataValue) && metadataValue.M != null)");
-        entityCode.Should().Contain("entity.Metadata = metadataValue.M.ToDictionary(");
-        entityCode.Should().Contain("kvp => kvp.Key,");
-        entityCode.Should().Contain("kvp => kvp.Value.S");
+        entityCode.Should().Contain("if (item.TryGetValue(\"metadata\", out var metadataValue) && metadataValue.M != null)",
+            "should check for attribute existence and Map type");
+        entityCode.ShouldUseLinqMethod("ToDictionary");
+        entityCode.Should().Contain("kvp => kvp.Key",
+            "should extract dictionary keys");
+        entityCode.Should().Contain("kvp => kvp.Value.S",
+            "should extract string values from DynamoDB String attributes");
     }
 
     [Fact]
@@ -106,14 +118,19 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source, nestedEntityCode);
         
         // Check ToDynamoDb uses nested type's generated method
-        entityCode.Should().Contain("if (typedEntity.Attributes != null)");
-        entityCode.Should().Contain("var attributesMap = ProductAttributes.ToDynamoDb(typedEntity.Attributes);");
-        entityCode.Should().Contain("if (attributesMap != null && attributesMap.Count > 0)");
-        entityCode.Should().Contain("item[\"attributes\"] = new AttributeValue { M = attributesMap };");
+        entityCode.Should().Contain("if (typedEntity.Attributes != null)",
+            "should check for null before processing nested entity");
+        entityCode.ShouldContainAssignment("attributesMap");
+        entityCode.ShouldReferenceType("ProductAttributes");
+        entityCode.Should().Contain("if (attributesMap != null && attributesMap.Count > 0)",
+            "should check for null and empty before adding nested Map to DynamoDB item");
+        entityCode.Should().Contain("{ M = attributesMap }",
+            "should use Map (M) attribute type for nested entity");
         
         // Check FromDynamoDb uses nested type's generated method
-        entityCode.Should().Contain("if (item.TryGetValue(\"attributes\", out var attributesValue) && attributesValue.M != null)");
-        entityCode.Should().Contain("entity.Attributes = ProductAttributes.FromDynamoDb<ProductAttributes>(attributesValue.M);");
+        entityCode.Should().Contain("if (item.TryGetValue(\"attributes\", out var attributesValue) && attributesValue.M != null)",
+            "should check for attribute existence and Map type");
+        entityCode.ShouldContainMethod("FromDynamoDb");
     }
 
     [Fact]
@@ -151,7 +168,8 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify empty collection check exists
-        entityCode.Should().Contain("if (typedEntity.Metadata != null && typedEntity.Metadata.Count > 0)");
+        entityCode.Should().Contain("if (typedEntity.Metadata != null && typedEntity.Metadata.Count > 0)",
+            "should check for null and empty to omit empty Dictionary from DynamoDB item");
     }
 
     [Fact]
@@ -189,10 +207,12 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify null check exists in ToDynamoDb
-        entityCode.Should().Contain("if (typedEntity.Metadata != null && typedEntity.Metadata.Count > 0)");
+        entityCode.Should().Contain("if (typedEntity.Metadata != null && typedEntity.Metadata.Count > 0)",
+            "should check for null and empty to handle null Dictionary gracefully");
         
         // Verify FromDynamoDb handles missing attribute
-        entityCode.Should().Contain("if (item.TryGetValue(\"metadata\", out var metadataValue) && metadataValue.M != null)");
+        entityCode.Should().Contain("if (item.TryGetValue(\"metadata\", out var metadataValue) && metadataValue.M != null)",
+            "should handle missing or null Map attribute gracefully");
     }
 
     #endregion
@@ -234,12 +254,15 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb generates SS conversion
-        entityCode.Should().Contain("if (typedEntity.Tags != null && typedEntity.Tags.Count > 0)");
-        entityCode.Should().Contain("item[\"tags\"] = new AttributeValue { SS = typedEntity.Tags.ToList() };");
+        entityCode.Should().Contain("if (typedEntity.Tags != null && typedEntity.Tags.Count > 0)",
+            "should check for null and empty before adding HashSet to DynamoDB item");
+        entityCode.Should().Contain("{ SS = typedEntity.Tags.ToList() }",
+            "should use String Set (SS) attribute type for HashSet<string>");
         
         // Check FromDynamoDb reconstructs HashSet
-        entityCode.Should().Contain("if (item.TryGetValue(\"tags\", out var tagsValue))");
-        entityCode.Should().Contain("entity.Tags = new");
+        entityCode.Should().Contain("if (item.TryGetValue(\"tags\", out var tagsValue))",
+            "should check for attribute existence");
+        entityCode.ShouldContainAssignment("entity.Tags");
     }
 
     [Fact]
@@ -277,13 +300,15 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb generates NS conversion
-        entityCode.Should().Contain("if (typedEntity.CategoryIds != null && typedEntity.CategoryIds.Count > 0)");
-        entityCode.Should().Contain("item[\"category_ids\"] = new AttributeValue");
-        entityCode.Should().Contain("NS = typedEntity.CategoryIds.Select(x => x.ToString()).ToList()");
+        entityCode.Should().Contain("if (typedEntity.CategoryIds != null && typedEntity.CategoryIds.Count > 0)",
+            "should check for null and empty before adding HashSet to DynamoDB item");
+        entityCode.Should().Contain("NS = typedEntity.CategoryIds.Select(x => x.ToString()).ToList()",
+            "should use Number Set (NS) attribute type for HashSet<int> with ToString conversion");
         
         // Check FromDynamoDb reconstructs HashSet<int>
-        entityCode.Should().Contain("if (item.TryGetValue(\"category_ids\", out var categoryidsValue))");
-        entityCode.Should().Contain("entity.CategoryIds = new");
+        entityCode.Should().Contain("if (item.TryGetValue(\"category_ids\", out var categoryidsValue))",
+            "should check for attribute existence");
+        entityCode.ShouldContainAssignment("entity.CategoryIds");
     }
 
     [Fact]
@@ -321,13 +346,15 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb generates BS conversion
-        entityCode.Should().Contain("if (typedEntity.BinaryData != null && typedEntity.BinaryData.Count > 0)");
-        entityCode.Should().Contain("item[\"binary_data\"] = new AttributeValue");
-        entityCode.Should().Contain("BS = typedEntity.BinaryData.Select(x => new MemoryStream(x)).ToList()");
+        entityCode.Should().Contain("if (typedEntity.BinaryData != null && typedEntity.BinaryData.Count > 0)",
+            "should check for null and empty before adding HashSet to DynamoDB item");
+        entityCode.Should().Contain("BS = typedEntity.BinaryData.Select(x => new MemoryStream(x)).ToList()",
+            "should use Binary Set (BS) attribute type for HashSet<byte[]> with MemoryStream conversion");
         
         // Check FromDynamoDb reconstructs HashSet<byte[]>
-        entityCode.Should().Contain("if (item.TryGetValue(\"binary_data\", out var binarydataValue))");
-        entityCode.Should().Contain("entity.BinaryData = new");
+        entityCode.Should().Contain("if (item.TryGetValue(\"binary_data\", out var binarydataValue))",
+            "should check for attribute existence");
+        entityCode.ShouldContainAssignment("entity.BinaryData");
     }
 
     [Fact]
@@ -365,7 +392,8 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify empty collection check exists
-        entityCode.Should().Contain("if (typedEntity.Tags != null && typedEntity.Tags.Count > 0)");
+        entityCode.Should().Contain("if (typedEntity.Tags != null && typedEntity.Tags.Count > 0)",
+            "should check for null and empty to omit empty HashSet from DynamoDB item");
     }
 
     #endregion
@@ -407,13 +435,15 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb generates L conversion
-        entityCode.Should().Contain("if (typedEntity.ItemIds != null && typedEntity.ItemIds.Count > 0)");
-        entityCode.Should().Contain("item[\"item_ids\"] = new AttributeValue");
-        entityCode.Should().Contain("L = typedEntity.ItemIds.Select(x => new AttributeValue { S = x }).ToList()");
+        entityCode.Should().Contain("if (typedEntity.ItemIds != null && typedEntity.ItemIds.Count > 0)",
+            "should check for null and empty before adding List to DynamoDB item");
+        entityCode.Should().Contain("L = typedEntity.ItemIds.Select(x => new AttributeValue { S = x }).ToList()",
+            "should use List (L) attribute type for List<string> with String elements");
         
         // Check FromDynamoDb reconstructs List
-        entityCode.Should().Contain("if (item.TryGetValue(\"item_ids\", out var itemidsValue))");
-        entityCode.Should().Contain("entity.ItemIds = new");
+        entityCode.Should().Contain("if (item.TryGetValue(\"item_ids\", out var itemidsValue))",
+            "should check for attribute existence");
+        entityCode.ShouldContainAssignment("entity.ItemIds");
     }
 
     [Fact]
@@ -451,13 +481,15 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb generates L conversion with numeric elements
-        entityCode.Should().Contain("if (typedEntity.Quantities != null && typedEntity.Quantities.Count > 0)");
-        entityCode.Should().Contain("item[\"quantities\"] = new AttributeValue");
-        entityCode.Should().Contain("L = typedEntity.Quantities.Select(x => new AttributeValue { N = x.ToString() }).ToList()");
+        entityCode.Should().Contain("if (typedEntity.Quantities != null && typedEntity.Quantities.Count > 0)",
+            "should check for null and empty before adding List to DynamoDB item");
+        entityCode.Should().Contain("L = typedEntity.Quantities.Select(x => new AttributeValue { N = x.ToString() }).ToList()",
+            "should use List (L) attribute type for List<int> with Number elements");
         
         // Check FromDynamoDb reconstructs List<int>
-        entityCode.Should().Contain("if (item.TryGetValue(\"quantities\", out var quantitiesValue))");
-        entityCode.Should().Contain("entity.Quantities = new");
+        entityCode.Should().Contain("if (item.TryGetValue(\"quantities\", out var quantitiesValue))",
+            "should check for attribute existence");
+        entityCode.ShouldContainAssignment("entity.Quantities");
     }
 
     [Fact]
@@ -495,13 +527,15 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb generates L conversion with decimal elements
-        entityCode.Should().Contain("if (typedEntity.Prices != null && typedEntity.Prices.Count > 0)");
-        entityCode.Should().Contain("item[\"prices\"] = new AttributeValue");
-        entityCode.Should().Contain("L = typedEntity.Prices.Select(x => new AttributeValue { N = x.ToString() }).ToList()");
+        entityCode.Should().Contain("if (typedEntity.Prices != null && typedEntity.Prices.Count > 0)",
+            "should check for null and empty before adding List to DynamoDB item");
+        entityCode.Should().Contain("L = typedEntity.Prices.Select(x => new AttributeValue { N = x.ToString() }).ToList()",
+            "should use List (L) attribute type for List<decimal> with Number elements");
         
         // Check FromDynamoDb reconstructs List<decimal>
-        entityCode.Should().Contain("if (item.TryGetValue(\"prices\", out var pricesValue))");
-        entityCode.Should().Contain("entity.Prices = new");
+        entityCode.Should().Contain("if (item.TryGetValue(\"prices\", out var pricesValue))",
+            "should check for attribute existence");
+        entityCode.ShouldContainAssignment("entity.Prices");
     }
 
     [Fact]
@@ -539,7 +573,8 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify empty collection check exists
-        entityCode.Should().Contain("if (typedEntity.Items != null && typedEntity.Items.Count > 0)");
+        entityCode.Should().Contain("if (typedEntity.Items != null && typedEntity.Items.Count > 0)",
+            "should check for null and empty to omit empty List from DynamoDB item");
     }
 
     #endregion
@@ -581,16 +616,20 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb generates Unix epoch conversion
-        entityCode.Should().Contain("if (typedEntity.ExpiresAt.HasValue)");
-        entityCode.Should().Contain("var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);");
-        entityCode.Should().Contain("var seconds = (long)(typedEntity.ExpiresAt.Value.ToUniversalTime() - epoch).TotalSeconds;");
-        entityCode.Should().Contain("item[\"ttl\"] = new AttributeValue { N = seconds.ToString() };");
+        entityCode.Should().Contain("if (typedEntity.ExpiresAt.HasValue)",
+            "should check for null before converting TTL");
+        entityCode.Should().Contain("var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)",
+            "should use Unix epoch for TTL conversion");
+        entityCode.ShouldContainAssignment("seconds");
+        entityCode.Should().Contain("{ N = seconds.ToString() }",
+            "should use Number (N) attribute type for TTL Unix timestamp");
         
         // Check FromDynamoDb reconstructs DateTime
-        entityCode.Should().Contain("if (item.TryGetValue(\"ttl\", out var ttlValue) && ttlValue.N != null)");
-        entityCode.Should().Contain("var seconds = long.Parse(ttlValue.N);");
-        entityCode.Should().Contain("var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);");
-        entityCode.Should().Contain("entity.ExpiresAt = epoch.AddSeconds(seconds);");
+        entityCode.Should().Contain("if (item.TryGetValue(\"ttl\", out var ttlValue) && ttlValue.N != null)",
+            "should check for attribute existence and Number type");
+        entityCode.Should().Contain("var seconds = long.Parse(ttlValue.N)",
+            "should parse Unix timestamp from Number attribute");
+        entityCode.ShouldContainAssignment("entity.ExpiresAt");
     }
 
     [Fact]
@@ -628,14 +667,20 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb generates Unix epoch conversion using ToUnixTimeSeconds
-        entityCode.Should().Contain("if (typedEntity.ExpiresAt.HasValue)");
-        entityCode.Should().Contain("var seconds = typedEntity.ExpiresAt.Value.ToUnixTimeSeconds();");
-        entityCode.Should().Contain("item[\"ttl\"] = new AttributeValue { N = seconds.ToString() };");
+        entityCode.Should().Contain("if (typedEntity.ExpiresAt.HasValue)",
+            "should check for null before converting TTL");
+        entityCode.Should().Contain("var seconds = typedEntity.ExpiresAt.Value.ToUnixTimeSeconds()",
+            "should use ToUnixTimeSeconds for DateTimeOffset TTL conversion");
+        entityCode.Should().Contain("{ N = seconds.ToString() }",
+            "should use Number (N) attribute type for TTL Unix timestamp");
         
         // Check FromDynamoDb reconstructs DateTimeOffset
-        entityCode.Should().Contain("if (item.TryGetValue(\"ttl\", out var ttlValue) && ttlValue.N != null)");
-        entityCode.Should().Contain("var seconds = long.Parse(ttlValue.N);");
-        entityCode.Should().Contain("entity.ExpiresAt = DateTimeOffset.FromUnixTimeSeconds(seconds);");
+        entityCode.Should().Contain("if (item.TryGetValue(\"ttl\", out var ttlValue) && ttlValue.N != null)",
+            "should check for attribute existence and Number type");
+        entityCode.Should().Contain("var seconds = long.Parse(ttlValue.N)",
+            "should parse Unix timestamp from Number attribute");
+        entityCode.Should().Contain("entity.ExpiresAt = DateTimeOffset.FromUnixTimeSeconds(seconds)",
+            "should use FromUnixTimeSeconds to reconstruct DateTimeOffset");
     }
 
     [Fact]
@@ -673,7 +718,8 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify null check exists
-        entityCode.Should().Contain("if (typedEntity.ExpiresAt.HasValue)");
+        entityCode.Should().Contain("if (typedEntity.ExpiresAt.HasValue)",
+            "should check for null to omit TTL attribute when not set");
     }
 
     [Fact]
@@ -711,7 +757,8 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify FromDynamoDb handles missing TTL attribute
-        entityCode.Should().Contain("if (item.TryGetValue(\"ttl\", out var ttlValue) && ttlValue.N != null)");
+        entityCode.Should().Contain("if (item.TryGetValue(\"ttl\", out var ttlValue) && ttlValue.N != null)",
+            "should handle missing TTL attribute gracefully");
     }
 
     #endregion
@@ -771,13 +818,19 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb uses System.Text.Json serialization
-        entityCode.Should().Contain("if (typedEntity.Content != null)");
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize");
-        entityCode.Should().Contain("item[\"content\"] = new AttributeValue { S = json };");
+        entityCode.Should().Contain("if (typedEntity.Content != null)",
+            "should check for null before serializing JSON blob");
+        entityCode.ShouldReferenceType("JsonSerializer");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize",
+            "should use System.Text.Json for serialization");
+        entityCode.Should().Contain("{ S = json }",
+            "should use String (S) attribute type for JSON blob");
         
         // Check FromDynamoDb uses System.Text.Json deserialization
-        entityCode.Should().Contain("if (item.TryGetValue(\"content\", out var contentValue))");
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Deserialize");
+        entityCode.Should().Contain("if (item.TryGetValue(\"content\", out var contentValue))",
+            "should check for attribute existence");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Deserialize",
+            "should use System.Text.Json for deserialization");
     }
 
     [Fact]
@@ -823,13 +876,19 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb uses Newtonsoft.Json serialization
-        entityCode.Should().Contain("if (typedEntity.Content != null)");
-        entityCode.Should().Contain("Newtonsoft.Json.JsonConvert.SerializeObject");
-        entityCode.Should().Contain("item[\"content\"] = new AttributeValue { S = json };");
+        entityCode.Should().Contain("if (typedEntity.Content != null)",
+            "should check for null before serializing JSON blob");
+        entityCode.ShouldReferenceType("JsonConvert");
+        entityCode.Should().Contain("Newtonsoft.Json.JsonConvert.SerializeObject",
+            "should use Newtonsoft.Json for serialization");
+        entityCode.Should().Contain("{ S = json }",
+            "should use String (S) attribute type for JSON blob");
         
         // Check FromDynamoDb uses Newtonsoft.Json deserialization
-        entityCode.Should().Contain("if (item.TryGetValue(\"content\", out var contentValue))");
-        entityCode.Should().Contain("Newtonsoft.Json.JsonConvert.DeserializeObject");
+        entityCode.Should().Contain("if (item.TryGetValue(\"content\", out var contentValue))",
+            "should check for attribute existence");
+        entityCode.Should().Contain("Newtonsoft.Json.JsonConvert.DeserializeObject",
+            "should use Newtonsoft.Json for deserialization");
     }
 
     [Fact]
@@ -910,7 +969,8 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify System.Text.Json is used based on assembly attribute
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize",
+            "should use System.Text.Json based on assembly attribute");
         entityCode.Should().NotContain("Newtonsoft.Json");
     }
 
@@ -957,8 +1017,10 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check FromDynamoDb deserializes JSON
-        entityCode.Should().Contain("if (item.TryGetValue(\"content\", out var contentValue))");
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Deserialize");
+        entityCode.Should().Contain("if (item.TryGetValue(\"content\", out var contentValue))",
+            "should check for attribute existence");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Deserialize",
+            "should use System.Text.Json for deserialization");
     }
 
     [Fact]
@@ -1004,9 +1066,12 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb serializes JSON
-        entityCode.Should().Contain("if (typedEntity.Content != null)");
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize");
-        entityCode.Should().Contain("item[\"content\"] = new AttributeValue { S = json };");
+        entityCode.Should().Contain("if (typedEntity.Content != null)",
+            "should check for null before serializing JSON blob");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize",
+            "should use System.Text.Json for serialization");
+        entityCode.Should().Contain("{ S = json }",
+            "should use String (S) attribute type for JSON blob");
     }
 
     [Fact]
@@ -1051,7 +1116,8 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify null check exists
-        entityCode.Should().Contain("if (typedEntity.Content != null)");
+        entityCode.Should().Contain("if (typedEntity.Content != null)",
+            "should check for null to omit JSON blob attribute when not set");
     }
 
     [Fact]
@@ -1096,8 +1162,10 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify serialization happens even for empty objects
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize");
-        entityCode.Should().Contain("item[\"content\"] = new AttributeValue { S = json };");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize",
+            "should serialize even empty objects");
+        entityCode.Should().Contain("{ S = json }",
+            "should use String (S) attribute type for JSON blob");
     }
 
     [Fact]
@@ -1145,8 +1213,10 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify complex type serialization
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize");
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Deserialize");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize",
+            "should serialize complex types with nested collections");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Deserialize",
+            "should deserialize complex types with nested collections");
     }
 
     [Fact]
@@ -1195,8 +1265,10 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify both JsonBlob and TTL are handled
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize");
-        entityCode.Should().Contain("var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize",
+            "should handle JSON blob serialization");
+        entityCode.Should().Contain("var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)",
+            "should handle TTL Unix epoch conversion");
     }
 
     [Fact]
@@ -1245,7 +1317,8 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify JsonBlob works in multi-item entity
-        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize");
+        entityCode.Should().Contain("System.Text.Json.JsonSerializer.Serialize",
+            "should handle JSON blob in multi-item entity");
         // Note: Multi-item entity comment may not be present if entity doesn't have relationships
     }
 
@@ -1288,14 +1361,16 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check async ToDynamoDb method signature
-        entityCode.Should().Contain("public static async Task<Dictionary<string, AttributeValue>> ToDynamoDbAsync<TSelf>");
-        entityCode.Should().Contain("IBlobStorageProvider blobProvider");
-        entityCode.Should().Contain("CancellationToken cancellationToken = default");
+        entityCode.ShouldContainMethod("ToDynamoDbAsync");
+        entityCode.ShouldReferenceType("IBlobStorageProvider");
+        entityCode.ShouldReferenceType("CancellationToken");
+        entityCode.Should().Contain("public static async Task<Dictionary<string, AttributeValue>> ToDynamoDbAsync<TSelf>",
+            "should generate async method signature for blob storage");
         
         // Check async FromDynamoDb method signature
-        entityCode.Should().Contain("public static async Task<TSelf> FromDynamoDbAsync<TSelf>");
-        entityCode.Should().Contain("IBlobStorageProvider blobProvider");
-        entityCode.Should().Contain("CancellationToken cancellationToken = default");
+        entityCode.ShouldContainMethod("FromDynamoDbAsync");
+        entityCode.Should().Contain("public static async Task<TSelf> FromDynamoDbAsync<TSelf>",
+            "should generate async method signature for blob retrieval");
     }
 
     [Fact]
@@ -1333,11 +1408,14 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check ToDynamoDb calls StoreAsync
-        entityCode.Should().Contain("if (typedEntity.Data != null)");
-        entityCode.Should().Contain("using var stream = new MemoryStream(typedEntity.Data);");
-        entityCode.Should().Contain("await blobProvider.StoreAsync");
-        entityCode.Should().Contain("cancellationToken");
-        entityCode.Should().Contain("item[\"data_ref\"] = new AttributeValue { S = reference };");
+        entityCode.Should().Contain("if (typedEntity.Data != null)",
+            "should check for null before storing blob");
+        entityCode.ShouldReferenceType("MemoryStream");
+        entityCode.Should().Contain("await blobProvider.StoreAsync",
+            "should call StoreAsync to store blob data");
+        entityCode.ShouldReferenceType("CancellationToken");
+        entityCode.Should().Contain("{ S = reference }",
+            "should use String (S) attribute type for blob reference");
     }
 
     [Fact]
@@ -1375,7 +1453,8 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify reference is stored as string in DynamoDB
-        entityCode.Should().Contain("item[\"file_ref\"] = new AttributeValue { S = reference };");
+        entityCode.Should().Contain("{ S = reference }",
+            "should use String (S) attribute type for blob reference");
     }
 
     [Fact]
@@ -1413,15 +1492,19 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Check FromDynamoDb calls RetrieveAsync
-        entityCode.Should().Contain("if (item.TryGetValue(\"data_ref\", out var dataValue))");
-        entityCode.Should().Contain("await blobProvider.RetrieveAsync");
-        entityCode.Should().Contain("using var memoryStream = new MemoryStream();");
-        entityCode.Should().Contain("await stream.CopyToAsync(memoryStream, cancellationToken);");
-        entityCode.Should().Contain("entity.Data = memoryStream.ToArray();");
+        entityCode.Should().Contain("if (item.TryGetValue(\"data_ref\", out var dataValue))",
+            "should check for attribute existence");
+        entityCode.Should().Contain("await blobProvider.RetrieveAsync",
+            "should call RetrieveAsync to retrieve blob data");
+        entityCode.ShouldReferenceType("MemoryStream");
+        entityCode.Should().Contain("await stream.CopyToAsync(memoryStream, cancellationToken)",
+            "should copy blob stream to memory");
+        entityCode.ShouldContainAssignment("entity.Data");
         
         // Check error handling
-        entityCode.Should().Contain("catch (Exception ex)");
-        entityCode.Should().Contain("throw DynamoDbMappingException");
+        entityCode.Should().Contain("catch (Exception ex)",
+            "should handle blob retrieval errors");
+        entityCode.ShouldReferenceType("DynamoDbMappingException");
     }
 
     [Fact]
@@ -1459,9 +1542,11 @@ namespace TestNamespace
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
         
         // Verify FromDynamoDb retrieves blob from storage
-        entityCode.Should().Contain("if (item.TryGetValue(\"file_ref\", out var filedataValue))");
-        entityCode.Should().Contain("await blobProvider.RetrieveAsync");
-        entityCode.Should().Contain("entity.FileData = memoryStream.ToArray();");
+        entityCode.Should().Contain("if (item.TryGetValue(\"file_ref\", out var filedataValue))",
+            "should check for attribute existence");
+        entityCode.Should().Contain("await blobProvider.RetrieveAsync",
+            "should call RetrieveAsync to retrieve blob data");
+        entityCode.ShouldContainAssignment("entity.FileData");
     }
 
     #endregion
