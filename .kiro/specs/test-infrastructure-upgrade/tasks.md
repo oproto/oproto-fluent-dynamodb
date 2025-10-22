@@ -202,18 +202,18 @@
     - Show context when assertion fails
     - _Requirements: 5.5_
 
-- [ ] 11. Write complex scenario integration tests
-  - [ ] 11.1 Create ComplexEntityTests class
+- [x] 11. Write complex scenario integration tests
+  - [x] 11.1 Create ComplexEntityTests class
     - Test entity with multiple advanced types
     - Test round-trip with all properties
     - _Requirements: 13.1_
   
-  - [ ] 11.2 Test query operations with advanced types
+  - [x] 11.2 Test query operations with advanced types
     - Create QueryOperationsTests class
     - Test queries that filter on advanced type properties
     - _Requirements: 13.2_
   
-  - [ ] 11.3 Test update operations with collections
+  - [x] 11.3 Test update operations with collections
     - Test updating HashSet properties
     - Test updating List properties
     - Test updating Dictionary properties
@@ -250,21 +250,21 @@
     - Include DynamoDB Local logs on failure
     - _Requirements: 6.3, 6.4_
 
-- [ ] 14. Create documentation
-  - [ ] 14.1 Write integration test README
+- [x] 14. Create documentation
+  - [x] 14.1 Write integration test README
     - Document prerequisites
     - Explain setup process
     - Show how to run tests locally
     - Add troubleshooting section
     - _Requirements: 10.1, 10.4, 10.5_
   
-  - [ ] 14.2 Write migration guide
+  - [x] 14.2 Write migration guide
     - Provide examples of adding compilation verification
     - Show how to replace string checks with semantic assertions
     - Explain when to use each test type
     - _Requirements: 7.1, 7.2, 7.3, 10.2, 10.3_
   
-  - [ ] 14.3 Create test writing guide
+  - [x] 14.3 Create test writing guide
     - Provide templates for common test scenarios
     - Document test data builders
     - Explain test organization

@@ -519,7 +519,7 @@ public static class MapperGenerator
                 sb.AppendLine($"                        typeof({entity.ClassName}),");
                 sb.AppendLine($"                        \"{propertyName}\",");
                 sb.AppendLine($"                        new AttributeValue {{ S = typedEntity.{propertyName}.Value.ToString(\"O\") }},");
-                sb.AppendLine($"                        typeof({propertyType}),");
+                sb.AppendLine($"                        typeof({GetTypeForMetadata(propertyType)}),");
                 sb.AppendLine("                        ex)");
                 sb.AppendLine($"                        .WithContext(\"TtlValue\", typedEntity.{propertyName}.Value.ToString(\"O\"))");
                 sb.AppendLine($"                        .WithContext(\"Operation\", \"TtlConversion\");");
@@ -550,7 +550,7 @@ public static class MapperGenerator
                 sb.AppendLine($"                    typeof({entity.ClassName}),");
                 sb.AppendLine($"                    \"{propertyName}\",");
                 sb.AppendLine($"                    new AttributeValue {{ S = typedEntity.{propertyName}.ToString(\"O\") }},");
-                sb.AppendLine($"                    typeof({propertyType}),");
+                sb.AppendLine($"                    typeof({GetTypeForMetadata(propertyType)}),");
                 sb.AppendLine("                    ex)");
                 sb.AppendLine($"                    .WithContext(\"TtlValue\", typedEntity.{propertyName}.ToString(\"O\"))");
                 sb.AppendLine($"                    .WithContext(\"Operation\", \"TtlConversion\");");
@@ -580,7 +580,7 @@ public static class MapperGenerator
                 sb.AppendLine($"                        typeof({entity.ClassName}),");
                 sb.AppendLine($"                        \"{propertyName}\",");
                 sb.AppendLine($"                        new AttributeValue {{ S = typedEntity.{propertyName}.Value.ToString(\"O\") }},");
-                sb.AppendLine($"                        typeof({propertyType}),");
+                sb.AppendLine($"                        typeof({GetTypeForMetadata(propertyType)}),");
                 sb.AppendLine("                        ex)");
                 sb.AppendLine($"                        .WithContext(\"TtlValue\", typedEntity.{propertyName}.Value.ToString(\"O\"))");
                 sb.AppendLine($"                        .WithContext(\"Operation\", \"TtlConversion\");");
@@ -605,7 +605,7 @@ public static class MapperGenerator
                 sb.AppendLine($"                    typeof({entity.ClassName}),");
                 sb.AppendLine($"                    \"{propertyName}\",");
                 sb.AppendLine($"                    new AttributeValue {{ S = typedEntity.{propertyName}.ToString(\"O\") }},");
-                sb.AppendLine($"                    typeof({propertyType}),");
+                sb.AppendLine($"                    typeof({GetTypeForMetadata(propertyType)}),");
                 sb.AppendLine("                    ex)");
                 sb.AppendLine($"                    .WithContext(\"TtlValue\", typedEntity.{propertyName}.ToString(\"O\"))");
                 sb.AppendLine($"                    .WithContext(\"Operation\", \"TtlConversion\");");
@@ -652,7 +652,7 @@ public static class MapperGenerator
             sb.AppendLine($"                        typeof({entity.ClassName}),");
             sb.AppendLine($"                        \"{propertyName}\",");
             sb.AppendLine($"                        new AttributeValue {{ S = \"<json serialization failed>\" }},");
-            sb.AppendLine($"                        typeof({property.PropertyType}),");
+            sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
             sb.AppendLine("                        ex)");
             sb.AppendLine($"                        .WithContext(\"SerializerType\", \"{serializerType}\")");
             sb.AppendLine($"                        .WithContext(\"PropertyType\", \"{baseType}\")");
@@ -687,7 +687,7 @@ public static class MapperGenerator
             sb.AppendLine($"                    typeof({entity.ClassName}),");
             sb.AppendLine($"                    \"{propertyName}\",");
             sb.AppendLine($"                    new AttributeValue {{ S = \"<json serialization failed>\" }},");
-            sb.AppendLine($"                    typeof({property.PropertyType}),");
+            sb.AppendLine($"                    typeof({GetTypeForMetadata(property.PropertyType)}),");
             sb.AppendLine("                    ex)");
             sb.AppendLine($"                    .WithContext(\"SerializerType\", \"{serializerType}\")");
             sb.AppendLine($"                    .WithContext(\"PropertyType\", \"{baseType}\")");
@@ -816,7 +816,7 @@ public static class MapperGenerator
             sb.AppendLine($"                        typeof({entity.ClassName}),");
             sb.AppendLine($"                        \"{propertyName}\",");
             sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
-            sb.AppendLine($"                        typeof({propertyType}),");
+            sb.AppendLine($"                        typeof({GetTypeForMetadata(propertyType)}),");
             sb.AppendLine("                        ex)");
             sb.AppendLine($"                        .WithContext(\"MapType\", \"Dictionary<string, string>\")");
             sb.AppendLine($"                        .WithContext(\"Operation\", \"ToDynamoDb\");");
@@ -840,7 +840,7 @@ public static class MapperGenerator
             sb.AppendLine($"                        typeof({entity.ClassName}),");
             sb.AppendLine($"                        \"{propertyName}\",");
             sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
-            sb.AppendLine($"                        typeof({propertyType}),");
+            sb.AppendLine($"                        typeof({GetTypeForMetadata(propertyType)}),");
             sb.AppendLine("                        ex)");
             sb.AppendLine($"                        .WithContext(\"MapType\", \"Dictionary<string, AttributeValue>\")");
             sb.AppendLine($"                        .WithContext(\"Operation\", \"ToDynamoDb\");");
@@ -869,7 +869,7 @@ public static class MapperGenerator
             sb.AppendLine($"                        typeof({entity.ClassName}),");
             sb.AppendLine($"                        \"{propertyName}\",");
             sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
-            sb.AppendLine($"                        typeof({propertyType}),");
+            sb.AppendLine($"                        typeof({GetTypeForMetadata(propertyType)}),");
             sb.AppendLine("                        ex)");
             sb.AppendLine($"                        .WithContext(\"MapType\", \"CustomObject\")");
             sb.AppendLine($"                        .WithContext(\"NestedType\", \"{propertyType}\")");
@@ -977,22 +977,28 @@ public static class MapperGenerator
     private static string GetToAttributeValueExpression(PropertyModel property, string valueExpression)
     {
         var baseType = GetBaseType(property.PropertyType);
+        
+        // For nullable value types (e.g., DateTime?, int?), we need to access .Value before calling ToString
+        // Check if the property type contains "?" which indicates a nullable value type
+        // Exclude string since it's a reference type and doesn't have .Value
+        var isNullableValueType = property.PropertyType.Contains("?") && baseType != "string";
+        var actualValue = isNullableValueType ? $"{valueExpression}.Value" : valueExpression;
 
         return baseType switch
         {
             "string" => $"new AttributeValue {{ S = {valueExpression} }}",
-            "int" or "System.Int32" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
-            "long" or "System.Int64" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
-            "double" or "System.Double" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
-            "float" or "System.Single" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
-            "decimal" or "System.Decimal" => $"new AttributeValue {{ N = {valueExpression}.ToString() }}",
-            "bool" or "System.Boolean" => $"new AttributeValue {{ BOOL = {valueExpression} }}",
-            "DateTime" or "System.DateTime" => $"new AttributeValue {{ S = {valueExpression}.ToString(\"O\") }}",
-            "DateTimeOffset" or "System.DateTimeOffset" => $"new AttributeValue {{ S = {valueExpression}.ToString(\"O\") }}",
-            "Guid" or "System.Guid" => $"new AttributeValue {{ S = {valueExpression}.ToString() }}",
-            "Ulid" or "System.Ulid" => $"new AttributeValue {{ S = {valueExpression}.ToString() }}",
+            "int" or "System.Int32" => $"new AttributeValue {{ N = {actualValue}.ToString() }}",
+            "long" or "System.Int64" => $"new AttributeValue {{ N = {actualValue}.ToString() }}",
+            "double" or "System.Double" => $"new AttributeValue {{ N = {actualValue}.ToString() }}",
+            "float" or "System.Single" => $"new AttributeValue {{ N = {actualValue}.ToString() }}",
+            "decimal" or "System.Decimal" => $"new AttributeValue {{ N = {actualValue}.ToString() }}",
+            "bool" or "System.Boolean" => $"new AttributeValue {{ BOOL = {actualValue} }}",
+            "DateTime" or "System.DateTime" => $"new AttributeValue {{ S = {actualValue}.ToString(\"O\") }}",
+            "DateTimeOffset" or "System.DateTimeOffset" => $"new AttributeValue {{ S = {actualValue}.ToString(\"O\") }}",
+            "Guid" or "System.Guid" => $"new AttributeValue {{ S = {actualValue}.ToString() }}",
+            "Ulid" or "System.Ulid" => $"new AttributeValue {{ S = {actualValue}.ToString() }}",
             "byte[]" or "System.Byte[]" => $"new AttributeValue {{ B = new System.IO.MemoryStream({valueExpression}) }}",
-            _ when IsEnumType(property.PropertyType) => $"new AttributeValue {{ S = {valueExpression}.ToString() }}",
+            _ when IsEnumType(property.PropertyType) => $"new AttributeValue {{ S = {actualValue}.ToString() }}",
             _ => $"new AttributeValue {{ S = {valueExpression} != null ? {valueExpression}.ToString() : \"\" }}"
         };
     }
@@ -1435,7 +1441,7 @@ public static class MapperGenerator
         sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
-        sb.AppendLine($"                        typeof({property.PropertyType}),");
+        sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
         sb.AppendLine("                        ex);");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
@@ -1476,9 +1482,8 @@ public static class MapperGenerator
         sb.AppendLine($"                        typeof({entity.ClassName}),");
         sb.AppendLine($"                        \"{propertyName}\",");
         sb.AppendLine($"                        {propertyName.ToLowerInvariant()}Value,");
-        sb.AppendLine($"                        typeof({property.PropertyType}),");
+        sb.AppendLine($"                        typeof({GetTypeForMetadata(property.PropertyType)}),");
         sb.AppendLine("                        ex);");
-        sb.AppendLine("                }");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
         sb.AppendLine("            else");
@@ -2021,7 +2026,9 @@ public static class MapperGenerator
     private static string GetTypeForMetadata(string typeName)
     {
         // For metadata, we need the actual type without nullable annotations
-        var baseType = GetBaseType(typeName);
+        // The typeof operator cannot be used with nullable reference types (e.g., List<string>?)
+        // so we strip the trailing ? for reference types
+        var baseType = typeName.TrimEnd('?');
 
         // Convert common type aliases to full type names for typeof()
         return baseType switch
