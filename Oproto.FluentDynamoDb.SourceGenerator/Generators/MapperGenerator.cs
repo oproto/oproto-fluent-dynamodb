@@ -345,11 +345,20 @@ public static class MapperGenerator
         {
             sb.AppendLine($"            if (typedEntity.{propertyName} != null)");
             sb.AppendLine("            {");
+            // Generate logging for basic property mapping
+            sb.Append(LoggingCodeGenerator.GeneratePropertyMappingLogging(propertyName, GetBaseType(property.PropertyType), "ToDynamoDb"));
             sb.AppendLine($"                item[\"{attributeName}\"] = {GetToAttributeValueExpression(property, $"typedEntity.{propertyName}")};");
+            sb.AppendLine("            }");
+            sb.AppendLine("            else");
+            sb.AppendLine("            {");
+            // Generate logging for skipped properties
+            sb.Append(LoggingCodeGenerator.GeneratePropertySkippedLogging(propertyName, "null value"));
             sb.AppendLine("            }");
         }
         else
         {
+            // Generate logging for basic property mapping
+            sb.Append(LoggingCodeGenerator.GeneratePropertyMappingLogging(propertyName, GetBaseType(property.PropertyType), "ToDynamoDb"));
             sb.AppendLine($"            item[\"{attributeName}\"] = {GetToAttributeValueExpression(property, $"typedEntity.{propertyName}")};");
         }
     }
@@ -597,6 +606,8 @@ public static class MapperGenerator
         var baseType = GetBaseType(propertyType);
 
         sb.AppendLine($"            // Convert TTL property {propertyName} to Unix epoch seconds");
+        // Generate logging for TTL conversion
+        sb.Append(LoggingCodeGenerator.GenerateTtlConversionLogging(propertyName, "ToDynamoDb"));
 
         if (baseType == "DateTime" || baseType == "System.DateTime")
         {
@@ -734,6 +745,8 @@ public static class MapperGenerator
         {
             sb.AppendLine($"            if (typedEntity.{propertyName} != null)");
             sb.AppendLine("            {");
+            // Generate logging for JSON blob operation
+            sb.Append(LoggingCodeGenerator.GenerateJsonBlobLogging(propertyName, baseType, serializerType ?? "SystemTextJson", "Serialization"));
             sb.AppendLine("                try");
             sb.AppendLine("                {");
 

@@ -80,15 +80,15 @@
     - Use null-conditional operators for logger calls
     - _Requirements: 2.4, 2.5, 10.1, 10.4, 12.2_
 
-- [ ] 5. Generate property-level logging
-  - [ ] 5.1 Generate logging for basic property mapping
+- [-] 5. Generate property-level logging
+  - [x] 5.1 Generate logging for basic property mapping
     - Log each property mapping at Debug level with property name and type
     - Check IsEnabled before logging to avoid parameter evaluation
     - Include property name and type in structured logging
     - Wrap in conditional compilation directives
     - _Requirements: 2.2, 2.5, 4.2, 7.2, 8.2_
   
-  - [ ] 5.2 Generate logging for skipped properties
+  - [x] 5.2 Generate logging for skipped properties
     - Log when null or empty values are skipped at Debug level
     - Include property name and reason for skipping
     - Wrap in conditional compilation directives
@@ -112,13 +112,13 @@
     - Wrap in conditional compilation directives
     - _Requirements: 2.2, 7.2_
   
-  - [ ] 5.6 Generate logging for TTL conversions
+  - [x] 5.6 Generate logging for TTL conversions
     - Log TTL conversion at Debug level with property name
     - Include property name and conversion direction in structured logging
     - Wrap in conditional compilation directives
     - _Requirements: 2.2, 7.2_
   
-  - [ ] 5.7 Generate logging for JSON blob operations
+  - [x] 5.7 Generate logging for JSON blob operations
     - Log JSON serialization/deserialization at Debug level with property name and serializer type
     - Include property name, type, and serializer in structured logging
     - Wrap in conditional compilation directives
