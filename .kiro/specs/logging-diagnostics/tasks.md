@@ -287,23 +287,23 @@
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
 
-- [ ] 12. Write performance tests
-  - [ ] 12.1 Test NoOpLogger has zero overhead
+- [x] 12. Write performance tests
+  - [x] 12.1 Test NoOpLogger has zero overhead
     - Benchmark mapping with NoOpLogger vs null logger
     - Verify performance difference is negligible (< 5%)
     - _Requirements: 4.1, 12.5_
   
-  - [ ] 12.2 Test IsEnabled check prevents parameter evaluation
+  - [x] 12.2 Test IsEnabled check prevents parameter evaluation
     - Benchmark logging with IsEnabled check vs without
     - Verify expensive parameters are not evaluated when disabled
     - _Requirements: 4.2, 4.5_
   
-  - [ ] 12.3 Test conditional compilation eliminates overhead
+  - [x] 12.3 Test conditional compilation eliminates overhead
     - Benchmark code with DISABLE_DYNAMODB_LOGGING vs without
     - Verify compiled code has no logging overhead when disabled
     - _Requirements: 10.2, 10.3_
   
-  - [ ] 12.4 Test logging allocation overhead
+  - [x] 12.4 Test logging allocation overhead
     - Measure allocations with logging enabled
     - Verify allocations are minimal and predictable
     - _Requirements: 4.3, 4.4_
