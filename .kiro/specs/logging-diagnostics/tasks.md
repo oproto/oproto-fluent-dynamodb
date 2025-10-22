@@ -164,14 +164,14 @@
     - Wrap in conditional compilation directives
     - _Requirements: 3.5, 13.2, 13.3, 13.4_
 
-- [ ] 7. Create Microsoft.Extensions.Logging adapter package
-  - [ ] 7.1 Create Oproto.FluentDynamoDb.Logging.Extensions project
+- [x] 7. Create Microsoft.Extensions.Logging adapter package
+  - [x] 7.1 Create Oproto.FluentDynamoDb.Logging.Extensions project
     - Create new .NET 8 project
     - Reference Microsoft.Extensions.Logging.Abstractions
     - Reference core Oproto.FluentDynamoDb project
     - _Requirements: 5.1, 13.1_
   
-  - [ ] 7.2 Implement MicrosoftExtensionsLoggingAdapter
+  - [x] 7.2 Implement MicrosoftExtensionsLoggingAdapter
     - Implement IDynamoDbLogger interface
     - Accept ILogger in constructor
     - Map log levels between IDynamoDbLogger and ILogger
@@ -179,12 +179,12 @@
     - Preserve structured logging parameters
     - _Requirements: 5.1, 5.2, 5.3, 5.5, 11.5_
   
-  - [ ] 7.3 Create extension methods for easy adapter creation
+  - [x] 7.3 Create extension methods for easy adapter creation
     - Add ToDynamoDbLogger extension on ILogger
     - Add ToDynamoDbLogger extension on ILoggerFactory
     - _Requirements: 5.1_
   
-  - [ ] 7.4 Support ILogger scopes
+  - [x] 7.4 Support ILogger scopes
     - Implement scope support in adapter
     - Ensure scopes flow through to ILogger
     - _Requirements: 5.4_
