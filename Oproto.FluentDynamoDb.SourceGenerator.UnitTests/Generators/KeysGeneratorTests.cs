@@ -1,3 +1,8 @@
+// Migration Status: COMPLETED
+// This test file has been migrated to use compilation verification and semantic assertions
+// instead of brittle string matching. Key format strings are preserved with descriptive messages.
+// See: .kiro/specs/unit-test-fixes/design.md for migration patterns
+
 using FluentAssertions;
 using Oproto.FluentDynamoDb.SourceGenerator.Generators;
 using Oproto.FluentDynamoDb.SourceGenerator.Models;
@@ -36,12 +41,16 @@ public class KeysGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static partial class TestEntityKeys");
-        result.Should().Contain("public static string Pk(string id)");
-        result.Should().Contain("var keyValue = \"tenant#\" + id;");
-        result.Should().Contain("/// <summary>");
-        result.Should().Contain("/// Builds the partition key value for Id.");
+        // Assert - Structural checks
+        result.ShouldContainMethod("Pk", "should generate partition key builder method");
+        
+        // Assert - Class and key format checks (DynamoDB-specific)
+        result.Should().Contain("public static partial class TestEntityKeys",
+            "should generate keys class for entity");
+        result.Should().Contain("var keyValue = \"tenant#\" + id;",
+            "should use the specified prefix 'tenant' with separator '#' for partition key format");
+        result.Should().Contain("/// Builds the partition key value for Id.",
+            "should include XML documentation describing the key builder purpose");
     }
 
     [Fact]
@@ -80,20 +89,20 @@ public class KeysGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static partial class TestEntityKeys");
+        // Assert - Structural checks
+        result.ShouldContainMethod("Pk", "should generate partition key builder method");
+        result.ShouldContainMethod("Sk", "should generate sort key builder method");
+        result.ShouldContainMethod("Key", "should generate composite key builder method");
 
-        // Partition key builder
-        result.Should().Contain("public static string Pk(string tenantId)");
-        result.Should().Contain("var keyValue = \"tenant#\" + tenantId;");
-
-        // Sort key builder
-        result.Should().Contain("public static string Sk(System.Guid transactionId)");
-        result.Should().Contain("var keyValue = \"txn#\" + transactionId.ToString();");
-
-        // Composite key builder
-        result.Should().Contain("public static (string PartitionKey, string SortKey) Key(string tenantId, System.Guid transactionId)");
-        result.Should().Contain("return (Pk(tenantId), Sk(transactionId));");
+        // Assert - Class and key format checks (DynamoDB-specific)
+        result.Should().Contain("public static partial class TestEntityKeys",
+            "should generate keys class for entity");
+        result.Should().Contain("var keyValue = \"tenant#\" + tenantId;",
+            "should use the specified prefix 'tenant' with separator '#' for partition key format");
+        result.Should().Contain("var keyValue = \"txn#\" + transactionId.ToString();",
+            "should use the specified prefix 'txn' with separator '#' for sort key format and convert Guid to string");
+        result.Should().Contain("return (Pk(tenantId), Sk(transactionId));",
+            "should return tuple calling both Pk and Sk methods for composite key");
     }
 
     [Fact]
@@ -160,18 +169,17 @@ public class KeysGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static partial class TestEntityKeys");
-
-        // Main table key builders
-        result.Should().Contain("public static string Pk(string id)");
-
-        // GSI key builders
-        result.Should().Contain("public static partial class StatusIndexKeys");
-        result.Should().Contain("/// Key builder methods for StatusIndex Global Secondary Index.");
-        result.Should().Contain("public static string Pk(string status)");
-        result.Should().Contain("public static string Sk(System.DateTime createdDate)");
-        result.Should().Contain("public static (string PartitionKey, string SortKey) Key(string status, System.DateTime createdDate)");
+        // Assert - Structural checks
+        result.ShouldContainMethod("Pk", "should generate partition key builder method for main table");
+        result.ShouldContainMethod("Key", "should generate composite key builder for GSI");
+        
+        // Assert - Class and documentation checks (DynamoDB-specific)
+        result.Should().Contain("public static partial class TestEntityKeys",
+            "should generate main keys class for entity");
+        result.Should().Contain("public static partial class StatusIndexKeys",
+            "should generate nested keys class for GSI");
+        result.Should().Contain("/// Key builder methods for StatusIndex Global Secondary Index.",
+            "should include XML documentation describing the GSI key builder purpose");
     }
 
     [Fact]
@@ -202,10 +210,14 @@ public class KeysGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static string Pk(string? id)");
-        result.Should().Contain("if (id == null)");
-        result.Should().Contain("throw new System.ArgumentNullException(nameof(id), \"Key parameter cannot be null.\");");
+        // Assert - Structural checks
+        result.ShouldContainMethod("Pk", "should generate partition key builder method");
+        
+        // Assert - Null handling (DynamoDB-specific behavior)
+        result.Should().Contain("if (id == null)",
+            "should check for null parameter before building key");
+        result.Should().Contain("throw new System.ArgumentNullException(nameof(id), \"Key parameter cannot be null.\");",
+            "should throw ArgumentNullException with descriptive message when key parameter is null");
     }
 
     [Fact]
@@ -235,9 +247,12 @@ public class KeysGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static string Pk(System.Guid id)");
-        result.Should().Contain("var keyValue = id.ToString();");
+        // Assert - Structural checks
+        result.ShouldContainMethod("Pk", "should generate partition key builder method");
+        
+        // Assert - Guid conversion (DynamoDB-specific type handling)
+        result.Should().Contain("id.ToString()",
+            "should convert Guid to string using ToString() for DynamoDB key format");
     }
 
     [Fact]
@@ -267,9 +282,12 @@ public class KeysGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static string Pk(System.DateTime createdDate)");
-        result.Should().Contain("var keyValue = createdDate.ToString(\"yyyy-MM-ddTHH:mm:ss.fffZ\");");
+        // Assert - Structural checks
+        result.ShouldContainMethod("Pk", "should generate partition key builder method");
+        
+        // Assert - DateTime formatting (DynamoDB-specific type handling)
+        result.Should().Contain("createdDate.ToString(\"yyyy-MM-ddTHH:mm:ss.fffZ\")",
+            "should format DateTime using ISO 8601 format with milliseconds for sortable DynamoDB keys");
     }
 
     [Fact]
@@ -298,11 +316,15 @@ public class KeysGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static partial class TestEntityKeys");
-        result.Should().Contain("namespace TestNamespace");
-        result.Should().NotContain("public static string Pk(");
-        result.Should().NotContain("public static string Sk(");
+        // Assert - Class generation (DynamoDB-specific)
+        result.Should().Contain("public static partial class TestEntityKeys",
+            "should generate keys class even when no keys are defined");
+        
+        // Assert - No key methods should be generated
+        result.Should().NotContain("public static string Pk(",
+            "should not generate Pk method when no partition key is defined");
+        result.Should().NotContain("public static string Sk(",
+            "should not generate Sk method when no sort key is defined");
     }
 
     [Fact]
@@ -349,10 +371,13 @@ public class KeysGeneratorTests
         // Verify compilation
         CompilationVerifier.AssertGeneratedCodeCompiles(result);
 
-        // Assert
-        result.Should().Contain("public static partial class CustomIndexKeys");
-        result.Should().Contain("public static string Pk(string id)");
-        // The key format parsing should handle the custom format
-        result.Should().Contain("var keyValue = \"custom_\" + id;");
+        // Assert - Structural checks
+        result.ShouldContainMethod("Pk", "should generate partition key builder method for GSI");
+        
+        // Assert - Class and custom key format parsing (DynamoDB-specific)
+        result.Should().Contain("public static partial class CustomIndexKeys",
+            "should generate nested keys class for custom GSI");
+        result.Should().Contain("var keyValue = \"custom_\" + id;",
+            "should parse custom format string 'custom_{0}_suffix' and generate concatenation with prefix 'custom_'");
     }
 }

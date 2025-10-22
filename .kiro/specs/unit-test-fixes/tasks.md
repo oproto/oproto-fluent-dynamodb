@@ -67,30 +67,30 @@
   - Update migration tracking
   - _Requirements: 5.1, 5.4_
 
-- [ ] 4. Migrate KeysGeneratorTests.cs (High Priority)
-- [ ] 4.1 Add compilation verification to all tests in KeysGeneratorTests.cs
+- [x] 4. Migrate KeysGeneratorTests.cs (High Priority)
+- [x] 4.1 Add compilation verification to all tests in KeysGeneratorTests.cs
   - Add compilation verification after diagnostic checks
   - _Requirements: 2.1, 2.4_
 
-- [ ] 4.2 Replace structural assertions with semantic assertions in KeysGeneratorTests.cs
+- [x] 4.2 Replace structural assertions with semantic assertions in KeysGeneratorTests.cs
   - Replace method existence checks
   - Replace assignment checks for key generation
   - Replace string concatenation checks where appropriate
   - _Requirements: 3.1, 3.2, 3.5_
 
-- [ ] 4.3 Preserve key format checks in KeysGeneratorTests.cs
+- [x] 4.3 Preserve key format checks in KeysGeneratorTests.cs
   - Keep string checks for partition key format strings
   - Keep string checks for sort key format strings
   - Add "because" messages explaining format requirements
   - _Requirements: 4.2, 4.4_
 
-- [ ] 4.4 Validate KeysGeneratorTests.cs migration
+- [x] 4.4 Validate KeysGeneratorTests.cs migration
   - Run tests and verify they pass
   - Test with formatting changes
   - Test with intentional errors
   - _Requirements: 8.1, 8.2, 8.4_
 
-- [ ] 4.5 Document KeysGeneratorTests.cs migration
+- [x] 4.5 Document KeysGeneratorTests.cs migration
   - Add file header comment
   - Update migration tracking
   - _Requirements: 5.1, 5.4_

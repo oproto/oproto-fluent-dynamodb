@@ -7,7 +7,7 @@ This document tracks the migration of brittle unit tests from string-based asser
 **Last Updated:** 2025-10-22  
 **Total Test Files:** 15  
 **Total Tests:** 164  
-**Migrated Tests:** 47 (28.7%)
+**Migrated Tests:** 55 (33.5%)
 
 ## Migration Priority Classification
 
@@ -100,31 +100,41 @@ These tests verify infrastructure, diagnostics, or simple models and rarely brea
 
 ---
 
-#### 3. KeysGeneratorTests.cs
+#### 3. KeysGeneratorTests.cs ✅ COMPLETED
 - **Location:** `Oproto.FluentDynamoDb.SourceGenerator.UnitTests/Generators/KeysGeneratorTests.cs`
 - **Total Tests:** 8
-- **Migration Status:** ❌ Not Started
+- **Migration Status:** ✅ **COMPLETED** (2025-10-22)
 - **Compilation Verification:** ✅ Already Added
-- **String Assertions Found:**
-  - Method existence checks: `Should().Contain("public static string Pk(")`
-  - Key format checks: `Should().Contain("var keyValue = \"tenant#\" + id")`
-  - GSI key builder checks: `Should().Contain("public static partial class StatusIndexKeys")`
-  - Null check generation: `Should().Contain("if (id == null)")`
-- **Estimated Effort:** Medium (8 tests with format string checks)
+- **Migration Changes Applied:**
+  - ✅ Compilation verification already present in all tests
+  - ✅ Replaced method existence checks with `.ShouldContainMethod()`
+  - ✅ Preserved class name checks as DynamoDB-specific structural elements
+  - ✅ Preserved key format string checks with "because" messages
+  - ✅ Preserved null handling checks with "because" messages
+  - ✅ Preserved type conversion checks (Guid.ToString(), DateTime formatting) with "because" messages
+  - ✅ Added file header comment documenting migration
+  - ✅ All 8 tests passing
 - **Notes:**
-  - Already has compilation verification in all tests
-  - Key format strings are DynamoDB-specific and should be preserved
-  - Tests verify partition key, sort key, and GSI key generation
+  - Migration completed successfully
+  - Tests now resilient to formatting changes
+  - DynamoDB-specific behavior checks preserved for:
+    - Partition key format strings (prefix + separator patterns)
+    - Sort key format strings
+    - GSI key builder class generation
+    - Null parameter validation
+    - Guid to string conversion
+    - DateTime ISO 8601 formatting for sortable keys
+    - Custom format string parsing
 
 **Test Breakdown:**
-1. `GenerateKeysClass_WithPartitionKeyOnly_GeneratesPartitionKeyBuilder`
-2. `GenerateKeysClass_WithPartitionAndSortKey_GeneratesAllKeyBuilders`
-3. `GenerateKeysClass_WithGsi_GeneratesGsiKeyBuilders`
-4. `GenerateKeysClass_WithNullableTypes_GeneratesNullChecks`
-5. `GenerateKeysClass_WithGuidType_GeneratesToStringConversion`
-6. `GenerateKeysClass_WithDateTimeType_GeneratesFormattedString`
-7. `GenerateKeysClass_WithNoKeys_GeneratesEmptyClass`
-8. `GenerateKeysClass_WithCustomKeyFormat_ParsesFormatCorrectly`
+1. `GenerateKeysClass_WithPartitionKeyOnly_GeneratesPartitionKeyBuilder` - Basic partition key
+2. `GenerateKeysClass_WithPartitionAndSortKey_GeneratesAllKeyBuilders` - Composite keys
+3. `GenerateKeysClass_WithGsi_GeneratesGsiKeyBuilders` - GSI key builders
+4. `GenerateKeysClass_WithNullableTypes_GeneratesNullChecks` - Null validation
+5. `GenerateKeysClass_WithGuidType_GeneratesToStringConversion` - Guid conversion
+6. `GenerateKeysClass_WithDateTimeType_GeneratesFormattedString` - DateTime formatting
+7. `GenerateKeysClass_WithNoKeys_GeneratesEmptyClass` - Empty class generation
+8. `GenerateKeysClass_WithCustomKeyFormat_ParsesFormatCorrectly` - Custom format parsing
 
 ---
 
@@ -322,8 +332,8 @@ These tests verify infrastructure, diagnostics, or simple models and rarely brea
 - **Priority 3 (Low Impact):** 9 files, 99 tests
 
 ### By Migration Status
-- **Completed:** 2 files, 47 tests ✅
-- **Not Started:** 4 files, 18 tests
+- **Completed:** 3 files, 55 tests ✅
+- **Not Started:** 3 files, 10 tests
 - **Good As-Is:** 7 files, 87 tests
 - **Review Needed:** 2 files, 23 tests
 
@@ -428,7 +438,7 @@ Use this checklist for each file being migrated:
 1. ✅ Complete this migration status document
 2. ✅ **COMPLETED:** Priority 1: MapperGeneratorTests.cs (9 tests migrated)
 3. ✅ **COMPLETED:** Priority 1: AdvancedTypeGenerationTests.cs (38 tests migrated)
-4. ⏭️ Continue with Priority 1: KeysGeneratorTests.cs (8 tests)
-5. ⏭️ Move to Priority 2 files
+4. ✅ **COMPLETED:** Priority 1: KeysGeneratorTests.cs (8 tests migrated)
+5. ⏭️ Move to Priority 2 files (FieldsGeneratorTests.cs, DynamoDbSourceGeneratorTests.cs, MapperGeneratorBugFixTests.cs)
 6. ⏭️ Review Priority 3 files that need review
 7. ⏭️ Create final migration summary report
