@@ -202,19 +202,19 @@
     - _Requirements: 10.1, 10.4_
 
 
-- [ ] 9. Write unit tests for core logging
-  - [ ] 9.1 Test NoOpLogger implementation
+- [x] 9. Write unit tests for core logging
+  - [x] 9.1 Test NoOpLogger implementation
     - Test IsEnabled always returns false
     - Test all log methods do not throw
     - Test singleton instance
     - _Requirements: 1.4, 4.1_
   
-  - [ ] 9.2 Test IDynamoDbLogger interface
+  - [x] 9.2 Test IDynamoDbLogger interface
     - Test interface can be implemented
     - Test all methods are callable
     - _Requirements: 1.1, 1.2, 1.3_
   
-  - [ ] 9.3 Test LogEventIds constants
+  - [x] 9.3 Test LogEventIds constants
     - Test all event IDs are unique
     - Test event IDs are in correct ranges
     - _Requirements: 11.1, 11.2, 11.3, 11.4_

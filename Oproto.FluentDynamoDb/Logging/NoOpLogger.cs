@@ -5,7 +5,7 @@ namespace Oproto.FluentDynamoDb.Logging;
 /// Used as default when no logger is configured.
 /// This implementation has zero allocation overhead.
 /// </summary>
-internal sealed class NoOpLogger : IDynamoDbLogger
+public sealed class NoOpLogger : IDynamoDbLogger
 {
     /// <summary>
     /// Gets the singleton instance of the no-op logger.
