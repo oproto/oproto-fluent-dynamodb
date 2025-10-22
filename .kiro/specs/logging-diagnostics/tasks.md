@@ -248,8 +248,8 @@
     - Test ToDynamoDbLogger on ILoggerFactory
     - _Requirements: 5.1_
 
-- [ ] 11. Write integration tests for generated logging
-  - [ ] 11.1 Test generated ToDynamoDb with logger
+- [-] 11. Write integration tests for generated logging
+  - [x] 11.1 Test generated ToDynamoDb with logger
     - Test entry logging is generated
     - Test property logging is generated
     - Test exit logging is generated
