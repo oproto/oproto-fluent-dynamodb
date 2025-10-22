@@ -455,6 +455,9 @@ public static class MapperGenerator
             sb.AppendLine($"                suggestedKey = $\"{propertyName}/{{Guid.NewGuid()}}\";");
         }
         
+        // Generate logging for blob reference operation
+        sb.Append(LoggingCodeGenerator.GenerateBlobReferenceLogging(propertyName, "suggestedKey", "Store"));
+        
         sb.AppendLine("                try");
         sb.AppendLine("                {");
 
@@ -915,6 +918,8 @@ public static class MapperGenerator
             // Dictionary<string, string> - simple string map
             sb.AppendLine($"            if (typedEntity.{propertyName} != null && typedEntity.{propertyName}.Count > 0)");
             sb.AppendLine("            {");
+            // Generate logging for Map conversion
+            sb.Append(LoggingCodeGenerator.GenerateMapConversionLogging(propertyName, $"typedEntity.{propertyName}.Count", "ToDynamoDb"));
             sb.AppendLine("                try");
             sb.AppendLine("                {");
             sb.AppendLine($"                    var {propertyName.ToLowerInvariant()}Map = new Dictionary<string, AttributeValue>();");
@@ -944,6 +949,8 @@ public static class MapperGenerator
             // Dictionary<string, AttributeValue> - direct map
             sb.AppendLine($"            if (typedEntity.{propertyName} != null && typedEntity.{propertyName}.Count > 0)");
             sb.AppendLine("            {");
+            // Generate logging for Map conversion
+            sb.Append(LoggingCodeGenerator.GenerateMapConversionLogging(propertyName, $"typedEntity.{propertyName}.Count", "ToDynamoDb"));
             sb.AppendLine("                try");
             sb.AppendLine("                {");
             sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ M = typedEntity.{propertyName} }};");
@@ -974,6 +981,8 @@ public static class MapperGenerator
             sb.AppendLine($"                    var {propertyName.ToLowerInvariant()}Map = {simpleTypeName}.ToDynamoDb(typedEntity.{propertyName});");
             sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Map != null && {propertyName.ToLowerInvariant()}Map.Count > 0)");
             sb.AppendLine("                    {");
+            // Generate logging for Map conversion (custom object)
+            sb.Append(LoggingCodeGenerator.GenerateMapConversionLogging(propertyName, $"{propertyName.ToLowerInvariant()}Map.Count", "ToDynamoDb"));
             sb.AppendLine($"                        item[\"{attributeName}\"] = new AttributeValue {{ M = {propertyName.ToLowerInvariant()}Map }};");
             sb.AppendLine("                    }");
             sb.AppendLine("                }");
@@ -1027,11 +1036,15 @@ public static class MapperGenerator
         if (baseElementType == "string" || baseElementType == "System.String")
         {
             // String Set (SS)
+            // Generate logging for Set conversion
+            sb.Append(LoggingCodeGenerator.GenerateSetConversionLogging(propertyName, "String Set", $"typedEntity.{propertyName}.Count", "ToDynamoDb"));
             sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ SS = typedEntity.{propertyName}.ToList() }};");
         }
         else if (IsNumericType(baseElementType))
         {
             // Number Set (NS)
+            // Generate logging for Set conversion
+            sb.Append(LoggingCodeGenerator.GenerateSetConversionLogging(propertyName, "Number Set", $"typedEntity.{propertyName}.Count", "ToDynamoDb"));
             sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
             sb.AppendLine("                {");
             sb.AppendLine($"                    NS = typedEntity.{propertyName}.Select(x => x.ToString()).ToList()");
@@ -1040,6 +1053,8 @@ public static class MapperGenerator
         else if (baseElementType == "byte[]" || baseElementType == "System.Byte[]")
         {
             // Binary Set (BS)
+            // Generate logging for Set conversion
+            sb.Append(LoggingCodeGenerator.GenerateSetConversionLogging(propertyName, "Binary Set", $"typedEntity.{propertyName}.Count", "ToDynamoDb"));
             sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
             sb.AppendLine("                {");
             sb.AppendLine($"                    BS = typedEntity.{propertyName}.Select(x => new MemoryStream(x)).ToList()");
@@ -1059,6 +1074,9 @@ public static class MapperGenerator
         // Add comment for collection conversion
         sb.AppendLine($"                // Convert collection {propertyName} to native DynamoDB type");
         sb.AppendLine($"                // Convert {property.PropertyType} to DynamoDB List (L)");
+        
+        // Generate logging for List conversion
+        sb.Append(LoggingCodeGenerator.GenerateListConversionLogging(propertyName, $"typedEntity.{propertyName}.Count", "ToDynamoDb"));
         
         // Use List (L) for all List types
         sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
@@ -1547,6 +1565,8 @@ public static class MapperGenerator
         sb.AppendLine($"            // Note: Custom types use nested FromDynamoDb calls (NO REFLECTION) for AOT compatibility");
         sb.AppendLine($"            if (item.TryGetValue(\"{attributeName}\", out var {propertyName.ToLowerInvariant()}Value) && {propertyName.ToLowerInvariant()}Value.M != null)");
         sb.AppendLine("            {");
+        // Generate logging for Map conversion
+        sb.Append(LoggingCodeGenerator.GenerateMapConversionLogging(propertyName, $"{propertyName.ToLowerInvariant()}Value.M.Count", "FromDynamoDb"));
         sb.AppendLine("                try");
         sb.AppendLine("                {");
 
@@ -1652,6 +1672,8 @@ public static class MapperGenerator
             sb.AppendLine($"                    // Convert DynamoDB String Set (SS) to HashSet<string>");
             sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.SS != null && {propertyName.ToLowerInvariant()}Value.SS.Count > 0)");
             sb.AppendLine("                    {");
+            // Generate logging for Set conversion
+            sb.Append(LoggingCodeGenerator.GenerateSetConversionLogging(propertyName, "String Set", $"{propertyName.ToLowerInvariant()}Value.SS.Count", "FromDynamoDb"));
             sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}({propertyName.ToLowerInvariant()}Value.SS);");
             sb.AppendLine("                    }");
             sb.AppendLine("                    else");
@@ -1665,6 +1687,8 @@ public static class MapperGenerator
             sb.AppendLine($"                    // Convert DynamoDB Number Set (NS) to HashSet<{baseElementType}>");
             sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.NS != null && {propertyName.ToLowerInvariant()}Value.NS.Count > 0)");
             sb.AppendLine("                    {");
+            // Generate logging for Set conversion
+            sb.Append(LoggingCodeGenerator.GenerateSetConversionLogging(propertyName, "Number Set", $"{propertyName.ToLowerInvariant()}Value.NS.Count", "FromDynamoDb"));
             sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}({propertyName.ToLowerInvariant()}Value.NS.Select({GetNumericConversionExpression(baseElementType)}));");
             sb.AppendLine("                    }");
             sb.AppendLine("                    else");
@@ -1678,6 +1702,8 @@ public static class MapperGenerator
             sb.AppendLine($"                    // Convert DynamoDB Binary Set (BS) to HashSet<byte[]>");
             sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.BS != null && {propertyName.ToLowerInvariant()}Value.BS.Count > 0)");
             sb.AppendLine("                    {");
+            // Generate logging for Set conversion
+            sb.Append(LoggingCodeGenerator.GenerateSetConversionLogging(propertyName, "Binary Set", $"{propertyName.ToLowerInvariant()}Value.BS.Count", "FromDynamoDb"));
             sb.AppendLine($"                        entity.{propertyName} = new {nonNullablePropertyType}({propertyName.ToLowerInvariant()}Value.BS.Select(x => x.ToArray()));");
             sb.AppendLine("                    }");
             sb.AppendLine("                    else");
@@ -1701,6 +1727,9 @@ public static class MapperGenerator
         sb.AppendLine($"                    // Convert DynamoDB List (L) to List<{collectionElementType}>");
         sb.AppendLine($"                    if ({propertyName.ToLowerInvariant()}Value.L != null && {propertyName.ToLowerInvariant()}Value.L.Count > 0)");
         sb.AppendLine("                    {");
+        
+        // Generate logging for List conversion
+        sb.Append(LoggingCodeGenerator.GenerateListConversionLogging(propertyName, $"{propertyName.ToLowerInvariant()}Value.L.Count", "FromDynamoDb"));
         
         // Strip nullable markers from both the property type and element type for instantiation
         // We need to rebuild the collection type with non-nullable element type
