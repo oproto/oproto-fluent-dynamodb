@@ -51,8 +51,8 @@
     - _Requirements: 9.3, 9.4, 9.5, 10.1, 10.4_
 
 
-- [ ] 4. Enhance source generator for logging code generation
-  - [ ] 4.1 Create LoggingCodeGenerator class
+- [x] 4. Enhance source generator for logging code generation
+  - [x] 4.1 Create LoggingCodeGenerator class
     - Create class to generate logging code snippets
     - Add methods for generating entry/exit logging
     - Add methods for generating property mapping logging
@@ -60,20 +60,20 @@
     - Support conditional compilation directives
     - _Requirements: 2.1, 2.2, 2.3, 10.1, 10.4_
   
-  - [ ] 4.2 Add logger parameter to generated mapping methods
+  - [x] 4.2 Add logger parameter to generated mapping methods
     - Update ToDynamoDb signature to include optional IDynamoDbLogger parameter
     - Update FromDynamoDb signature to include optional IDynamoDbLogger parameter
     - Update async variants for blob references
     - _Requirements: 2.1, 2.4, 6.4_
   
-  - [ ] 4.3 Generate entry/exit logging in ToDynamoDb
+  - [x] 4.3 Generate entry/exit logging in ToDynamoDb
     - Log method entry at Trace level with entity type
     - Log method exit at Trace level with attribute count
     - Wrap in conditional compilation directives
     - Use null-conditional operators for logger calls
     - _Requirements: 2.1, 2.3, 10.1, 10.4, 12.2_
   
-  - [ ] 4.4 Generate entry/exit logging in FromDynamoDb
+  - [x] 4.4 Generate entry/exit logging in FromDynamoDb
     - Log method entry at Trace level with entity type and attribute count
     - Log method exit at Trace level with entity type
     - Wrap in conditional compilation directives

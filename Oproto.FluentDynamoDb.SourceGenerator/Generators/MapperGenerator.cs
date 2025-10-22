@@ -151,6 +151,11 @@ public static class MapperGenerator
         sb.AppendLine("        [MethodImpl(MethodImplOptions.AggressiveInlining)]");
         sb.AppendLine($"        public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity, Logging.IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
+        
+        // Generate entry logging
+        sb.Append(LoggingCodeGenerator.GenerateToDynamoDbEntryLogging(entity.ClassName));
+        sb.AppendLine();
+        
         sb.AppendLine($"            if (entity is not {entity.ClassName} typedEntity)");
         sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{entity.GetType().Name}}\", nameof(entity));");
         sb.AppendLine();
@@ -180,6 +185,11 @@ public static class MapperGenerator
         }
 
         sb.AppendLine();
+        
+        // Generate exit logging
+        sb.Append(LoggingCodeGenerator.GenerateToDynamoDbExitLogging(entity.ClassName, "item"));
+        sb.AppendLine();
+        
         sb.AppendLine("            return item;");
         sb.AppendLine("        }");
     }
@@ -251,6 +261,11 @@ public static class MapperGenerator
         sb.AppendLine("            Logging.IDynamoDbLogger? logger = null,");
         sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
+        
+        // Generate entry logging
+        sb.Append(LoggingCodeGenerator.GenerateToDynamoDbEntryLogging(entity.ClassName));
+        sb.AppendLine();
+        
         sb.AppendLine($"            if (entity is not {entity.ClassName} typedEntity)");
         sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{entity.GetType().Name}}\", nameof(entity));");
         sb.AppendLine();
@@ -283,6 +298,11 @@ public static class MapperGenerator
         }
 
         sb.AppendLine();
+        
+        // Generate exit logging
+        sb.Append(LoggingCodeGenerator.GenerateToDynamoDbExitLogging(entity.ClassName, "item"));
+        sb.AppendLine();
+        
         sb.AppendLine("            return item;");
         sb.AppendLine("        }");
     }
@@ -1102,6 +1122,11 @@ public static class MapperGenerator
         sb.AppendLine("        /// <exception cref=\"DynamoDbMappingException\">Thrown when mapping fails due to data conversion issues.</exception>");
         sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item, Logging.IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
+        
+        // Generate entry logging
+        sb.Append(LoggingCodeGenerator.GenerateFromDynamoDbEntryLogging(entity.ClassName, "item"));
+        sb.AppendLine();
+        
         sb.AppendLine($"            if (typeof(TSelf) != typeof({entity.ClassName}))");
         sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{typeof(TSelf).Name}}\");");
         sb.AppendLine();
@@ -1128,6 +1153,11 @@ public static class MapperGenerator
         }
 
         sb.AppendLine();
+        
+        // Generate exit logging
+        sb.Append(LoggingCodeGenerator.GenerateFromDynamoDbExitLogging(entity.ClassName));
+        sb.AppendLine();
+        
         sb.AppendLine("            return (TSelf)(object)entity;");
         sb.AppendLine("        }");
     }
@@ -1153,6 +1183,11 @@ public static class MapperGenerator
         sb.AppendLine("            Logging.IDynamoDbLogger? logger = null,");
         sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
+        
+        // Generate entry logging
+        sb.Append(LoggingCodeGenerator.GenerateFromDynamoDbEntryLogging(entity.ClassName, "item"));
+        sb.AppendLine();
+        
         sb.AppendLine($"            if (typeof(TSelf) != typeof({entity.ClassName}))");
         sb.AppendLine($"                throw new ArgumentException($\"Expected {entity.ClassName}, got {{typeof(TSelf).Name}}\");");
         sb.AppendLine();
@@ -1182,6 +1217,11 @@ public static class MapperGenerator
         }
 
         sb.AppendLine();
+        
+        // Generate exit logging
+        sb.Append(LoggingCodeGenerator.GenerateFromDynamoDbExitLogging(entity.ClassName));
+        sb.AppendLine();
+        
         sb.AppendLine("            return (TSelf)(object)entity;");
         sb.AppendLine("        }");
     }
@@ -1727,6 +1767,15 @@ public static class MapperGenerator
         sb.AppendLine("        /// <exception cref=\"DynamoDbMappingException\">Thrown when mapping fails due to data conversion issues.</exception>");
         sb.AppendLine($"        public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items, Logging.IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
+        
+        // Generate entry logging for multi-item
+        sb.AppendLine("            #if !DISABLE_DYNAMODB_LOGGING");
+        sb.AppendLine("            logger?.LogTrace(Logging.LogEventIds.MappingFromDynamoDbStart,");
+        sb.AppendLine($"                \"Starting FromDynamoDb mapping for {{EntityType}} with {{ItemCount}} items\",");
+        sb.AppendLine($"                \"{entity.ClassName}\", items?.Count ?? 0);");
+        sb.AppendLine("            #endif");
+        sb.AppendLine();
+        
         sb.AppendLine("            if (items == null || items.Count == 0)");
         sb.AppendLine($"                throw new ArgumentException(\"Items collection cannot be null or empty\", nameof(items));");
         sb.AppendLine();
