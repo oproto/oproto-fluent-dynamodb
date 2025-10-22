@@ -100,13 +100,6 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
                 context.AddSource($"{entity.ClassName}Keys.g.cs", keysCode);
             }
 
-            // Generate JsonSerializerContext for System.Text.Json if needed
-            var jsonContextCode = JsonSerializerContextGenerator.GenerateJsonSerializerContext(entity);
-            if (jsonContextCode != null)
-            {
-                context.AddSource($"{entity.ClassName}JsonContext.g.cs", jsonContextCode);
-            }
-
             // Generate optimized entity implementation with mapping methods
             var sourceCode = GenerateOptimizedEntityImplementation(entity);
             context.AddSource($"{entity.ClassName}.g.cs", sourceCode);

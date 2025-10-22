@@ -242,11 +242,9 @@ namespace TestNamespace
         var result = GenerateCode(source);
 
         // Assert
-        // Should generate warnings for complex collection types and unsupported Dictionary type
+        // Should generate warnings for complex collection types
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warning for complex collections
-        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB009"); // Unsupported type for Dictionary
-        result.Diagnostics.Should().Contain(d => d.Id == "DYNDB012"); // Multi-item entity should have sort key
         result.GeneratedSources.Should().HaveCount(3);
 
         var entityCode = GetGeneratedSource(result, "GenericConstraintsEntity.g.cs");

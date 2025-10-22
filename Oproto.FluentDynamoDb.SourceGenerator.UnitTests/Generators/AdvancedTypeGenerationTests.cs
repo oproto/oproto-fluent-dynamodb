@@ -1212,7 +1212,6 @@ using Oproto.FluentDynamoDb.Attributes;
 namespace TestNamespace
 {
     [DynamoDbTable(""test-table"")]
-    [MultiItemEntity]
     public partial class TestEntity
     {
         [PartitionKey]

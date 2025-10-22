@@ -83,7 +83,7 @@ public class MapperGeneratorTests
                 {
                     PropertyName = "LedgerEntries",
                     AttributeName = "ledger_entries",
-                    PropertyType = "List<LedgerEntry>",
+                    PropertyType = "List<string>",
                     IsCollection = true
                 }
             }
@@ -155,7 +155,8 @@ public class MapperGeneratorTests
 
         // Verify compilation
         var entitySource = CreateEntitySource(entity);
-        CompilationVerifier.AssertGeneratedCodeCompiles(result, entitySource);
+        var relatedEntitySources = CreateRelatedEntitySources(entity);
+        CompilationVerifier.AssertGeneratedCodeCompiles(result, new[] { entitySource }.Concat(relatedEntitySources).ToArray());
 
         // Assert
         result.Should().Contain("Related entities: 2 relationship(s) defined.");
@@ -491,9 +492,78 @@ public class MapperGeneratorTests
             sb.AppendLine($"        public {propertyType} {prop.PropertyName} {{ get; set; }}");
         }
         
+        // Add relationship properties
+        foreach (var relationship in entity.Relationships)
+        {
+            sb.AppendLine($"        public {relationship.PropertyType} {relationship.PropertyName} {{ get; set; }}");
+        }
+        
         sb.AppendLine("    }");
         sb.AppendLine("}");
         
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Helper method to create stub source code for related entity types.
+    /// </summary>
+    private static string[] CreateRelatedEntitySources(EntityModel entity)
+    {
+        var sources = new List<string>();
+        
+        foreach (var relationship in entity.Relationships)
+        {
+            var entityType = relationship.EntityType;
+            if (string.IsNullOrEmpty(entityType))
+                continue;
+                
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("using System;");
+            sb.AppendLine("using System.Collections.Generic;");
+            sb.AppendLine("using Amazon.DynamoDBv2.Model;");
+            sb.AppendLine("using Oproto.FluentDynamoDb.Storage;");
+            sb.AppendLine();
+            sb.AppendLine($"namespace {entity.Namespace}");
+            sb.AppendLine("{");
+            sb.AppendLine($"    public partial class {entityType} : IDynamoDbEntity");
+            sb.AppendLine("    {");
+            sb.AppendLine("        public string Id { get; set; } = string.Empty;");
+            sb.AppendLine();
+            sb.AppendLine("        public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity) where TSelf : IDynamoDbEntity");
+            sb.AppendLine("        {");
+            sb.AppendLine("            return new Dictionary<string, AttributeValue>();");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item) where TSelf : IDynamoDbEntity");
+            sb.AppendLine("        {");
+            sb.AppendLine($"            return (TSelf)(object)new {entityType}();");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items) where TSelf : IDynamoDbEntity");
+            sb.AppendLine("        {");
+            sb.AppendLine($"            return (TSelf)(object)new {entityType}();");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        public static string GetPartitionKey(Dictionary<string, AttributeValue> item)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            return string.Empty;");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        public static bool MatchesEntity(Dictionary<string, AttributeValue> item)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            return true;");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        public static EntityMetadata GetEntityMetadata()");
+            sb.AppendLine("        {");
+            sb.AppendLine("            return new EntityMetadata();");
+            sb.AppendLine("        }");
+            sb.AppendLine("    }");
+            sb.AppendLine("}");
+            
+            sources.Add(sb.ToString());
+        }
+        
+        return sources.ToArray();
     }
 }

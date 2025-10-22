@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Reflection;
 using System.Text;
+using System.Linq;
 
 namespace Oproto.FluentDynamoDb.SourceGenerator.UnitTests.TestHelpers;
 
@@ -98,6 +99,11 @@ namespace Oproto.FluentDynamoDb.Attributes
             MetadataReference.CreateFromFile(typeof(System.IO.Stream).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Threading.Tasks.Task).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Threading.CancellationToken).Assembly.Location),
+            
+            // JSON serialization references
+            MetadataReference.CreateFromFile(typeof(System.Text.Json.JsonSerializer).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.Text.Json.Serialization.JsonSerializerContext).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Newtonsoft.Json.JsonConvert).Assembly.Location),
             
             // AWS SDK references
             MetadataReference.CreateFromFile(typeof(Amazon.DynamoDBv2.Model.AttributeValue).Assembly.Location),

@@ -61,6 +61,21 @@ public static class MapperGenerator
         sb.AppendLine("using Amazon.DynamoDBv2.Model;");
         sb.AppendLine("using Oproto.FluentDynamoDb.Attributes;");
         sb.AppendLine("using Oproto.FluentDynamoDb.Storage;");
+        
+        // Add JSON serializer using statements if needed
+        var hasJsonBlobProperties = entity.Properties.Any(p => p.AdvancedType?.IsJsonBlob == true);
+        if (hasJsonBlobProperties)
+        {
+            if (entity.JsonSerializerInfo?.SerializerToUse == Analysis.JsonSerializerType.SystemTextJson)
+            {
+                sb.AppendLine("using System.Text.Json;");
+            }
+            else if (entity.JsonSerializerInfo?.SerializerToUse == Analysis.JsonSerializerType.NewtonsoftJson)
+            {
+                sb.AppendLine("using Newtonsoft.Json;");
+            }
+        }
+        
         sb.AppendLine();
 
         // Namespace declaration
@@ -511,10 +526,8 @@ public static class MapperGenerator
         sb.AppendLine($"                    // Step 1: Serialize property to JSON");
         if (serializerType == "SystemTextJson")
         {
-            // Use System.Text.Json with generated JsonSerializerContext
-            sb.AppendLine($"                    var json = System.Text.Json.JsonSerializer.Serialize(");
-            sb.AppendLine($"                        typedEntity.{propertyName},");
-            sb.AppendLine($"                        {entity.ClassName}JsonContext.Default.{baseType});");
+            // Use System.Text.Json (AOT-compatible when user provides JsonSerializerContext)
+            sb.AppendLine($"                    var json = System.Text.Json.JsonSerializer.Serialize(typedEntity.{propertyName});");
         }
         else if (serializerType == "NewtonsoftJson")
         {
@@ -703,10 +716,8 @@ public static class MapperGenerator
 
             if (serializerType == "SystemTextJson")
             {
-                // Use System.Text.Json with generated JsonSerializerContext
-                sb.AppendLine($"                    var json = System.Text.Json.JsonSerializer.Serialize(");
-                sb.AppendLine($"                        typedEntity.{propertyName},");
-                sb.AppendLine($"                        {entity.ClassName}JsonContext.Default.{baseType});");
+                // Use System.Text.Json (AOT-compatible when user provides JsonSerializerContext)
+                sb.AppendLine($"                    var json = System.Text.Json.JsonSerializer.Serialize(typedEntity.{propertyName});");
                 sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
             }
             else if (serializerType == "NewtonsoftJson")
@@ -738,10 +749,8 @@ public static class MapperGenerator
 
             if (serializerType == "SystemTextJson")
             {
-                // Use System.Text.Json with generated JsonSerializerContext
-                sb.AppendLine($"                var json = System.Text.Json.JsonSerializer.Serialize(");
-                sb.AppendLine($"                    typedEntity.{propertyName},");
-                sb.AppendLine($"                    {entity.ClassName}JsonContext.Default.{baseType});");
+                // Use System.Text.Json (AOT-compatible when user provides JsonSerializerContext)
+                sb.AppendLine($"                var json = System.Text.Json.JsonSerializer.Serialize(typedEntity.{propertyName});");
                 sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue {{ S = json }};");
             }
             else if (serializerType == "NewtonsoftJson")
@@ -828,10 +837,8 @@ public static class MapperGenerator
 
         if (serializerType == "SystemTextJson")
         {
-            // Use System.Text.Json with generated JsonSerializerContext
-            sb.AppendLine($"                        entity.{propertyName} = System.Text.Json.JsonSerializer.Deserialize(");
-            sb.AppendLine($"                            {propertyName.ToLowerInvariant()}Value.S,");
-            sb.AppendLine($"                            {entity.ClassName}JsonContext.Default.{baseType});");
+            // Use System.Text.Json (AOT-compatible when user provides JsonSerializerContext)
+            sb.AppendLine($"                        entity.{propertyName} = System.Text.Json.JsonSerializer.Deserialize<{baseType}>({propertyName.ToLowerInvariant()}Value.S);");
         }
         else if (serializerType == "NewtonsoftJson")
         {
@@ -1013,6 +1020,10 @@ public static class MapperGenerator
     {
         var baseElementType = GetBaseType(collectionElementType);
 
+        // Add comment for collection conversion
+        sb.AppendLine($"                // Convert collection {propertyName} to native DynamoDB type");
+        sb.AppendLine($"                // Convert {property.PropertyType} to DynamoDB List (L)");
+        
         // Use List (L) for all List types
         sb.AppendLine($"                item[\"{attributeName}\"] = new AttributeValue");
         sb.AppendLine("                {");
@@ -1436,10 +1447,8 @@ public static class MapperGenerator
         sb.AppendLine($"                        // Step 3: Deserialize JSON to property type");
         if (serializerType == "SystemTextJson")
         {
-            // Use System.Text.Json with generated JsonSerializerContext
-            sb.AppendLine($"                        entity.{propertyName} = System.Text.Json.JsonSerializer.Deserialize(");
-            sb.AppendLine("                            json,");
-            sb.AppendLine($"                            {entity.ClassName}JsonContext.Default.{baseType});");
+            // Use System.Text.Json (AOT-compatible when user provides JsonSerializerContext)
+            sb.AppendLine($"                        entity.{propertyName} = System.Text.Json.JsonSerializer.Deserialize<{baseType}>(json);");
         }
         else if (serializerType == "NewtonsoftJson")
         {
@@ -1659,7 +1668,7 @@ public static class MapperGenerator
             "double" or "System.Double" => "x => double.Parse(x.N)",
             "float" or "System.Single" => "x => float.Parse(x.N)",
             "decimal" or "System.Decimal" => "x => decimal.Parse(x.N)",
-            "bool" or "System.Boolean" => "x => x.BOOL",
+            "bool" or "System.Boolean" => "x => x.BOOL ?? false",
             "DateTime" or "System.DateTime" => "x => DateTime.Parse(x.S)",
             "DateTimeOffset" or "System.DateTimeOffset" => "x => DateTimeOffset.Parse(x.S)",
             "Guid" or "System.Guid" => "x => Guid.Parse(x.S)",
@@ -1682,7 +1691,7 @@ public static class MapperGenerator
             "double" or "System.Double" => $"double.Parse({valueExpression}.N)",
             "float" or "System.Single" => $"float.Parse({valueExpression}.N)",
             "decimal" or "System.Decimal" => $"decimal.Parse({valueExpression}.N)",
-            "bool" or "System.Boolean" => $"{valueExpression}.BOOL",
+            "bool" or "System.Boolean" => property.IsNullable ? $"{valueExpression}.BOOL" : $"{valueExpression}.BOOL ?? false",
             "DateTime" or "System.DateTime" => $"DateTime.Parse({valueExpression}.S)",
             "DateTimeOffset" or "System.DateTimeOffset" => $"DateTimeOffset.Parse({valueExpression}.S)",
             "Guid" or "System.Guid" => $"Guid.Parse({valueExpression}.S)",
