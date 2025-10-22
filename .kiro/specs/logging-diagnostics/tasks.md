@@ -189,14 +189,14 @@
     - Ensure scopes flow through to ILogger
     - _Requirements: 5.4_
 
-- [ ] 8. Add conditional compilation support
-  - [ ] 8.1 Wrap all generated logging code in #if !DISABLE_DYNAMODB_LOGGING
+- [x] 8. Add conditional compilation support
+  - [x] 8.1 Wrap all generated logging code in #if !DISABLE_DYNAMODB_LOGGING
     - Add conditional compilation directives around all logging calls
     - Ensure code compiles with and without the directive
     - Test that logging is completely removed when disabled
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
   
-  - [ ] 8.2 Update project templates to support conditional compilation
+  - [x] 8.2 Update project templates to support conditional compilation
     - Add example of defining DISABLE_DYNAMODB_LOGGING in .csproj
     - Document how to enable/disable logging per configuration
     - _Requirements: 10.1, 10.4_
