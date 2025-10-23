@@ -524,4 +524,102 @@ public static class DiagnosticDescriptors
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         description: "Custom types used with [DynamoDbMap] must be marked with [DynamoDbEntity] to generate the required mapping methods. This ensures AOT compatibility by avoiding reflection.");
+
+    // Projection Model Diagnostics (PROJ001-PROJ006, PROJ101-PROJ102)
+
+    /// <summary>
+    /// Error when a projection property does not exist on the source entity.
+    /// </summary>
+    public static readonly DiagnosticDescriptor ProjectionPropertyNotFound = new(
+        "PROJ001",
+        "Projection property not found",
+        "Property '{0}' on projection '{1}' does not exist on source entity '{2}'",
+        "DynamoDb.Projection",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "All properties in a projection model must exist on the source entity.");
+
+    /// <summary>
+    /// Error when a projection property type does not match the source entity property type.
+    /// </summary>
+    public static readonly DiagnosticDescriptor ProjectionPropertyTypeMismatch = new(
+        "PROJ002",
+        "Projection property type mismatch",
+        "Property '{0}' type '{1}' on projection '{2}' does not match source entity type '{3}'",
+        "DynamoDb.Projection",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Projection property types must match the corresponding source entity property types.");
+
+    /// <summary>
+    /// Error when the source entity type for a projection does not exist or is not a DynamoDB entity.
+    /// </summary>
+    public static readonly DiagnosticDescriptor InvalidProjectionSourceEntity = new(
+        "PROJ003",
+        "Invalid projection source entity",
+        "Source entity type '{0}' for projection '{1}' does not exist or is not a DynamoDB entity",
+        "DynamoDb.Projection",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Projection source entity must be a valid DynamoDB entity class.");
+
+    /// <summary>
+    /// Error when a projection class is not declared as partial.
+    /// </summary>
+    public static readonly DiagnosticDescriptor ProjectionMustBePartial = new(
+        "PROJ004",
+        "Projection must be partial",
+        "Projection class '{0}' must be declared as 'partial' to support source generation",
+        "DynamoDb.Projection",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Projection classes must be declared as partial to allow the source generator to add mapping code.");
+
+    /// <summary>
+    /// Error when [UseProjection] references a non-existent projection type.
+    /// </summary>
+    public static readonly DiagnosticDescriptor UseProjectionInvalidType = new(
+        "PROJ005",
+        "UseProjection references invalid type",
+        "UseProjection attribute on GSI '{0}' references non-existent or invalid projection type '{1}'",
+        "DynamoDb.Projection",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "UseProjection attribute must reference a valid projection model type.");
+
+    /// <summary>
+    /// Error when multiple conflicting [UseProjection] attributes are found for the same GSI.
+    /// </summary>
+    public static readonly DiagnosticDescriptor ConflictingUseProjection = new(
+        "PROJ006",
+        "Conflicting UseProjection attributes",
+        "GSI '{0}' has multiple conflicting UseProjection attributes specifying different projection types",
+        "DynamoDb.Projection",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "A GSI can only have one projection type constraint across all entities.");
+
+    /// <summary>
+    /// Warning when a projection includes all properties from the source entity.
+    /// </summary>
+    public static readonly DiagnosticDescriptor ProjectionIncludesAllProperties = new(
+        "PROJ101",
+        "Projection includes all properties",
+        "Projection '{0}' includes all properties from source entity '{1}'. Consider using the full entity type instead for better performance.",
+        "DynamoDb.Projection",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Projections that include all properties provide no optimization benefit over using the full entity type.");
+
+    /// <summary>
+    /// Warning when a projection has many properties which may impact performance.
+    /// </summary>
+    public static readonly DiagnosticDescriptor ProjectionHasManyProperties = new(
+        "PROJ102",
+        "Projection has many properties",
+        "Projection '{0}' has {1} properties which may impact performance. Consider reducing the number of projected properties.",
+        "DynamoDb.Projection",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Projections with many properties may not provide significant performance benefits.");
 }

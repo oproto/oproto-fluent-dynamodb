@@ -23,8 +23,18 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
                 transform: static (ctx, _) => GetEntityModel(ctx));
         // Note: We don't filter out null models here because we still need to report diagnostics
 
+        // Register syntax receiver for classes with DynamoDbProjection attribute
+        var projectionClasses = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (s, _) => IsDynamoDbProjection(s),
+                transform: static (ctx, _) => ctx);
+
+        // Combine entity and projection classes for processing
+        var combined = entityClasses.Collect()
+            .Combine(projectionClasses.Collect());
+
         // Register code generation
-        context.RegisterSourceOutput(entityClasses.Collect(), Execute);
+        context.RegisterSourceOutput(combined, Execute);
     }
 
     private static bool IsDynamoDbEntity(SyntaxNode node)
@@ -40,6 +50,20 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
                        attributeName.Contains("DynamoDbTableAttribute") ||
                        attributeName.Contains("DynamoDbEntity") ||
                        attributeName.Contains("DynamoDbEntityAttribute");
+            }));
+    }
+
+    private static bool IsDynamoDbProjection(SyntaxNode node)
+    {
+        if (node is not ClassDeclarationSyntax classDecl)
+            return false;
+
+        return classDecl.AttributeLists.Any(al =>
+            al.Attributes.Any(a =>
+            {
+                var attributeName = a.Name.ToString();
+                return attributeName.Contains("DynamoDbProjection") ||
+                       attributeName.Contains("DynamoDbProjectionAttribute");
             }));
     }
 
@@ -74,8 +98,16 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
         }
     }
 
-    private static void Execute(SourceProductionContext context, ImmutableArray<(EntityModel? Model, IReadOnlyList<Diagnostic> Diagnostics)> entities)
+    private static void Execute(
+        SourceProductionContext context,
+        (ImmutableArray<(EntityModel? Model, IReadOnlyList<Diagnostic> Diagnostics)> Entities,
+         ImmutableArray<GeneratorSyntaxContext> ProjectionContexts) input)
     {
+        var (entities, projectionContexts) = input;
+
+        // First, process all entities and collect valid entity models
+        var validEntityModels = new List<EntityModel>();
+
         foreach (var (entity, diagnostics) in entities)
         {
             // Report diagnostics
@@ -85,6 +117,8 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
             }
 
             if (entity == null) continue;
+
+            validEntityModels.Add(entity);
 
             // Check if this is a nested entity (DynamoDbEntity) vs a table entity (DynamoDbTable)
             var isNestedEntity = entity.TableName?.StartsWith("_entity_") == true;
@@ -103,6 +137,51 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
             // Generate optimized entity implementation with mapping methods
             var sourceCode = GenerateOptimizedEntityImplementation(entity);
             context.AddSource($"{entity.ClassName}.g.cs", sourceCode);
+        }
+
+        // Now process projection models
+        foreach (var projectionContext in projectionContexts)
+        {
+            if (projectionContext.Node is not ClassDeclarationSyntax classDecl)
+                continue;
+
+            try
+            {
+                var analyzer = new ProjectionModelAnalyzer();
+                var projectionModel = analyzer.AnalyzeProjection(
+                    classDecl,
+                    projectionContext.SemanticModel,
+                    validEntityModels);
+
+                // Report diagnostics
+                foreach (var diagnostic in analyzer.Diagnostics)
+                {
+                    context.ReportDiagnostic(diagnostic);
+                }
+
+                if (projectionModel == null)
+                    continue;
+
+                // TODO: Generate projection code in later tasks
+                // For now, we just validate and report diagnostics
+            }
+            catch (Exception ex)
+            {
+                // Create a diagnostic for the exception to help with debugging
+                var diagnostic = Diagnostic.Create(
+                    new DiagnosticDescriptor(
+                        "DYNDB999",
+                        "Source generator error",
+                        "Source generator failed to analyze projection '{0}': {1}",
+                        "DynamoDb",
+                        DiagnosticSeverity.Error,
+                        isEnabledByDefault: true),
+                    classDecl.Identifier.GetLocation(),
+                    classDecl.Identifier.ValueText,
+                    ex.Message);
+
+                context.ReportDiagnostic(diagnostic);
+            }
         }
     }
 
