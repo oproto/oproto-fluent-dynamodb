@@ -94,7 +94,7 @@
   - Test format string integration with other fluent methods
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 7. Update source generator tests
+- [x] 7. Update source generator tests
   - Test generator produces correct Get/Update/Delete overloads for single-key tables
   - Test generator produces correct Get/Update/Delete overloads for composite-key tables
   - Test generator creates index definitions with key names
@@ -102,20 +102,29 @@
   - Test edge cases (no keys, multiple indexes, etc.)
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 9.1, 9.2, 9.3, 9.4_
 
-- [ ] 9. Update documentation and examples
-  - [ ] 9.1 Update XML documentation for new methods
+- [x] 9. Update documentation and examples
+  - [x] 9.1 Update XML documentation for new methods
     - Add comprehensive XML docs to Query(), Query(expression, params)
     - Document virtual Get(), Update(), Delete() methods
     - Add examples showing method-based usage patterns
     - Document Query expression parameter syntax
     - _Requirements: 8.1, 8.2, 8.4_
 
-  - [ ] 9.2 Update code examples in documentation
+  - [x] 9.2 Update code examples in documentation
     - Update examples to use method-based API
     - Show Query(expression, params) usage patterns
     - Demonstrate Get/Update/Delete with key parameters
     - Include index Query overload examples
     - _Requirements: 8.1, 8.2, 8.3_
+
+- [x] 8. Fix source generator unit tests expecting additional Table file
+  - Update all tests expecting 3 generated files to expect 4 (Fields, Keys, Entity, Table)
+  - Update tests expecting 5 files for entities with GSI (Fields with GSI classes, Keys, Entity, Table)
+  - Update tests expecting 30 files for multiple entities to expect 40 (10 entities × 4 files each)
+  - Fix EdgeCaseTests that verify generated file count
+  - Fix Integration EndToEndSourceGeneratorTests that verify generated file count
+  - Fix Performance SourceGeneratorPerformanceTests that verify generated file count
+  - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
 - [ ] 10. Update RealworldExample code
   - Update TransactionsTable to use method-based API

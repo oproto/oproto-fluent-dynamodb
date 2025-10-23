@@ -161,7 +161,7 @@ public class EcommerceService
             EmailGsi = email
         };
 
-        await _table.Put
+        await _table.Put()
             .WithItem(customer)
             .Where($"attribute_not_exists({CustomerFields.Pk})")
             .ExecuteAsync();
@@ -171,7 +171,7 @@ public class EcommerceService
 
     public async Task<Customer?> GetCustomerByEmailAsync(string email)
     {
-        var customers = await _table.Query
+        var customers = await _table.Query()
             .FromIndex("EmailIndex")
             .Where($"{CustomerFields.EmailIndex.EmailGsi} = {{0}}", email)
             .ToListAsync<Customer>();
@@ -196,7 +196,7 @@ public class EcommerceService
             Items = items
         };
 
-        await _table.Put
+        await _table.Put()
             .WithItem(order)
             .ExecuteAsync();
 
@@ -206,14 +206,14 @@ public class EcommerceService
     public async Task<Order?> GetOrderAsync(string orderId)
     {
         // Query returns order with all related items, payments, and shipment
-        return await _table.Query
+        return await _table.Query()
             .Where($"{OrderFields.Pk} = {{0}}", OrderKeys.Pk(orderId))
             .ToCompositeEntityAsync<Order>();
     }
 
     public async Task<List<Order>> GetCustomerOrdersAsync(string customerId, int limit = 50)
     {
-        return await _table.Query
+        return await _table.Query()
             .FromIndex("CustomerOrderIndex")
             .Where($"{OrderFields.CustomerOrderIndex.CustomerGsi} = {{0}}", $"CUSTOMER#{customerId}")
             .WithScanIndexForward(false) // Most recent first
@@ -237,7 +237,7 @@ public class EcommerceService
             order.Status = "paid";
         }
 
-        await _table.Put
+        await _table.Put()
             .WithItem(order)
             .ExecuteAsync();
 
@@ -253,7 +253,7 @@ public class EcommerceService
         order.Shipment = shipment;
         order.Status = "shipped";
 
-        await _table.Put
+        await _table.Put()
             .WithItem(order)
             .ExecuteAsync();
 
@@ -269,7 +269,7 @@ public class EcommerceService
 
     public async Task<Dictionary<string, int>> GetOrderStatusSummaryAsync()
     {
-        var allOrders = await _table.AsScannable().Scan
+        var allOrders = await _table.AsScannable().Scan()
             .WithFilter($"{OrderFields.Sk} = {{0}}", "ORDER")
             .ToListAsync<Order>();
 
@@ -367,7 +367,7 @@ public class TenantResourceService
             CreatedAtGsi = DateTime.UtcNow
         };
 
-        await _table.Put
+        await _table.Put()
             .WithClient(scopedClient)
             .WithItem(resource)
             .Where($"attribute_not_exists({TenantResourceFields.Pk})")
@@ -384,7 +384,7 @@ public class TenantResourceService
     {
         var scopedClient = await _stsService.CreateClientForTenantAsync(tenantId, user.Claims);
 
-        var response = await _table.Get
+        var response = await _table.Get()
             .WithClient(scopedClient)
             .WithKey(TenantResourceFields.Pk, TenantResourceKeys.Pk(tenantId, resourceType))
             .WithKey(TenantResourceFields.Sk, TenantResourceKeys.Sk(resourceId))
@@ -400,7 +400,7 @@ public class TenantResourceService
     {
         var scopedClient = await _stsService.CreateClientForTenantAsync(tenantId, user.Claims);
 
-        return await _table.Query
+        return await _table.Query()
             .WithClient(scopedClient)
             .Where($"{TenantResourceFields.Pk} = {{0}}", TenantResourceKeys.Pk(tenantId, resourceType))
             .ToListAsync<TenantResource>();
@@ -416,7 +416,7 @@ public class TenantResourceService
             throw new UnauthorizedAccessException("System admin role required");
         }
 
-        return await _table.Query
+        return await _table.Query()
             .FromIndex("ResourceTypeIndex")
             .Where($"{TenantResourceFields.ResourceTypeIndex.ResourceTypeGsi} = {{0}}", resourceType)
             .WithScanIndexForward(false)
@@ -494,7 +494,7 @@ public class MetricsService
             Tags = tags ?? new Dictionary<string, string>()
         };
 
-        await _table.Put
+        await _table.Put()
             .WithItem(metric)
             .ExecuteAsync();
     }
@@ -508,7 +508,7 @@ public class MetricsService
         var startKey = MetricDataKeys.Sk(startTime, "");
         var endKey = MetricDataKeys.Sk(endTime, "~"); // "~" sorts after all instance IDs
 
-        return await _table.Query
+        return await _table.Query()
             .Where($"{MetricDataFields.Pk} = {{0}} AND {MetricDataFields.Sk} BETWEEN {{1}} AND {{2}}",
                    MetricDataKeys.Pk(serviceName, metricName), startKey, endKey)
             .ToListAsync<MetricData>();
@@ -519,7 +519,7 @@ public class MetricsService
         string metricName,
         int count = 100)
     {
-        return await _table.Query
+        return await _table.Query()
             .Where($"{MetricDataFields.Pk} = {{0}}", MetricDataKeys.Pk(serviceName, metricName))
             .WithScanIndexForward(false) // Descending order
             .WithLimit(count)
@@ -697,7 +697,7 @@ public class ArticleService
             }
         };
 
-        await _table.Put
+        await _table.Put()
             .WithItem(article)
             .ExecuteAsync();
 
@@ -707,14 +707,14 @@ public class ArticleService
     public async Task<Article?> GetArticleAsync(string articleId)
     {
         // Returns article with all versions, comments, and metadata
-        return await _table.Query
+        return await _table.Query()
             .Where($"{ArticleFields.Pk} = {{0}}", ArticleKeys.Pk(articleId))
             .ToCompositeEntityAsync<Article>();
     }
 
     public async Task<List<Article>> GetAuthorArticlesAsync(string authorId)
     {
-        return await _table.Query
+        return await _table.Query()
             .FromIndex("AuthorIndex")
             .Where($"{ArticleFields.AuthorIndex.AuthorGsi} = {{0}}", $"AUTHOR#{authorId}")
             .WithScanIndexForward(false)
@@ -748,7 +748,7 @@ public class ArticleService
         article.Versions ??= new List<ArticleVersion>();
         article.Versions.Add(newVersion);
 
-        await _table.Put
+        await _table.Put()
             .WithItem(article)
             .ExecuteAsync();
 
@@ -764,7 +764,7 @@ public class ArticleService
         article.Status = "published";
         article.PublishedAt = DateTime.UtcNow;
 
-        await _table.Put
+        await _table.Put()
             .WithItem(article)
             .ExecuteAsync();
 
@@ -793,7 +793,7 @@ public class ArticleService
         article.Comments ??= new List<Comment>();
         article.Comments.Add(comment);
 
-        await _table.Put
+        await _table.Put()
             .WithItem(article)
             .ExecuteAsync();
 
@@ -802,7 +802,7 @@ public class ArticleService
 
     public async Task IncrementViewCountAsync(string articleId)
     {
-        await _table.Update
+        await _table.Update()
             .WithKey(ArticleFields.Pk, ArticleKeys.Pk(articleId))
             .WithKey(ArticleFields.Sk, "METADATA")
             .Set($"ADD view_count {{0}}", 1)

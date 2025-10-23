@@ -38,7 +38,7 @@ namespace TestNamespace
         // Assert
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var entityCode = GetGeneratedSource(result, "EmptyEntity.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
@@ -83,7 +83,7 @@ namespace TestNamespace
         // Assert
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var fieldsCode = GetGeneratedSource(result, "SpecialCharsEntityFields.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(fieldsCode, source);
@@ -139,7 +139,7 @@ namespace TestNamespace
         // Should generate warnings for reserved words only
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warnings
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var fieldsCode = GetGeneratedSource(result, "ReservedKeywordsEntityFields.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(fieldsCode, source);
@@ -187,7 +187,7 @@ namespace TestNamespace
         // Assert
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var fieldsCode = GetGeneratedSource(result, "LongNamesEntityFields.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(fieldsCode, source);
@@ -225,7 +225,7 @@ namespace Very.Deeply.Nested.Namespace.Structure
         // Should generate warnings for reserved word "name" only
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warning for "name"
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var entityCode = GetGeneratedSource(result, "NestedNamespaceEntity.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
@@ -271,7 +271,7 @@ namespace TestNamespace
         // Should generate warnings for complex collection types
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warning for complex collections
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var entityCode = GetGeneratedSource(result, "GenericConstraintsEntity.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
@@ -315,7 +315,7 @@ namespace TestNamespace
 
         // Assert
         // Should generate code gracefully even with circular references
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var entityCode = GetGeneratedSource(result, "CircularRefEntity.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);
@@ -359,7 +359,7 @@ namespace TestNamespace
         // Assert
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var fieldsCode = GetGeneratedSource(result, "UnicodeEntityFields.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(fieldsCode, source);
@@ -409,7 +409,7 @@ namespace TestNamespace
         // Should generate warning for reserved word "region"
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warning for "region"
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(5); // Fields, Keys, Entity, Table, Table.Indexes (has GSI)
 
         var keysCode = GetGeneratedSource(result, "ComplexKeyFormatsEntityKeys.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(keysCode, source);
@@ -453,7 +453,7 @@ namespace TestNamespace
         // Assert
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var fieldsCode = GetGeneratedSource(result, "EmptyAttributesEntityFields.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(fieldsCode, source);
@@ -497,7 +497,7 @@ namespace TestNamespace
         // Assert
         // Should generate code without any diagnostics for basic entity
         result.Diagnostics.Should().BeEmpty();
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var fieldsCode = GetGeneratedSource(result, "DuplicateAttributesEntityFields.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(fieldsCode, source);
@@ -566,7 +566,7 @@ namespace TestNamespace
         // May generate warnings about overly broad patterns and performance issues
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warnings for collections
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         var entityCode = GetGeneratedSource(result, "ComplexPatternsEntity.g.cs");
         CompilationVerifier.AssertGeneratedCodeCompiles(entityCode, source);

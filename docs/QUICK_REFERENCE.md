@@ -261,12 +261,12 @@ var table = new DynamoDbTableBase(client, "table-name");
 
 ```csharp
 // Simple put
-await table.Put
+await table.Put()
     .WithItem(entity)
     .ExecuteAsync();
 
 // Conditional put
-await table.Put
+await table.Put()
     .WithItem(entity)
     .Where($"{EntityFields.Status} = {{0}}", "draft")
     .ExecuteAsync();
@@ -278,12 +278,12 @@ await table.Put
 
 ```csharp
 // Get by partition key only
-var response = await table.Get
+var response = await table.Get()
     .WithKey(EntityFields.Id, EntityKeys.Pk("id123"))
     .ExecuteAsync<Entity>();
 
 // Get by partition and sort key
-var response = await table.Get
+var response = await table.Get()
     .WithKey(EntityFields.PartitionKey, EntityKeys.Pk("pk123"))
     .WithKey(EntityFields.SortKey, EntityKeys.Sk("sk456"))
     .ExecuteAsync<Entity>();
@@ -301,20 +301,20 @@ if (response.IsSuccess)
 
 ```csharp
 // SET expression
-await table.Update
+await table.Update()
     .WithKey(EntityFields.Id, EntityKeys.Pk("id123"))
     .Set($"SET {EntityFields.Name} = {{0}}, {EntityFields.UpdatedAt} = {{1:o}}", 
          "New Name", DateTime.UtcNow)
     .ExecuteAsync();
 
 // ADD expression (increment)
-await table.Update
+await table.Update()
     .WithKey(EntityFields.Id, EntityKeys.Pk("id123"))
     .Set($"ADD {EntityFields.ViewCount} {{0}}", 1)
     .ExecuteAsync();
 
 // REMOVE expression
-await table.Update
+await table.Update()
     .WithKey(EntityFields.Id, EntityKeys.Pk("id123"))
     .Set($"REMOVE {EntityFields.TempField}")
     .ExecuteAsync();
@@ -326,12 +326,12 @@ await table.Update
 
 ```csharp
 // Simple delete
-await table.Delete
+await table.Delete()
     .WithKey(EntityFields.Id, EntityKeys.Pk("id123"))
     .ExecuteAsync();
 
 // Conditional delete
-await table.Delete
+await table.Delete()
     .WithKey(EntityFields.Id, EntityKeys.Pk("id123"))
     .Where($"{EntityFields.Status} = {{0}}", "inactive")
     .ExecuteAsync();
@@ -347,12 +347,12 @@ await table.Delete
 
 ```csharp
 // Query by partition key
-var response = await table.Query
+var response = await table.Query()
     .Where($"{EntityFields.PartitionKey} = {{0}}", EntityKeys.Pk("pk123"))
     .ExecuteAsync<Entity>();
 
 // Query with sort key condition
-var response = await table.Query
+var response = await table.Query()
     .Where($"{EntityFields.PartitionKey} = {{0}} AND {EntityFields.SortKey} = {{1}}", 
            EntityKeys.Pk("pk123"), EntityKeys.Sk("sk456"))
     .ExecuteAsync<Entity>();
@@ -363,7 +363,7 @@ var response = await table.Query
 ### Query with Filter
 
 ```csharp
-var response = await table.Query
+var response = await table.Query()
     .Where($"{EntityFields.PartitionKey} = {{0}}", EntityKeys.Pk("pk123"))
     .Where($"{EntityFields.Status} = {{0}}", "active")
     .ExecuteAsync<Entity>();
@@ -374,7 +374,7 @@ var response = await table.Query
 ### Query with Pagination
 
 ```csharp
-var response = await table.Query
+var response = await table.Query()
     .Where($"{EntityFields.PartitionKey} = {{0}}", EntityKeys.Pk("pk123"))
     .Take(20)
     .ExecuteAsync<Entity>();
@@ -382,7 +382,7 @@ var response = await table.Query
 // Next page
 if (response.LastEvaluatedKey != null)
 {
-    var nextPage = await table.Query
+    var nextPage = await table.Query()
         .Where($"{EntityFields.PartitionKey} = {{0}}", EntityKeys.Pk("pk123"))
         .Take(20)
         .WithExclusiveStartKey(response.LastEvaluatedKey)
@@ -395,7 +395,7 @@ if (response.LastEvaluatedKey != null)
 ### Query GSI
 
 ```csharp
-var response = await table.Query
+var response = await table.Query()
     .WithIndex(EntityIndexes.IndexName)
     .Where($"{EntityFields.GsiPartitionKey} = {{0}}", "value")
     .ExecuteAsync<Entity>();
@@ -406,7 +406,7 @@ var response = await table.Query
 ### Scan (Use Sparingly)
 
 ```csharp
-var response = await table.Scan
+var response = await table.Scan()
     .Where($"{EntityFields.Status} = {{0}}", "active")
     .ExecuteAsync<Entity>();
 ```
@@ -582,7 +582,7 @@ public DateTime CreatedAt { get; set; }
 ### Query GSI
 
 ```csharp
-var response = await table.Query
+var response = await table.Query()
     .WithIndex(EntityIndexes.StatusIndex)
     .Where($"{EntityFields.Status} = {{0}}", "active")
     .ExecuteAsync<Entity>();
@@ -647,7 +647,7 @@ public partial class Customer
 
 ```csharp
 // Query all items for the partition key
-var response = await table.Query
+var response = await table.Query()
     .Where($"{OrderFields.OrderId} = {{0}}", OrderKeys.Pk("order123"))
     .ExecuteAsync<Order>();
 
@@ -738,7 +738,7 @@ var scopedClient = new AmazonDynamoDBClient(
 ### Use Custom Client
 
 ```csharp
-var response = await table.Get
+var response = await table.Get()
     .WithClient(scopedClient)
     .WithKey(EntityFields.Id, EntityKeys.Pk("id123"))
     .ExecuteAsync<Entity>();
@@ -764,7 +764,7 @@ await batchBuilder.ExecuteAsync();
 // ❌ Avoid - multiple individual requests
 foreach (var entity in entities)
 {
-    await table.Put.WithItem(entity).ExecuteAsync();
+    await table.Put().WithItem(entity).ExecuteAsync();
 }
 ```
 
@@ -774,7 +774,7 @@ foreach (var entity in entities)
 
 ```csharp
 // ✅ Good - only retrieve needed attributes
-var response = await table.Query
+var response = await table.Query()
     .Where($"{EntityFields.PartitionKey} = {{0}}", EntityKeys.Pk("pk123"))
     .WithProjectionExpression($"{EntityFields.Id}, {EntityFields.Name}")
     .ExecuteAsync<Entity>();
@@ -786,12 +786,12 @@ var response = await table.Query
 
 ```csharp
 // Eventually consistent (default) - uses half the RCUs
-var response = await table.Get
+var response = await table.Get()
     .WithKey(EntityFields.Id, EntityKeys.Pk("id123"))
     .ExecuteAsync<Entity>();
 
 // Strongly consistent - uses double the RCUs
-var response = await table.Get
+var response = await table.Get()
     .WithKey(EntityFields.Id, EntityKeys.Pk("id123"))
     .UsingConsistentRead()
     .ExecuteAsync<Entity>();

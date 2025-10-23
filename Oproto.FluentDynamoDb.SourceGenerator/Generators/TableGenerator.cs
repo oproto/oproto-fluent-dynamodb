@@ -33,6 +33,7 @@ public static class TableGenerator
         sb.AppendLine("using Amazon.DynamoDBv2;");
         sb.AppendLine("using Oproto.FluentDynamoDb.Logging;");
         sb.AppendLine("using Oproto.FluentDynamoDb.Requests;");
+        sb.AppendLine("using Oproto.FluentDynamoDb.Requests.Extensions;");
         sb.AppendLine("using Oproto.FluentDynamoDb.Storage;");
         sb.AppendLine();
         

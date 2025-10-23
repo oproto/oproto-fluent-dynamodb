@@ -43,7 +43,7 @@ namespace TestNamespace
         // Should generate code with DYNDB021 warning for reserved word "name"
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warning for "name"
-        result.GeneratedSources.Should().HaveCount(3); // Entity + Fields + Keys
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
 
         // Check entity implementation
         var entityCode = result.GeneratedSources.First(s => s.FileName.Contains("TestEntity.g.cs")).SourceText.ToString();
@@ -119,7 +119,7 @@ namespace TestNamespace
         // Assert
         // Should generate code without any diagnostics for GSI entity
         result.Diagnostics.Should().BeEmpty();
-        result.GeneratedSources.Should().HaveCount(3); // Entity + Fields + Keys
+        result.GeneratedSources.Should().HaveCount(5); // Fields, Keys, Entity, Table, Table.Indexes (has GSI)
 
         var fieldsCode = result.GeneratedSources.First(s => s.FileName.Contains("TestEntityFields.g.cs")).SourceText.ToString();
         CompilationVerifier.AssertGeneratedCodeCompiles(fieldsCode, source);

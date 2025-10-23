@@ -141,12 +141,12 @@ var transaction = new Transaction
 };
 
 // Put item using generated mapping
-await table.Put
+await table.Put()
     .WithItem(transaction)
     .ExecuteAsync();
 
 // Get item with strongly-typed response
-var response = await table.Get
+var response = await table.Get()
     .WithKey(TransactionFields.TenantId, TransactionKeys.Pk("tenant123"))
     .WithKey(TransactionFields.TransactionId, TransactionKeys.Sk("txn456"))
     .ExecuteAsync<Transaction>();
@@ -161,7 +161,7 @@ if (response.Item != null)
 
 ```csharp
 // Query with strongly-typed results
-var queryResponse = await table.Query
+var queryResponse = await table.Query()
     .Where($"{TransactionFields.TenantId} = :pk", new { pk = TransactionKeys.Pk("tenant123") })
     .ExecuteAsync<Transaction>();
 
@@ -175,7 +175,7 @@ foreach (var transaction in queryResponse.Items)
 
 ```csharp
 // Query GSI using generated field constants and key builders
-var statusResponse = await table.Query
+var statusResponse = await table.Query()
     .FromIndex("StatusIndex")
     .Where($"{TransactionFields.StatusIndex.Status} = :status", 
            new { status = TransactionKeys.StatusIndex.Pk("pending") })
@@ -205,7 +205,7 @@ public partial class TransactionWithEntries
 }
 
 // Query automatically groups items by partition key
-var response = await table.Query
+var response = await table.Query()
     .Where($"{TransactionWithEntriesFields.TenantId} = :pk", 
            new { pk = TransactionWithEntriesKeys.Pk("tenant123") })
     .ExecuteAsync<TransactionWithEntries>();
@@ -254,7 +254,7 @@ public class TransactionService
         var scopedClient = await _stsService.CreateClientForTenant(tenantId, user.Claims);
 
         // Use scoped client for the operation
-        var response = await _table.Get
+        var response = await _table.Get()
             .WithClient(scopedClient)
             .WithKey(TransactionFields.TenantId, TransactionKeys.Pk(tenantId))
             .WithKey(TransactionFields.TransactionId, TransactionKeys.Sk(transactionId))
@@ -277,7 +277,7 @@ dotnet add package Oproto.FluentDynamoDb.FluentResults
 using Oproto.FluentDynamoDb.FluentResults;
 
 // Returns Result<GetItemResponse<Transaction>> instead of throwing exceptions
-var result = await table.Get
+var result = await table.Get()
     .WithKey(TransactionFields.TenantId, TransactionKeys.Pk("tenant123"))
     .WithKey(TransactionFields.TransactionId, TransactionKeys.Sk("txn456"))
     .ExecuteAsync<Transaction>();

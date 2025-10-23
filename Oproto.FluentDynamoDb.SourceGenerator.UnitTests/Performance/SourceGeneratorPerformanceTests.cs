@@ -27,7 +27,7 @@ public class SourceGeneratorPerformanceTests
         // Should generate warnings for reserved words only
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warnings for "name", "count"
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000, "Single entity generation should complete within 1 second");
     }
 
@@ -51,7 +51,7 @@ public class SourceGeneratorPerformanceTests
         // Should generate warnings for reserved words and scalability for each entity
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warnings
-        result.GeneratedSources.Should().HaveCount(30); // 3 files per entity * 10 entities
+        result.GeneratedSources.Should().HaveCount(40); // 4 files per entity * 10 entities (Fields, Keys, Entity, Table)
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(5000, "Multiple entity generation should complete within 5 seconds");
     }
 
@@ -72,7 +72,7 @@ public class SourceGeneratorPerformanceTests
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warnings for "name", "status"
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warnings for collections
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB009"); // Unsupported type warnings for complex objects
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(5); // Fields, Keys, Entity, Table, Table.Indexes (has GSI)
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(2000, "Complex entity generation should complete within 2 seconds");
     }
 
@@ -91,7 +91,7 @@ public class SourceGeneratorPerformanceTests
         // Should generate warnings for too many attributes and scalability
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB029"); // Too many attributes warning
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(3000, "Entity with many properties should complete within 3 seconds");
 
         // Verify all properties are included
@@ -114,7 +114,7 @@ public class SourceGeneratorPerformanceTests
         // Assert
         // Note: DYNDB027 scalability warnings were removed in Task 39 as they cannot be
         // accurately detected at compile time. This test now focuses on performance only.
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(5); // Fields, Keys, Entity, Table, Table.Indexes (has GSI)
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(3000, "Entity with many GSIs should complete within 3 seconds");
 
         // Verify all GSIs are included in generated code
@@ -142,7 +142,7 @@ public class SourceGeneratorPerformanceTests
         // Should generate performance warnings for collection properties but still produce code
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB023"); // Performance warnings for collections
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(4000, "Entity with many related entities should complete within 4 seconds");
 
         // Verify related entities are included in generated code structure
@@ -199,7 +199,7 @@ public class SourceGeneratorPerformanceTests
         // Should generate warnings for reserved word "name" and scalability
         result.Diagnostics.Should().NotBeEmpty();
         result.Diagnostics.Should().Contain(d => d.Id == "DYNDB021"); // Reserved word warning for "name"
-        result.GeneratedSources.Should().HaveCount(3);
+        result.GeneratedSources.Should().HaveCount(4); // Fields, Keys, Entity, Table
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(3000, "Large source file should be processed within 3 seconds");
     }
 

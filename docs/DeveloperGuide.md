@@ -258,18 +258,18 @@ The library supports string.Format-style parameter syntax for concise, readable 
 
 ```csharp
 // Basic query with format strings
-var response = await table.Query
+var response = await table.Query()
     .Where($"{UserFields.UserId} = {{0}}", UserKeys.Pk("user123"))
     .ToListAsync<User>();
 
 // Date range query with format specifiers
-var response = await table.Query
+var response = await table.Query()
     .Where($"{UserFields.UserId} = {{0}} AND {UserFields.CreatedAt} BETWEEN {{1:o}} AND {{2:o}}", 
            UserKeys.Pk("user123"), DateTime.UtcNow.AddDays(-30), DateTime.UtcNow)
     .ToListAsync<User>();
 
 // Update with format strings
-await table.Update
+await table.Update()
     .WithKey(UserFields.UserId, UserKeys.Pk("user123"))
     .Set($"SET {UserFields.Name} = {{0}}, {UserFields.UpdatedAt} = {{1:o}}", 
          "New Name", DateTime.UtcNow)
@@ -294,12 +294,12 @@ var user = new User
     CreatedAt = DateTime.UtcNow
 };
 
-await table.Put
+await table.Put()
     .WithItem(user)
     .ExecuteAsync();
 
 // Read
-var response = await table.Get
+var response = await table.Get()
     .WithKey(UserFields.UserId, UserKeys.Pk("user123"))
     .ExecuteAsync<User>();
 
@@ -309,13 +309,13 @@ if (response.Item != null)
 }
 
 // Update with format strings
-await table.Update
+await table.Update()
     .WithKey(UserFields.UserId, UserKeys.Pk("user123"))
     .Set($"SET {UserFields.Name} = {{0}}", "Jane Doe")
     .ExecuteAsync();
 
 // Delete
-await table.Delete
+await table.Delete()
     .WithKey(UserFields.UserId, UserKeys.Pk("user123"))
     .ExecuteAsync();
 ```
@@ -326,14 +326,14 @@ await table.Delete
 
 #### Basic Query
 ```csharp
-var queryResponse = await table.Query
+var queryResponse = await table.Query()
     .Where($"{UserFields.UserId} = {{0}}", UserKeys.Pk("user123"))
     .ToListAsync<User>();
 ```
 
 #### GSI Query
 ```csharp
-var productsByStatus = await table.Query
+var productsByStatus = await table.Query()
     .FromIndex("StatusIndex")
     .Where($"{ProductFields.StatusIndex.Status} = {{0}}", "active")
     .ToListAsync<Product>();
@@ -341,7 +341,7 @@ var productsByStatus = await table.Query
 
 #### Range Queries
 ```csharp
-var recentProducts = await table.Query
+var recentProducts = await table.Query()
     .Where($"{ProductFields.ProductId} = {{0}} AND {ProductFields.CreatedDate} > {{1:o}}", 
            ProductKeys.Pk("PROD123"), DateTime.UtcNow.AddDays(-30))
     .ToListAsync<Product>();
@@ -411,7 +411,7 @@ public partial class TransactionWithEntries
 }
 
 // Query automatically groups items by partition key
-var transaction = await table.Query
+var transaction = await table.Query()
     .Where($"{TransactionWithEntriesFields.TransactionId} = {{0}}", 
            TransactionWithEntriesKeys.Pk("txn123"))
     .ToCompositeEntityAsync<TransactionWithEntries>();
@@ -450,7 +450,7 @@ public partial class OrderWithRelated
 }
 
 // Query brings back all related data
-var order = await table.Query
+var order = await table.Query()
     .Where($"{OrderWithRelatedFields.OrderId} = {{0}}", 
            OrderWithRelatedKeys.Pk("order123"))
     .ToCompositeEntityAsync<OrderWithRelated>();
@@ -462,13 +462,13 @@ See [Composite Entities](advanced-topics/CompositeEntities.md) for detailed docu
 
 ```csharp
 // Conditional put (only if item doesn't exist)
-await table.Put
+await table.Put()
     .WithItem(user)
     .Where($"attribute_not_exists({{0}})", UserFields.UserId)
     .ExecuteAsync();
 
 // Conditional update with version check
-await table.Update
+await table.Update()
     .WithKey(UserFields.UserId, UserKeys.Pk("user123"))
     .Set($"SET {UserFields.Name} = {{0}}", "New Name")
     .Where($"{UserFields.Version} = {{0}}", currentVersion)
@@ -562,7 +562,7 @@ await new TransactWriteItemsRequestBuilder(dynamoDbClient)
    ```csharp
    try
    {
-       await table.Put
+       await table.Put()
            .WithItem(user)
            .WithConditionExpression($"attribute_not_exists({UserFields.UserId})")
            .ExecuteAsync();
@@ -580,7 +580,7 @@ await new TransactWriteItemsRequestBuilder(dynamoDbClient)
        throw new ArgumentException("UserId is required");
    }
    
-   await table.Put.WithItem(user).ExecuteAsync();
+   await table.Put().WithItem(user).ExecuteAsync();
    ```
 
 ## Performance Considerations
@@ -610,7 +610,7 @@ var config = new AmazonDynamoDBConfig
 };
 
 // Monitor consumed capacity
-var response = await table.Query
+var response = await table.Query()
     .Where($"{UserFields.UserId} = :pk", new { pk = UserKeys.Pk("user123") })
     .WithReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
     .ToListAsync<User>();
