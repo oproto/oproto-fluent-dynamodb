@@ -281,14 +281,12 @@ public class TransactionsTable : DynamoDbTableBase
 ```csharp
 /// <summary>
 /// Represents a DynamoDB Global Secondary Index (GSI) or Local Secondary Index (LSI).
-/// Provides method-based access to query operations with optional key pre-configuration.
+/// Provides method-based access to query operations using expression strings.
 /// </summary>
 public class DynamoDbIndex
 {
     private readonly DynamoDbTableBase _table;
     private readonly string? _projectionExpression;
-    private readonly string? _partitionKeyName;
-    private readonly string? _sortKeyName;
 
     /// <summary>
     /// Initializes a new instance of the DynamoDbIndex.
@@ -300,8 +298,6 @@ public class DynamoDbIndex
         _table = table;
         Name = indexName;
         _projectionExpression = null;
-        _partitionKeyName = null;
-        _sortKeyName = null;
     }
 
     /// <summary>
@@ -315,30 +311,6 @@ public class DynamoDbIndex
         _table = table;
         Name = indexName;
         _projectionExpression = projectionExpression;
-        _partitionKeyName = null;
-        _sortKeyName = null;
-    }
-    
-    /// <summary>
-    /// Initializes a new instance of the DynamoDbIndex with key names for method-based queries.
-    /// </summary>
-    /// <param name="table">The parent table that contains this index.</param>
-    /// <param name="indexName">The name of the index as defined in DynamoDB.</param>
-    /// <param name="partitionKeyName">The partition key attribute name for this index.</param>
-    /// <param name="sortKeyName">The sort key attribute name for this index (optional).</param>
-    /// <param name="projectionExpression">The projection expression to automatically apply to queries (optional).</param>
-    public DynamoDbIndex(
-        DynamoDbTableBase table, 
-        string indexName, 
-        string partitionKeyName, 
-        string? sortKeyName = null,
-        string? projectionExpression = null)
-    {
-        _table = table;
-        Name = indexName;
-        _partitionKeyName = partitionKeyName;
-        _sortKeyName = sortKeyName;
-        _projectionExpression = projectionExpression;
     }
 
     public string Name { get; private init; }
@@ -351,8 +323,7 @@ public class DynamoDbIndex
     /// <example>
     /// <code>
     /// var results = await index.Query()
-    ///     .Where("gsi1pk = :pk")
-    ///     .WithValue(":pk", "STATUS#ACTIVE")
+    ///     .Where("gsi1pk = {0}", "STATUS#ACTIVE")
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
@@ -371,52 +342,33 @@ public class DynamoDbIndex
     }
     
     /// <summary>
-    /// Creates a new Query operation builder with the partition key pre-configured.
+    /// Creates a new Query operation builder with a key condition expression.
+    /// Uses format string syntax for parameters: {0}, {1}, etc.
     /// </summary>
-    /// <param name="partitionKeyValue">The partition key value.</param>
-    /// <returns>A QueryRequestBuilder configured with the specified key condition.</returns>
+    /// <param name="keyConditionExpression">The key condition expression with format placeholders.</param>
+    /// <param name="values">The values to substitute into the expression.</param>
+    /// <returns>A QueryRequestBuilder configured with the key condition.</returns>
     /// <example>
     /// <code>
-    /// var results = await index.Query("STATUS#ACTIVE").ExecuteAsync();
-    /// </code>
-    /// </example>
-    public QueryRequestBuilder Query(string partitionKeyValue)
-    {
-        if (_partitionKeyName == null)
-            throw new InvalidOperationException($"Index {Name} was not configured with key names. Use Query() and manually configure the key condition.");
-        
-        return Query().Where($"{_partitionKeyName} = {{0}}", partitionKeyValue);
-    }
-    
-    /// <summary>
-    /// Creates a new Query operation builder with partition and sort key conditions pre-configured.
-    /// </summary>
-    /// <param name="partitionKeyValue">The partition key value.</param>
-    /// <param name="sortKeyValue">The sort key value.</param>
-    /// <param name="sortKeyOperator">The comparison operator for the sort key (default: "=").</param>
-    /// <returns>A QueryRequestBuilder configured with the specified key conditions.</returns>
-    /// <example>
-    /// <code>
-    /// // Exact match
-    /// var results = await index.Query("STATUS#ACTIVE", "2024-01-01").ExecuteAsync();
+    /// // Simple partition key query
+    /// var results = await index.Query("gsi1pk = {0}", "STATUS#ACTIVE").ExecuteAsync();
     /// 
-    /// // Range query
-    /// var results = await index.Query("STATUS#ACTIVE", "2024-01-01", ">=").ExecuteAsync();
+    /// // Composite key query
+    /// var results = await index.Query("gsi1pk = {0} AND gsi1sk > {1}", "STATUS#ACTIVE", "2024-01-01").ExecuteAsync();
+    /// 
+    /// // With begins_with
+    /// var results = await index.Query("gsi1pk = {0} AND begins_with(gsi1sk, {1})", "STATUS#ACTIVE", "USER#").ExecuteAsync();
     /// </code>
     /// </example>
-    public QueryRequestBuilder Query(string partitionKeyValue, string sortKeyValue, string sortKeyOperator = "=")
+    public QueryRequestBuilder Query(string keyConditionExpression, params object[] values)
     {
-        if (_partitionKeyName == null || _sortKeyName == null)
-            throw new InvalidOperationException($"Index {Name} was not configured with sort key name. Use Query(partitionKeyValue) or Query() instead.");
-        
-        return Query()
-            .Where($"{_partitionKeyName} = {{0}} AND {_sortKeyName} {sortKeyOperator} {{1}}", partitionKeyValue, sortKeyValue);
+        return Query().Where(keyConditionExpression, values);
     }
 }
 
 /// <summary>
 /// Generic DynamoDB index with a default projection type.
-/// Maintained for backward compatibility but simplified to use method-based queries.
+/// Maintained for backward compatibility but simplified to use method-based queries with expression strings.
 /// </summary>
 /// <typeparam name="TDefault">The default projection/entity type for this index.</typeparam>
 public class DynamoDbIndex<TDefault> where TDefault : class, new()
@@ -430,16 +382,6 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
     {
         _innerIndex = new DynamoDbIndex(table, indexName, projectionExpression);
     }
-    
-    public DynamoDbIndex(
-        DynamoDbTableBase table,
-        string indexName,
-        string partitionKeyName,
-        string? sortKeyName = null,
-        string? projectionExpression = null)
-    {
-        _innerIndex = new DynamoDbIndex(table, indexName, partitionKeyName, sortKeyName, projectionExpression);
-    }
 
     public string Name => _innerIndex.Name;
 
@@ -449,15 +391,35 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
     public QueryRequestBuilder Query() => _innerIndex.Query();
     
     /// <summary>
-    /// Creates a new Query operation builder with the partition key pre-configured.
+    /// Creates a new Query operation builder with a key condition expression.
+    /// Uses format string syntax for parameters: {0}, {1}, etc.
     /// </summary>
-    public QueryRequestBuilder Query(string partitionKeyValue) => _innerIndex.Query(partitionKeyValue);
+    public QueryRequestBuilder Query(string keyConditionExpression, params object[] values) => 
+        _innerIndex.Query(keyConditionExpression, values);
     
-    /// <summary>
-    /// Creates a new Query operation builder with partition and sort key conditions pre-configured.
-    /// </summary>
-    public QueryRequestBuilder Query(string partitionKeyValue, string sortKeyValue, string sortKeyOperator = "=") => 
-        _innerIndex.Query(partitionKeyValue, sortKeyValue, sortKeyOperator);
+    // QueryAsync methods for backward compatibility with generic index usage
+    public async Task<List<TDefault>> QueryAsync(
+        Action<QueryRequestBuilder> configure,
+        CancellationToken cancellationToken = default)
+    {
+        var builder = Query();
+        configure(builder);
+        var response = await builder.ExecuteAsync(cancellationToken);
+        // TODO: Implement proper hydration in future tasks
+        return new List<TDefault>();
+    }
+    
+    public async Task<List<TResult>> QueryAsync<TResult>(
+        Action<QueryRequestBuilder> configure,
+        CancellationToken cancellationToken = default)
+        where TResult : class, new()
+    {
+        var builder = Query();
+        configure(builder);
+        var response = await builder.ExecuteAsync(cancellationToken);
+        // TODO: Implement proper hydration in future tasks
+        return new List<TResult>();
+    }
 }
 ```
 
@@ -512,12 +474,10 @@ public partial class TransactionsTable : DynamoDbTableBase
     public DeleteItemRequestBuilder Delete(string pk, string sk) => 
         base.Delete().WithKey("pk", pk, "sk", sk);
     
-    // Indexes with key names for method-based queries
+    // Indexes with projection expression
     public DynamoDbIndex StatusIndex => new DynamoDbIndex(
         this, 
         "StatusIndex", 
-        "gsi1pk",  // partition key name
-        "gsi1sk",  // sort key name
         "id, amount, status, entity_type"  // projection
     );
 }
@@ -526,7 +486,8 @@ public partial class TransactionsTable : DynamoDbTableBase
 **Key Points:**
 - Source generator analyzes entity attributes to determine key structure
 - Only generates the appropriate overload (single key OR composite key, not both)
-- Index definitions include key names for Query(pk) and Query(pk, sk) overloads
+- Index definitions use projection expressions for automatic field selection
+- Index queries use expression strings consistent with table queries
 - No abstract PartitionKeyName/SortKeyName properties needed - key names are embedded in generated methods
 
 ## Data Models
@@ -535,17 +496,17 @@ No new data models are required. The existing request builder classes remain unc
 
 ## Error Handling
 
-### Key Configuration Errors
+### Expression String Errors
 
 ```csharp
-// Attempting to use parameterized query on index without key configuration
+// Invalid expression string format
 try
 {
-    await index.Query("value").ExecuteAsync();
+    await index.Query("gsi1pk = {0} AND invalid syntax", "value").ExecuteAsync();
 }
-catch (InvalidOperationException ex)
+catch (ArgumentException ex)
 {
-    // "Index StatusIndex was not configured with key names. Use Query() and manually configure the key condition."
+    // Error from expression parsing
 }
 ```
 
@@ -583,10 +544,11 @@ var results = await table.Query("pk = {0}", "USER#123").ExecuteAsync();
 
 3. **Index query methods**
    - Test Query() returns properly configured builder
-   - Test Query(pk) configures partition key condition
-   - Test Query(pk, sk) configures composite key condition
-   - Test Query(pk, sk, operator) with different operators
-   - Verify error handling for unconfigured key names
+   - Test Query(expression, values) configures key condition correctly
+   - Test expression strings with partition key only
+   - Test expression strings with composite keys
+   - Test expression strings with various operators (=, >, <, >=, <=, begins_with, between)
+   - Verify projection expressions are automatically applied
 
 4. **Deprecation warnings**
    - Verify [Obsolete] attributes are present

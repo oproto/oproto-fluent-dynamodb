@@ -9,8 +9,8 @@
   - Update AsScannable() to work with method-based API
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 5.1, 5.2, 6.1, 6.2_
 
-- [ ] 2. Update DynamoDbIndex classes for method-based access
-  - [ ] 2.1 Update non-generic DynamoDbIndex class
+- [x] 2. Update DynamoDbIndex classes for method-based access
+  - [x] 2.1 Update non-generic DynamoDbIndex class
     - Remove property-based Query property
     - Add Query() method returning QueryRequestBuilder
     - Add constructor overload accepting partition and sort key names
@@ -18,7 +18,7 @@
     - Add Query(string pk, string sk, string operator) overload for composite key queries
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 10.3, 10.4_
 
-  - [ ] 2.2 Update generic DynamoDbIndex<TDefault> class
+  - [x] 2.2 Update generic DynamoDbIndex<TDefault> class
     - Remove property-based Query property
     - Delegate to non-generic DynamoDbIndex for all Query methods
     - Add constructor overload accepting key names

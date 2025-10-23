@@ -4,28 +4,27 @@ namespace Oproto.FluentDynamoDb.Storage;
 
 /// <summary>
 /// Represents a DynamoDB Global Secondary Index (GSI) or Local Secondary Index (LSI).
-/// Provides a convenient way to query indexes with the correct table and index configuration.
+/// Provides method-based access to query operations using expression strings.
 /// </summary>
 /// <example>
 /// <code>
 /// // Define an index in your table class
 /// public DynamoDbIndex StatusIndex => new DynamoDbIndex(this, "StatusIndex");
 /// 
-/// // Query the index
-/// var results = await table.StatusIndex.Query
-///     .Where("gsi1pk = :status")
-///     .WithValue(":status", "ACTIVE")
+/// // Query the index with manual configuration
+/// var results = await table.StatusIndex.Query()
+///     .Where("gsi1pk = {0}", "ACTIVE")
 ///     .ExecuteAsync();
+/// 
+/// // Query with expression string directly
+/// var results = await table.StatusIndex.Query("gsi1pk = {0}", "ACTIVE").ExecuteAsync();
+/// 
+/// // Query with composite key
+/// var results = await table.StatusIndex.Query("gsi1pk = {0} AND gsi1sk >= {1}", "ACTIVE", "2024-01-01").ExecuteAsync();
 /// 
 /// // Define an index with projection expression
-/// public DynamoDbIndex StatusIndexWithProjection => 
+/// public DynamoDbIndex StatusIndex => 
 ///     new DynamoDbIndex(this, "StatusIndex", "id, amount, status");
-/// 
-/// // Query with auto-applied projection
-/// var results = await table.StatusIndexWithProjection.Query
-///     .Where("gsi1pk = :status")
-///     .WithValue(":status", "ACTIVE")
-///     .ExecuteAsync();
 /// </code>
 /// </example>
 public class DynamoDbIndex
@@ -59,9 +58,8 @@ public class DynamoDbIndex
     ///     new DynamoDbIndex(this, "StatusIndex", "id, amount, status, entity_type");
     /// 
     /// // Projection is automatically applied
-    /// var results = await table.StatusIndex.Query
-    ///     .Where("status = :status")
-    ///     .WithValue(":status", "ACTIVE")
+    /// var results = await table.StatusIndex.Query()
+    ///     .Where("status = {0}", "ACTIVE")
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
@@ -71,6 +69,8 @@ public class DynamoDbIndex
         Name = indexName;
         _projectionExpression = projectionExpression;
     }
+    
+
 
     /// <summary>
     /// Gets the name of the index.
@@ -78,58 +78,61 @@ public class DynamoDbIndex
     public string Name { get; private init; }
 
     /// <summary>
-    /// Gets a query builder pre-configured to query this specific index.
-    /// The builder is automatically configured with the correct table name and index name.
-    /// If a projection expression was specified in the constructor, it will be automatically applied.
-    /// 
-    /// Note: When querying an index, you must use the index's key schema in your key condition expression.
-    /// Global Secondary Indexes (GSI) do not support consistent reads.
+    /// Creates a new Query operation builder for this index.
+    /// Use this when you need to manually configure the query.
     /// </summary>
+    /// <returns>A QueryRequestBuilder configured for this index.</returns>
     /// <example>
     /// <code>
-    /// // Query a GSI with its own key schema
-    /// var results = await myIndex.Query
-    ///     .Where("gsi1pk = :pk AND begins_with(gsi1sk, :prefix)")
-    ///     .WithValue(":pk", "STATUS#ACTIVE")
-    ///     .WithValue(":prefix", "USER#")
-    ///     .ExecuteAsync();
-    /// 
-    /// // Manual projection override (takes precedence over auto-projection)
-    /// var results = await myIndex.Query
-    ///     .Where("gsi1pk = :pk")
-    ///     .WithValue(":pk", "STATUS#ACTIVE")
-    ///     .WithProjection("id, amount") // Overrides automatic projection
+    /// var results = await index.Query()
+    ///     .Where("gsi1pk = {0}", "STATUS#ACTIVE")
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public QueryRequestBuilder Query
+    public QueryRequestBuilder Query()
     {
-        get
+        var builder = new QueryRequestBuilder(_table.DynamoDbClient)
+            .ForTable(_table.Name)
+            .UsingIndex(Name);
+
+        if (!string.IsNullOrEmpty(_projectionExpression))
         {
-            var builder = new QueryRequestBuilder(_table.DynamoDbClient)
-                .ForTable(_table.Name)
-                .UsingIndex(Name);
-
-            // Auto-apply projection if configured
-            if (!string.IsNullOrEmpty(_projectionExpression))
-            {
-                builder = builder.WithProjection(_projectionExpression);
-            }
-
-            return builder;
+            builder = builder.WithProjection(_projectionExpression);
         }
+
+        return builder;
+    }
+    
+    /// <summary>
+    /// Creates a new Query operation builder with a key condition expression.
+    /// Uses format string syntax for parameters: {0}, {1}, etc.
+    /// </summary>
+    /// <param name="keyConditionExpression">The key condition expression with format placeholders.</param>
+    /// <param name="values">The values to substitute into the expression.</param>
+    /// <returns>A QueryRequestBuilder configured with the key condition.</returns>
+    /// <example>
+    /// <code>
+    /// // Simple partition key query
+    /// var results = await index.Query("gsi1pk = {0}", "STATUS#ACTIVE").ExecuteAsync();
+    /// 
+    /// // Composite key query
+    /// var results = await index.Query("gsi1pk = {0} AND gsi1sk > {1}", "STATUS#ACTIVE", "2024-01-01").ExecuteAsync();
+    /// 
+    /// // With begins_with
+    /// var results = await index.Query("gsi1pk = {0} AND begins_with(gsi1sk, {1})", "STATUS#ACTIVE", "USER#").ExecuteAsync();
+    /// </code>
+    /// </example>
+    public QueryRequestBuilder Query(string keyConditionExpression, params object[] values)
+    {
+        return Requests.Extensions.WithConditionExpressionExtensions.Where(Query(), keyConditionExpression, values);
     }
 }
 
 /// <summary>
-/// Generic DynamoDB index that automatically applies projection for the specified type.
-/// TDefault specifies the default projection/entity type for this index.
-/// This type's projection is auto-applied but can be overridden with ToListAsync&lt;TOther&gt;().
+/// Generic DynamoDB index with a default projection type.
+/// Maintained for backward compatibility but simplified to use method-based queries with expression strings.
 /// </summary>
-/// <typeparam name="TDefault">
-/// The default projection/entity type for this index.
-/// This type's projection is auto-applied but can be overridden with ToListAsync&lt;TOther&gt;().
-/// </typeparam>
+/// <typeparam name="TDefault">The default projection/entity type for this index.</typeparam>
 /// <example>
 /// <code>
 /// // Define a generic index with projection type
@@ -139,20 +142,18 @@ public class DynamoDbIndex
 ///         "StatusIndex", 
 ///         "id, amount, status, entity_type");
 /// 
-/// // Query using default type
-/// var summaries = await table.StatusIndex.QueryAsync(q => 
-///     q.Where("status = :status").WithValue(":status", "ACTIVE"));
+/// // Query using method-based API
+/// var results = await table.StatusIndex.Query()
+///     .Where("gsi1pk = {0}", "ACTIVE")
+///     .ExecuteAsync();
 /// 
-/// // Override to use different projection type
-/// var minimal = await table.StatusIndex.QueryAsync&lt;MinimalTransaction&gt;(q => 
-///     q.Where("status = :status").WithValue(":status", "ACTIVE"));
+/// // Query with expression string
+/// var results = await table.StatusIndex.Query("gsi1pk = {0}", "ACTIVE").ExecuteAsync();
 /// </code>
 /// </example>
 public class DynamoDbIndex<TDefault> where TDefault : class, new()
 {
-    private readonly DynamoDbTableBase _table;
-    private readonly string _indexName;
-    private readonly string? _projectionExpression;
+    private readonly DynamoDbIndex _innerIndex;
 
     /// <summary>
     /// Initializes a new instance of the DynamoDbIndex&lt;TDefault&gt;.
@@ -179,53 +180,47 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
         string indexName,
         string? projectionExpression = null)
     {
-        _table = table;
-        _indexName = indexName;
-        _projectionExpression = projectionExpression;
+        _innerIndex = new DynamoDbIndex(table, indexName, projectionExpression);
     }
+    
+
 
     /// <summary>
     /// Gets the index name.
     /// </summary>
-    public string Name => _indexName;
+    public string Name => _innerIndex.Name;
 
     /// <summary>
-    /// Gets a query builder pre-configured with projection expression.
-    /// The projection is automatically applied unless manually overridden.
+    /// Creates a new Query operation builder for this index.
     /// </summary>
+    /// <returns>A QueryRequestBuilder configured for this index.</returns>
     /// <example>
     /// <code>
-    /// // Use the Query property directly
-    /// var results = await table.StatusIndex.Query
-    ///     .Where("status = :status")
-    ///     .WithValue(":status", "ACTIVE")
-    ///     .ExecuteAsync();
-    /// 
-    /// // Manual projection override
-    /// var results = await table.StatusIndex.Query
-    ///     .Where("status = :status")
-    ///     .WithValue(":status", "ACTIVE")
-    ///     .WithProjection("id, amount") // Overrides automatic projection
+    /// var results = await table.StatusIndex.Query()
+    ///     .Where("gsi1pk = {0}", "ACTIVE")
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public QueryRequestBuilder Query
-    {
-        get
-        {
-            var builder = new QueryRequestBuilder(_table.DynamoDbClient)
-                .ForTable(_table.Name)
-                .UsingIndex(_indexName);
-
-            // Auto-apply projection if available
-            if (!string.IsNullOrEmpty(_projectionExpression))
-            {
-                builder = builder.WithProjection(_projectionExpression);
-            }
-
-            return builder;
-        }
-    }
+    public QueryRequestBuilder Query() => _innerIndex.Query();
+    
+    /// <summary>
+    /// Creates a new Query operation builder with a key condition expression.
+    /// Uses format string syntax for parameters: {0}, {1}, etc.
+    /// </summary>
+    /// <param name="keyConditionExpression">The key condition expression with format placeholders.</param>
+    /// <param name="values">The values to substitute into the expression.</param>
+    /// <returns>A QueryRequestBuilder configured with the key condition.</returns>
+    /// <example>
+    /// <code>
+    /// // Simple partition key query
+    /// var results = await index.Query("gsi1pk = {0}", "STATUS#ACTIVE").ExecuteAsync();
+    /// 
+    /// // Composite key query
+    /// var results = await index.Query("gsi1pk = {0} AND gsi1sk > {1}", "STATUS#ACTIVE", "2024-01-01").ExecuteAsync();
+    /// </code>
+    /// </example>
+    public QueryRequestBuilder Query(string keyConditionExpression, params object[] values) => 
+        _innerIndex.Query(keyConditionExpression, values);
 
     /// <summary>
     /// Executes query and returns results as TDefault (the index's default type).
@@ -237,14 +232,14 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
     /// <code>
     /// // Query using default type
     /// var summaries = await table.StatusIndex.QueryAsync(q => 
-    ///     q.Where("status = :status").WithValue(":status", "ACTIVE"));
+    ///     q.Where("status = {0}", "ACTIVE"));
     /// </code>
     /// </example>
     public async Task<List<TDefault>> QueryAsync(
         Action<QueryRequestBuilder> configure,
         CancellationToken cancellationToken = default)
     {
-        var builder = Query;
+        var builder = Query();
         configure(builder);
         
         // Note: This will be enhanced in future tasks to use ToListAsync<TDefault>()
@@ -268,11 +263,11 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
     /// <code>
     /// // Index default is TransactionSummary
     /// var summaries = await table.StatusIndex.QueryAsync&lt;TransactionSummary&gt;(q => 
-    ///     q.Where("status = :s").WithValue(":s", "ACTIVE"));
+    ///     q.Where("status = {0}", "ACTIVE"));
     /// 
     /// // Override to use different projection
     /// var minimal = await table.StatusIndex.QueryAsync&lt;MinimalTransaction&gt;(q => 
-    ///     q.Where("status = :s").WithValue(":s", "ACTIVE"));
+    ///     q.Where("status = {0}", "ACTIVE"));
     /// </code>
     /// </example>
     public async Task<List<TResult>> QueryAsync<TResult>(
@@ -280,7 +275,7 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
         CancellationToken cancellationToken = default)
         where TResult : class, new()
     {
-        var builder = Query;
+        var builder = Query();
         configure(builder);
         
         // Note: This will be enhanced in future tasks to use ToListAsync<TResult>()
