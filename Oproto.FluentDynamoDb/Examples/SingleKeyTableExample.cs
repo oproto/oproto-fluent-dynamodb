@@ -1,6 +1,7 @@
 using Amazon.DynamoDBv2;
 using Oproto.FluentDynamoDb.Logging;
 using Oproto.FluentDynamoDb.Requests;
+using Oproto.FluentDynamoDb.Requests.Extensions;
 using Oproto.FluentDynamoDb.Storage;
 
 namespace Oproto.FluentDynamoDb.Examples;
@@ -89,6 +90,8 @@ public class UsersTable : DynamoDbTableBase
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
+    public override GetItemRequestBuilder Get() => base.Get();
+    
     public GetItemRequestBuilder Get(string userId) => 
         base.Get().WithKey("id", userId);
 
@@ -118,6 +121,8 @@ public class UsersTable : DynamoDbTableBase
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
+    public override UpdateItemRequestBuilder Update() => base.Update();
+    
     public UpdateItemRequestBuilder Update(string userId) => 
         base.Update().WithKey("id", userId);
 
@@ -142,6 +147,8 @@ public class UsersTable : DynamoDbTableBase
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
+    public override DeleteItemRequestBuilder Delete() => base.Delete();
+    
     public DeleteItemRequestBuilder Delete(string userId) => 
         base.Delete().WithKey("id", userId);
 

@@ -98,7 +98,7 @@ public class ProjectionPrecedenceRulesExamples
         var table = new TransactionsTable(client);
 
         // Case 1: Manual projection overrides index projection
-        var response1 = await table.StatusIndexWithProjection.Query
+        var response1 = await table.StatusIndexWithProjection.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .WithProjection("id") // Overrides index projection "id, amount, status, created_date"
@@ -107,7 +107,7 @@ public class ProjectionPrecedenceRulesExamples
 
         // Case 2: Manual projection overrides generated projection (when using ToListAsync<T>)
         // Note: This would work with actual generated projection models
-        var response2 = await table.StatusIndexNoProjection.Query
+        var response2 = await table.StatusIndexNoProjection.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .WithProjection("id, amount") // Overrides TransactionSummary's projection "id, amount, status"
@@ -115,7 +115,7 @@ public class ProjectionPrecedenceRulesExamples
         // Result: Only "id, amount" are fetched
 
         // Case 3: Manual projection can expand or reduce the projection
-        var response3 = await table.StatusIndexWithProjection.Query
+        var response3 = await table.StatusIndexWithProjection.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .WithProjection("id, amount, status, created_date, description, metadata") // Expands projection
@@ -145,14 +145,14 @@ public class ProjectionPrecedenceRulesExamples
         var table = new TransactionsTable(client);
 
         // Case 1: Index projection is automatically applied
-        var response1 = await table.StatusIndexWithProjection.Query
+        var response1 = await table.StatusIndexWithProjection.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .ExecuteAsync();
         // Result: "id, amount, status, created_date" are fetched (from index projection)
 
         // Case 2: Index without projection fetches all fields
-        var response2 = await table.StatusIndexNoProjection.Query
+        var response2 = await table.StatusIndexNoProjection.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .ExecuteAsync();
@@ -190,14 +190,14 @@ public class ProjectionPrecedenceRulesExamples
 
         // Case 1: Generated projection is applied when using projection model type
         // (This would work with actual generated projection models)
-        // var summaries = await table.StatusIndexNoProjection.Query
+        // var summaries = await table.StatusIndexNoProjection.Query()
         //     .Where("status = :status")
         //     .WithValue(":status", "ACTIVE")
         //     .ToListAsync<TransactionSummary>();
         // Result: "id, amount, status" are fetched (from TransactionSummary.ProjectionExpression)
 
         // Case 2: Generated projection is NOT applied when using full entity type
-        // var transactions = await table.StatusIndexNoProjection.Query
+        // var transactions = await table.StatusIndexNoProjection.Query()
         //     .Where("status = :status")
         //     .WithValue(":status", "ACTIVE")
         //     .ToListAsync<Transaction>();
@@ -245,7 +245,7 @@ public class ProjectionPrecedenceRulesExamples
         var table = new TableWithManualOverride(client);
 
         // Uses the manually defined index with custom projection
-        var response = await table.StatusIndex.Query
+        var response = await table.StatusIndex.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .ExecuteAsync();
@@ -265,7 +265,7 @@ public class ProjectionPrecedenceRulesExamples
         var table = new TransactionsTable(client);
 
         // Level 1: Manual .WithProjection() - Highest precedence
-        var manual = await table.StatusIndexWithProjection.Query
+        var manual = await table.StatusIndexWithProjection.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .WithProjection("id") // Overrides everything
@@ -273,7 +273,7 @@ public class ProjectionPrecedenceRulesExamples
         // Fetches: id
 
         // Level 2: Index constructor projection - Second precedence
-        var indexProjection = await table.StatusIndexWithProjection.Query
+        var indexProjection = await table.StatusIndexWithProjection.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .ExecuteAsync();
@@ -281,14 +281,14 @@ public class ProjectionPrecedenceRulesExamples
 
         // Level 3: Generated projection - Third precedence
         // (Would work with actual generated projection models)
-        // var generated = await table.StatusIndexNoProjection.Query
+        // var generated = await table.StatusIndexNoProjection.Query()
         //     .Where("status = :status")
         //     .WithValue(":status", "ACTIVE")
         //     .ToListAsync<TransactionSummary>();
         // Fetches: id, amount, status
 
         // Level 4: No projection - Lowest precedence (default)
-        var noProjection = await table.StatusIndexNoProjection.Query
+        var noProjection = await table.StatusIndexNoProjection.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .ExecuteAsync();
@@ -342,20 +342,20 @@ public class ProjectionPrecedenceRulesExamples
             var table = new ConsistentDefaultsTable(client);
 
             // Most queries use the index default
-            var standard = await table.StatusIndex.Query
+            var standard = await table.StatusIndex.Query()
                 .Where("status = :status")
                 .WithValue(":status", "ACTIVE")
                 .ExecuteAsync();
 
             // Exceptional case: need additional fields
-            var detailed = await table.StatusIndex.Query
+            var detailed = await table.StatusIndex.Query()
                 .Where("status = :status")
                 .WithValue(":status", "ACTIVE")
                 .WithProjection("id, amount, status, created_date, description, metadata")
                 .ExecuteAsync();
 
             // Exceptional case: need fewer fields
-            var minimal = await table.StatusIndex.Query
+            var minimal = await table.StatusIndex.Query()
                 .Where("status = :status")
                 .WithValue(":status", "ACTIVE")
                 .WithProjection("id")
@@ -373,7 +373,7 @@ public class ProjectionPrecedenceRulesExamples
 
             // Type-safe query with automatic projection
             // (Would work with actual generated projection models)
-            // var summaries = await table.StatusIndex.Query
+            // var summaries = await table.StatusIndex.Query()
             //     .Where("status = :status")
             //     .WithValue(":status", "ACTIVE")
             //     .ToListAsync<TransactionSummary>();
@@ -420,20 +420,20 @@ public class ProjectionPrecedenceRulesExamples
             var table = new TransactionsTable(client);
 
             // Phase 1: Start with manual index projections
-            var phase1 = await table.StatusIndexWithProjection.Query
+            var phase1 = await table.StatusIndexWithProjection.Query()
                 .Where("status = :status")
                 .WithValue(":status", "ACTIVE")
                 .ExecuteAsync();
 
             // Phase 2: Add projection models and use ToListAsync<T>
             // Manual index projection still works as fallback
-            // var phase2 = await table.StatusIndexWithProjection.Query
+            // var phase2 = await table.StatusIndexWithProjection.Query()
             //     .Where("status = :status")
             //     .WithValue(":status", "ACTIVE")
             //     .ToListAsync<TransactionSummary>();
 
             // Phase 3: Remove manual index projection, rely on generated
-            // var phase3 = await table.StatusIndexNoProjection.Query
+            // var phase3 = await table.StatusIndexNoProjection.Query()
             //     .Where("status = :status")
             //     .WithValue(":status", "ACTIVE")
             //     .ToListAsync<TransactionSummary>();
@@ -448,7 +448,7 @@ public class ProjectionPrecedenceRulesExamples
             var table = new TransactionsTable(client);
 
             // List query: minimal projection for performance
-            var listItems = await table.StatusIndexWithProjection.Query
+            var listItems = await table.StatusIndexWithProjection.Query()
                 .Where("status = :status")
                 .WithValue(":status", "ACTIVE")
                 .WithProjection("id, status") // Override for minimal data
@@ -456,14 +456,14 @@ public class ProjectionPrecedenceRulesExamples
                 .ExecuteAsync();
 
             // Detail query: use index default projection
-            var detailItem = await table.StatusIndexWithProjection.Query
+            var detailItem = await table.StatusIndexWithProjection.Query()
                 .Where("status = :status AND id = :id")
                 .WithValue(":status", "ACTIVE")
                 .WithValue(":id", "TXN123")
                 .ExecuteAsync();
 
             // Export query: fetch all fields
-            var exportItems = await table.StatusIndexWithProjection.Query
+            var exportItems = await table.StatusIndexWithProjection.Query()
                 .Where("status = :status")
                 .WithValue(":status", "ACTIVE")
                 .WithProjection("id, amount, status, created_date, description, metadata") // Override for all data
@@ -480,7 +480,7 @@ public class ProjectionPrecedenceRulesExamples
         {
             var table = new TransactionsTable(client);
 
-            var query = table.StatusIndexWithProjection.Query
+            var query = table.StatusIndexWithProjection.Query()
                 .Where("status = :status")
                 .WithValue(":status", "ACTIVE");
 

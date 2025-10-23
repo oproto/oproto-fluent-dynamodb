@@ -63,15 +63,15 @@
     - Enable Query(pk) and Query(pk, sk) overloads on generated indexes
     - _Requirements: 7.4, 4.1, 4.2, 4.3_
 
-- [ ] 5. Update unit tests for method-based API
-  - [ ] 5.1 Update DynamoDbTableBase tests
+- [x] 5. Update unit tests for method-based API
+  - [x] 5.1 Update DynamoDbTableBase tests
     - Test Query() returns correct builder type
     - Test Query(expression, params) configures key condition correctly
     - Test Get(), Update(), Delete(), Put() return correct builder types
     - Test virtual methods can be overridden
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 6.1, 6.2_
 
-  - [ ] 5.2 Update DynamoDbIndex tests
+  - [x] 5.2 Update DynamoDbIndex tests
     - Test Query() returns correct builder with index configuration
     - Test Query(pk) configures partition key condition
     - Test Query(pk, sk) configures composite key condition
@@ -79,7 +79,7 @@
     - Test error handling for unconfigured key names
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 10.1, 10.2, 10.3, 10.4_
 
-  - [ ] 5.3 Create tests for manual table implementations
+  - [x] 5.3 Create tests for manual table implementations
     - Test single-key table Get/Update/Delete overloads
     - Test composite-key table Get/Update/Delete overloads
     - Test index Query overloads work correctly
