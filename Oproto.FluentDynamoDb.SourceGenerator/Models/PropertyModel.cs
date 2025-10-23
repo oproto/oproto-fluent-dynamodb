@@ -101,4 +101,9 @@ public class PropertyModel
     /// Gets or sets the advanced type information for this property.
     /// </summary>
     public AdvancedTypeInfo? AdvancedType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the security information for this property.
+    /// </summary>
+    public SecurityInfo? Security { get; set; }
 }

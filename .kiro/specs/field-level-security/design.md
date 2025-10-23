@@ -28,8 +28,6 @@ Oproto.FluentDynamoDb.SourceGenerator
 Oproto.FluentDynamoDb.Encryption.Kms (new assembly)
 ├── AwsEncryptionSdkFieldEncryptor
 ├── IKmsKeyResolver
-├── IBlobStorage
-├── S3BlobStorage
 ├── FieldEncryptionException
 └── AwsEncryptionSdkOptions
 ```
@@ -39,8 +37,8 @@ Oproto.FluentDynamoDb.Encryption.Kms (new assembly)
 - **Core Library**: No new external dependencies
 - **Encryption.Kms Assembly**: 
   - AWS.EncryptionSDK (3.0.0+)
-  - AWSSDK.S3 (3.7.0+) - for external blob storage
   - Oproto.FluentDynamoDb (reference)
+  - Optional: Oproto.FluentDynamoDb.BlobStorage.S3 (for external blob storage integration)
 
 ## Encryption Context Flow
 
@@ -281,7 +279,7 @@ public class AwsEncryptionSdkFieldEncryptor : IFieldEncryptor
         // 2. Create KMS keyring with resolved key
         // 3. Build encryption context with field name and context ID
         // 4. Encrypt using AWS Encryption SDK
-        // 5. If IsExternalBlob:
+        // 5. If encrypted size exceeds AutoExternalBlobThreshold:
         //    - Upload encrypted data to blob storage
         //    - Return blob reference (e.g., S3 URI) as bytes
         // 6. Else: Return encrypted message (AWS Encryption SDK format)
@@ -293,12 +291,12 @@ public class AwsEncryptionSdkFieldEncryptor : IFieldEncryptor
         FieldEncryptionContext context,
         CancellationToken cancellationToken = default)
     {
-        // 1. If IsExternalBlob:
-        //    - Parse blob reference from ciphertext
-        //    - Download encrypted data from blob storage
+        // 1. Check if ciphertext is a blob reference (starts with "s3://")
+        //    - If yes: Download encrypted data from blob storage
         //    - Use downloaded data as ciphertext
         // 2. Resolve KMS key ARN (for keyring)
         // 3. Create KMS keyring
+        // 4. Decrypt using AWS Encryption SDK
         // 4. Decrypt using AWS Encryption SDK
         // 5. Validate encryption context matches expected values
         // 6. Return plaintext
@@ -756,32 +754,28 @@ public class Document
     
     public string Title { get; set; }
     
-    [Encrypted(IsExternalBlob = true)]  // Stored in S3, not DynamoDB
+    // Combine encryption with external blob storage
+    [Encrypted]
+    [BlobReference(BlobProvider.S3, BucketName = "my-encrypted-blobs", KeyPrefix = "documents/")]
     [Sensitive]
     public byte[] LargeEncryptedContent { get; set; }
 }
 
-// Setup with S3 blob storage
-var s3Client = new AmazonS3Client();
-var blobStorage = new S3BlobStorage(
-    s3Client,
-    bucketName: "my-encrypted-blobs",
-    keyPrefix: "documents/");
-
+// Setup - encryption integrates with existing blob storage
 var options = new AwsEncryptionSdkOptions
 {
     DefaultKeyId = configuration["Kms:DefaultKeyArn"],
-    ExternalBlobBucket = "my-encrypted-blobs",
-    ExternalBlobKeyPrefix = "documents/",
     AutoExternalBlobThreshold = 350 * 1024  // Auto-externalize if > 350KB
 };
 
-var encryptor = new AwsEncryptionSdkFieldEncryptor(keyResolver, options, blobStorage);
+var encryptor = new AwsEncryptionSdkFieldEncryptor(keyResolver, options);
 
-// Usage - large content automatically stored in S3
+// Usage - encryption happens before blob storage
 await documentTable.PutItem(document).ExecuteAsync();
-// DynamoDB stores: s3://my-encrypted-blobs/documents/tenant-a/doc-123/LargeEncryptedContent/guid
-// S3 stores: Encrypted content using AWS Encryption SDK format
+// 1. Data is encrypted using AWS Encryption SDK
+// 2. Encrypted data is stored in S3 via existing blob provider
+// 3. DynamoDB stores: s3://my-encrypted-blobs/documents/{guid}
+// 4. S3 stores: Encrypted content in AWS Encryption SDK format
 ```
 
 ### Example 5: Custom Key Resolver

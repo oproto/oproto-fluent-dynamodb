@@ -31,36 +31,36 @@
     - Pass sensitive field metadata to logging methods
     - _Requirements: 1.3_
 
-- [ ] 4. Enhance source generator for security attributes
-  - [ ] 4.1 Create SecurityAttributeAnalyzer
+- [x] 4. Enhance source generator for security attributes
+  - [x] 4.1 Create SecurityAttributeAnalyzer
     - Detect SensitiveAttribute on properties
     - Detect EncryptedAttribute on properties
     - Extract CacheTtlSeconds from EncryptedAttribute
     - _Requirements: 1.5, 4.1, 4.2_
   
-  - [ ] 4.2 Generate sensitive field metadata
+  - [x] 4.2 Generate sensitive field metadata
     - Create static HashSet<string> of sensitive field names in metadata class
     - Generate IsSensitiveField(string) helper method
     - _Requirements: 1.1, 1.4_
   
-  - [ ] 4.3 Generate encryption code in ToItem mapper
+  - [x] 4.3 Generate encryption code in ToItem mapper
     - Check if IFieldEncryptor is available
     - Call EncryptAsync for properties with EncryptedAttribute
     - Pass FieldEncryptionContext with CacheTtlSeconds from attribute
     - Store encrypted data as Binary (B) AttributeValue
     - _Requirements: 2.2, 2.5, 4.1_
   
-  - [ ] 4.4 Generate decryption code in FromItem mapper
+  - [x] 4.4 Generate decryption code in FromItem mapper
     - Call DecryptAsync for properties with EncryptedAttribute
     - Handle Binary (B) AttributeValue type
     - Pass FieldEncryptionContext with CacheTtlSeconds from attribute
     - _Requirements: 2.3, 4.2_
   
-  - [ ] 4.5 Generate diagnostic for missing Encryption.Kms reference
+  - [x] 4.5 Generate diagnostic for missing Encryption.Kms reference
     - Emit warning when EncryptedAttribute is used without Encryption.Kms package
     - _Requirements: 4.4_
   
-  - [ ] 4.6 Support combined Sensitive + Encrypted attributes
+  - [x] 4.6 Support combined Sensitive + Encrypted attributes
     - Apply both logging redaction and encryption when both attributes present
     - _Requirements: 4.5_
 

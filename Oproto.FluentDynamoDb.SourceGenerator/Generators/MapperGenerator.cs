@@ -102,15 +102,16 @@ public static class MapperGenerator
         sb.AppendLine($"    public partial class {entity.ClassName} : IDynamoDbEntity");
         sb.AppendLine("    {");
 
-        // Check if entity has blob reference properties
+        // Check if entity has blob reference properties or encrypted properties
         var hasBlobReferences = entity.Properties.Any(p => p.AdvancedType?.IsBlobReference == true);
+        var hasEncryptedProperties = entity.Properties.Any(p => p.Security?.IsEncrypted == true);
 
         // Generate all required interface methods
-        if (hasBlobReferences)
+        if (hasBlobReferences || hasEncryptedProperties)
         {
-            // For entities with blob references, generate both:
+            // For entities with blob references or encrypted properties, generate both:
             // 1. Stub synchronous methods (to satisfy interface) that throw NotSupportedException
-            // 2. Actual async methods that handle blob storage
+            // 2. Actual async methods that handle blob storage and/or encryption
             GenerateToDynamoDbStubMethod(sb, entity);
             GenerateFromDynamoDbSingleStubMethod(sb, entity);
             GenerateFromDynamoDbMultiStubMethod(sb, entity);
@@ -121,7 +122,7 @@ public static class MapperGenerator
         }
         else
         {
-            // Generate synchronous methods for entities without blob references
+            // Generate synchronous methods for entities without blob references or encryption
             GenerateToDynamoDbMethod(sb, entity);
             GenerateFromDynamoDbSingleMethod(sb, entity);
             GenerateFromDynamoDbMultiMethod(sb, entity);
@@ -212,15 +213,48 @@ public static class MapperGenerator
     {
         sb.AppendLine();
         sb.AppendLine("        /// <summary>");
-        sb.AppendLine("        /// Stub method for interface compliance. This entity has blob references and requires async methods.");
+        
+        var hasBlobReferences = entity.Properties.Any(p => p.AdvancedType?.IsBlobReference == true);
+        var hasEncryptedProperties = entity.Properties.Any(p => p.Security?.IsEncrypted == true);
+        
+        if (hasBlobReferences && hasEncryptedProperties)
+        {
+            sb.AppendLine("        /// Stub method for interface compliance. This entity has blob references and encrypted properties and requires async methods.");
+        }
+        else if (hasEncryptedProperties)
+        {
+            sb.AppendLine("        /// Stub method for interface compliance. This entity has encrypted properties and requires async methods.");
+        }
+        else
+        {
+            sb.AppendLine("        /// Stub method for interface compliance. This entity has blob references and requires async methods.");
+        }
+        
         sb.AppendLine("        /// Use ToDynamoDbAsync instead.");
         sb.AppendLine("        /// </summary>");
         sb.AppendLine("        [MethodImpl(MethodImplOptions.AggressiveInlining)]");
         sb.AppendLine($"        public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity, IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
-        sb.AppendLine($"            throw new NotSupportedException(");
-        sb.AppendLine($"                \"{entity.ClassName} has blob reference properties and requires async methods. \" +");
-        sb.AppendLine($"                \"Use ToDynamoDbAsync with an IBlobStorageProvider instead.\");");
+        
+        if (hasBlobReferences && hasEncryptedProperties)
+        {
+            sb.AppendLine($"            throw new NotSupportedException(");
+            sb.AppendLine($"                \"{entity.ClassName} has blob reference and encrypted properties and requires async methods. \" +");
+            sb.AppendLine($"                \"Use ToDynamoDbAsync with an IBlobStorageProvider and IFieldEncryptor instead.\");");
+        }
+        else if (hasEncryptedProperties)
+        {
+            sb.AppendLine($"            throw new NotSupportedException(");
+            sb.AppendLine($"                \"{entity.ClassName} has encrypted properties and requires async methods. \" +");
+            sb.AppendLine($"                \"Use ToDynamoDbAsync with an IFieldEncryptor instead.\");");
+        }
+        else
+        {
+            sb.AppendLine($"            throw new NotSupportedException(");
+            sb.AppendLine($"                \"{entity.ClassName} has blob reference properties and requires async methods. \" +");
+            sb.AppendLine($"                \"Use ToDynamoDbAsync with an IBlobStorageProvider instead.\");");
+        }
+        
         sb.AppendLine("        }");
     }
 
@@ -260,11 +294,13 @@ public static class MapperGenerator
         sb.AppendLine("        /// <summary>");
         sb.AppendLine("        /// High-performance async conversion from entity to DynamoDB AttributeValue dictionary.");
         sb.AppendLine("        /// Handles blob reference properties by storing data externally and saving references.");
+        sb.AppendLine("        /// Handles encrypted properties by encrypting data before storage.");
         sb.AppendLine("        /// Optimized for minimal allocations and maximum throughput.");
         sb.AppendLine("        /// </summary>");
         sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
         sb.AppendLine("        /// <param name=\"entity\">The entity instance to convert.</param>");
         sb.AppendLine("        /// <param name=\"blobProvider\">The blob storage provider for handling blob references.</param>");
+        sb.AppendLine("        /// <param name=\"fieldEncryptor\">Optional field encryptor for handling encrypted properties.</param>");
         sb.AppendLine("        /// <param name=\"logger\">Optional logger for DynamoDB operations. If null, no logging is performed.</param>");
         sb.AppendLine("        /// <param name=\"cancellationToken\">Cancellation token for async operations.</param>");
         sb.AppendLine("        /// <returns>A task that resolves to a dictionary of DynamoDB AttributeValues representing the entity.</returns>");
@@ -272,6 +308,7 @@ public static class MapperGenerator
         sb.AppendLine($"        public static async Task<Dictionary<string, AttributeValue>> ToDynamoDbAsync<TSelf>(");
         sb.AppendLine("            TSelf entity,");
         sb.AppendLine("            IBlobStorageProvider blobProvider,");
+        sb.AppendLine("            IFieldEncryptor? fieldEncryptor = null,");
         sb.AppendLine("            IDynamoDbLogger? logger = null,");
         sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
@@ -339,6 +376,16 @@ public static class MapperGenerator
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
 
+        // Handle encrypted properties - these require async methods
+        if (property.Security?.IsEncrypted == true)
+        {
+            // Encrypted properties cannot be handled in synchronous methods
+            // This should have been caught earlier and routed to async methods
+            sb.AppendLine($"            // ERROR: {propertyName} is encrypted and requires async methods");
+            sb.AppendLine($"            throw new NotSupportedException(\"Property {propertyName} is encrypted and requires async methods. Use ToDynamoDbAsync instead.\");");
+            return;
+        }
+
         // Handle TTL properties (Time-To-Live)
         if (property.AdvancedType?.IsTtl == true)
         {
@@ -394,6 +441,13 @@ public static class MapperGenerator
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
+
+        // Handle encrypted properties (must be before other handlers)
+        if (property.Security?.IsEncrypted == true)
+        {
+            GenerateEncryptedPropertyToAttributeValue(sb, property, entity);
+            return;
+        }
 
         // Handle combined JSON blob + blob reference (serialize to JSON, then store as external blob)
         if (property.AdvancedType?.IsJsonBlob == true && property.AdvancedType?.IsBlobReference == true)
@@ -1329,10 +1383,12 @@ public static class MapperGenerator
         sb.AppendLine("        /// <summary>");
         sb.AppendLine("        /// High-performance async conversion from DynamoDB item to entity with minimal boxing and allocations.");
         sb.AppendLine("        /// Handles blob reference properties by retrieving data from external storage.");
+        sb.AppendLine("        /// Handles encrypted properties by decrypting data after retrieval.");
         sb.AppendLine("        /// </summary>");
         sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
         sb.AppendLine("        /// <param name=\"item\">The DynamoDB item to map from.</param>");
         sb.AppendLine("        /// <param name=\"blobProvider\">The blob storage provider for handling blob references.</param>");
+        sb.AppendLine("        /// <param name=\"fieldEncryptor\">Optional field encryptor for handling encrypted properties.</param>");
         sb.AppendLine("        /// <param name=\"logger\">Optional logger for DynamoDB operations. If null, no logging is performed.</param>");
         sb.AppendLine("        /// <param name=\"cancellationToken\">Cancellation token for async operations.</param>");
         sb.AppendLine("        /// <returns>A task that resolves to a mapped entity instance.</returns>");
@@ -1341,6 +1397,7 @@ public static class MapperGenerator
         sb.AppendLine($"        public static async Task<TSelf> FromDynamoDbAsync<TSelf>(");
         sb.AppendLine("            Dictionary<string, AttributeValue> item,");
         sb.AppendLine("            IBlobStorageProvider blobProvider,");
+        sb.AppendLine("            IFieldEncryptor? fieldEncryptor = null,");
         sb.AppendLine("            IDynamoDbLogger? logger = null,");
         sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
@@ -1407,10 +1464,12 @@ public static class MapperGenerator
         sb.AppendLine("        /// Creates an entity instance from multiple DynamoDB items (composite entity support).");
         sb.AppendLine("        /// For single-item entities, uses the first item. For multi-item entities, combines all items.");
         sb.AppendLine("        /// Handles blob reference properties by retrieving data from external storage.");
+        sb.AppendLine("        /// Handles encrypted properties by decrypting data after retrieval.");
         sb.AppendLine("        /// </summary>");
         sb.AppendLine("        /// <typeparam name=\"TSelf\">The entity type implementing IDynamoDbEntity.</typeparam>");
         sb.AppendLine("        /// <param name=\"items\">The collection of DynamoDB items to map from.</param>");
         sb.AppendLine("        /// <param name=\"blobProvider\">The blob storage provider for handling blob references.</param>");
+        sb.AppendLine("        /// <param name=\"fieldEncryptor\">Optional field encryptor for handling encrypted properties.</param>");
         sb.AppendLine("        /// <param name=\"logger\">Optional logger for DynamoDB operations. If null, no logging is performed.</param>");
         sb.AppendLine("        /// <param name=\"cancellationToken\">Cancellation token for async operations.</param>");
         sb.AppendLine("        /// <returns>A task that resolves to a mapped entity instance.</returns>");
@@ -1419,6 +1478,7 @@ public static class MapperGenerator
         sb.AppendLine($"        public static async Task<TSelf> FromDynamoDbAsync<TSelf>(");
         sb.AppendLine("            IList<Dictionary<string, AttributeValue>> items,");
         sb.AppendLine("            IBlobStorageProvider blobProvider,");
+        sb.AppendLine("            IFieldEncryptor? fieldEncryptor = null,");
         sb.AppendLine("            IDynamoDbLogger? logger = null,");
         sb.AppendLine("            CancellationToken cancellationToken = default) where TSelf : IDynamoDbEntity");
         sb.AppendLine("        {");
@@ -1435,12 +1495,12 @@ public static class MapperGenerator
         {
             sb.AppendLine("                // Multi-item entity: combine all items into a single entity");
             sb.AppendLine("                // Note: Multi-item entities with blob references not yet fully supported");
-            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, logger, cancellationToken);");
+            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, fieldEncryptor, logger, cancellationToken);");
         }
         else
         {
             sb.AppendLine("                // Single-item entity: use the first item");
-            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, logger, cancellationToken);");
+            sb.AppendLine("                return await FromDynamoDbAsync<TSelf>(items[0], blobProvider, fieldEncryptor, logger, cancellationToken);");
         }
 
         sb.AppendLine("            }");
@@ -1515,6 +1575,13 @@ public static class MapperGenerator
     {
         var attributeName = property.AttributeName;
         var propertyName = property.PropertyName;
+
+        // Handle encrypted properties (must be before other handlers)
+        if (property.Security?.IsEncrypted == true)
+        {
+            GenerateEncryptedPropertyFromAttributeValue(sb, property, entity);
+            return;
+        }
 
         // Handle combined JSON blob + blob reference (retrieve blob, then deserialize from JSON)
         if (property.AdvancedType?.IsJsonBlob == true && property.AdvancedType?.IsBlobReference == true)
@@ -2728,6 +2795,203 @@ public static class MapperGenerator
         sb.AppendLine($"                    entity.{propertyName} = {sourceProperty.ToLowerInvariant()}Parts[{index}];");
         sb.AppendLine("                }");
         sb.AppendLine("            }");
+    }
+
+    private static void GenerateEncryptedPropertyToAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+        var cacheTtlSeconds = property.Security?.EncryptionConfig?.CacheTtlSeconds ?? 300;
+
+        sb.AppendLine($"            // Encrypt {propertyName}");
+        sb.AppendLine("            if (fieldEncryptor != null)");
+        sb.AppendLine("            {");
+
+        // Handle nullable properties
+        if (property.IsNullable)
+        {
+            sb.AppendLine($"                if (typedEntity.{propertyName} != null)");
+            sb.AppendLine("                {");
+        }
+
+        // Convert property value to bytes
+        sb.AppendLine($"                    var {propertyName}Plaintext = System.Text.Encoding.UTF8.GetBytes({GetPropertyValueAsString(property, propertyName)});");
+        sb.AppendLine();
+
+        // Create encryption context
+        sb.AppendLine("                    var encryptionContext = new FieldEncryptionContext");
+        sb.AppendLine("                    {");
+        sb.AppendLine("                        ContextId = EncryptionContext.Current,");
+        sb.AppendLine($"                        CacheTtlSeconds = {cacheTtlSeconds},");
+        
+        // Add EntityId for external blob storage path
+        var partitionKeyProperty = entity.PartitionKeyProperty;
+        if (partitionKeyProperty != null)
+        {
+            sb.AppendLine($"                        EntityId = typedEntity.{partitionKeyProperty.PropertyName}?.ToString()");
+        }
+        else
+        {
+            sb.AppendLine("                        EntityId = null");
+        }
+        
+        sb.AppendLine("                    };");
+        sb.AppendLine();
+
+        // Call EncryptAsync
+        sb.AppendLine($"                    var {propertyName}Ciphertext = await fieldEncryptor.EncryptAsync(");
+        sb.AppendLine($"                        {propertyName}Plaintext,");
+        sb.AppendLine($"                        \"{propertyName}\",");
+        sb.AppendLine("                        encryptionContext,");
+        sb.AppendLine("                        cancellationToken);");
+        sb.AppendLine();
+
+        // Store as Binary (B) AttributeValue
+        sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ B = new MemoryStream({propertyName}Ciphertext) }};");
+
+        if (property.IsNullable)
+        {
+            sb.AppendLine("                }");
+        }
+
+        sb.AppendLine("            }");
+        sb.AppendLine("            else");
+        sb.AppendLine("            {");
+        sb.AppendLine($"                throw new InvalidOperationException(\"Property {propertyName} is marked with [Encrypted] but no IFieldEncryptor is configured. Add the Oproto.FluentDynamoDb.Encryption.Kms package and configure encryption.\");");
+        sb.AppendLine("            }");
+    }
+
+    private static void GenerateEncryptedPropertyFromAttributeValue(StringBuilder sb, PropertyModel property, EntityModel entity)
+    {
+        var attributeName = property.AttributeName;
+        var propertyName = property.PropertyName;
+        var cacheTtlSeconds = property.Security?.EncryptionConfig?.CacheTtlSeconds ?? 300;
+
+        sb.AppendLine($"            // Decrypt {propertyName}");
+        sb.AppendLine($"            if (item.TryGetValue(\"{attributeName}\", out var {propertyName.ToLowerInvariant()}Value))");
+        sb.AppendLine("            {");
+        sb.AppendLine("                if (fieldEncryptor != null)");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    try");
+        sb.AppendLine("                    {");
+        
+        // Read Binary (B) AttributeValue
+        sb.AppendLine($"                        if ({propertyName.ToLowerInvariant()}Value.B != null)");
+        sb.AppendLine("                        {");
+        sb.AppendLine($"                            byte[] {propertyName}Ciphertext;");
+        sb.AppendLine($"                            using (var ms = {propertyName.ToLowerInvariant()}Value.B)");
+        sb.AppendLine("                            {");
+        sb.AppendLine($"                                {propertyName}Ciphertext = ms.ToArray();");
+        sb.AppendLine("                            }");
+        sb.AppendLine();
+
+        // Create encryption context
+        sb.AppendLine("                            var encryptionContext = new FieldEncryptionContext");
+        sb.AppendLine("                            {");
+        sb.AppendLine("                                ContextId = EncryptionContext.Current,");
+        sb.AppendLine($"                                CacheTtlSeconds = {cacheTtlSeconds}");
+        sb.AppendLine("                            };");
+        sb.AppendLine();
+
+        // Call DecryptAsync
+        sb.AppendLine($"                            var {propertyName}Plaintext = await fieldEncryptor.DecryptAsync(");
+        sb.AppendLine($"                                {propertyName}Ciphertext,");
+        sb.AppendLine($"                                \"{propertyName}\",");
+        sb.AppendLine("                                encryptionContext,");
+        sb.AppendLine("                                cancellationToken);");
+        sb.AppendLine();
+
+        // Convert bytes back to property type
+        sb.AppendLine($"                            var {propertyName}String = System.Text.Encoding.UTF8.GetString({propertyName}Plaintext);");
+        sb.AppendLine($"                            entity.{propertyName} = {ConvertStringToPropertyType(property, $"{propertyName}String")};");
+        
+        sb.AppendLine("                        }");
+        sb.AppendLine("                    }");
+        sb.AppendLine("                    catch (Exception ex)");
+        sb.AppendLine("                    {");
+        sb.AppendLine($"                        throw DynamoDbMappingException.PropertyConversionFailed(");
+        sb.AppendLine($"                            typeof({entity.ClassName}),");
+        sb.AppendLine($"                            \"{propertyName}\",");
+        sb.AppendLine($"                            {propertyName.ToLowerInvariant()}Value,");
+        sb.AppendLine($"                            typeof({GetTypeForMetadata(property.PropertyType)}),");
+        sb.AppendLine("                            ex);");
+        sb.AppendLine("                    }");
+        sb.AppendLine("                }");
+        sb.AppendLine("                else");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    throw new InvalidOperationException(\"Property {propertyName} is marked with [Encrypted] but no IFieldEncryptor is configured. Add the Oproto.FluentDynamoDb.Encryption.Kms package and configure encryption.\");");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+    }
+
+    private static string GetPropertyValueAsString(PropertyModel property, string propertyName)
+    {
+        var baseType = GetBaseType(property.PropertyType);
+
+        // For string properties, use directly
+        if (baseType == "string" || baseType == "System.String")
+        {
+            return $"typedEntity.{propertyName}";
+        }
+
+        // For other types, convert to string first
+        return $"typedEntity.{propertyName}.ToString()";
+    }
+
+    private static string ConvertStringToPropertyType(PropertyModel property, string stringVariable)
+    {
+        var baseType = GetBaseType(property.PropertyType);
+
+        // For string properties, use directly
+        if (baseType == "string" || baseType == "System.String")
+        {
+            return stringVariable;
+        }
+
+        // For int
+        if (baseType == "int" || baseType == "System.Int32")
+        {
+            return $"int.Parse({stringVariable})";
+        }
+
+        // For long
+        if (baseType == "long" || baseType == "System.Int64")
+        {
+            return $"long.Parse({stringVariable})";
+        }
+
+        // For double
+        if (baseType == "double" || baseType == "System.Double")
+        {
+            return $"double.Parse({stringVariable})";
+        }
+
+        // For decimal
+        if (baseType == "decimal" || baseType == "System.Decimal")
+        {
+            return $"decimal.Parse({stringVariable})";
+        }
+
+        // For bool
+        if (baseType == "bool" || baseType == "System.Boolean")
+        {
+            return $"bool.Parse({stringVariable})";
+        }
+
+        // For DateTime
+        if (baseType == "DateTime" || baseType == "System.DateTime")
+        {
+            return $"DateTime.Parse({stringVariable})";
+        }
+
+        // For Guid
+        if (baseType == "Guid" || baseType == "System.Guid")
+        {
+            return $"Guid.Parse({stringVariable})";
+        }
+
+        // Default: assume the type has a Parse method or constructor that takes a string
+        return $"{baseType}.Parse({stringVariable})";
     }
 
 }

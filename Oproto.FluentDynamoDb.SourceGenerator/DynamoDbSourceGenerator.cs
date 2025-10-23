@@ -137,6 +137,13 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
             // Generate optimized entity implementation with mapping methods
             var sourceCode = GenerateOptimizedEntityImplementation(entity);
             context.AddSource($"{entity.ClassName}.g.cs", sourceCode);
+
+            // Generate security metadata if entity has sensitive fields
+            var securityMetadata = SecurityMetadataGenerator.GenerateSecurityMetadata(entity);
+            if (!string.IsNullOrEmpty(securityMetadata))
+            {
+                context.AddSource($"{entity.ClassName}SecurityMetadata.g.cs", securityMetadata);
+            }
         }
 
         // Now process projection models and collect them

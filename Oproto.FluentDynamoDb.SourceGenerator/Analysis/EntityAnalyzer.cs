@@ -196,6 +196,10 @@ public class EntityAnalyzer
         var advancedTypeAnalyzer = new AdvancedTypeAnalyzer();
         propertyModel.AdvancedType = advancedTypeAnalyzer.AnalyzeProperty(propertyModel, semanticModel);
 
+        // Analyze security attributes
+        var securityAnalyzer = new SecurityAttributeAnalyzer();
+        propertyModel.Security = securityAnalyzer.AnalyzeProperty(propertyModel, semanticModel);
+
         return propertyModel;
     }
 
@@ -539,6 +543,9 @@ public class EntityAnalyzer
 
         // Validate advanced types (Map, Set, List, TTL, JsonBlob, BlobReference)
         ValidateAdvancedTypes(entityModel);
+
+        // Validate security attributes (Sensitive, Encrypted)
+        ValidateSecurityAttributes(entityModel);
 
         // Additional comprehensive validations
         ValidateEntityComplexity(entityModel);
@@ -1553,6 +1560,30 @@ public class EntityAnalyzer
 
         // Could add checks for other blob provider packages here
         return hasS3Provider;
+    }
+
+    private void ValidateSecurityAttributes(EntityModel entityModel)
+    {
+        var compilation = entityModel.SemanticModel?.Compilation;
+        if (compilation == null)
+            return;
+
+        // Check if Encryption.Kms package is referenced
+        var hasEncryptionKms = compilation.ReferencedAssemblyNames
+            .Any(a => a.Name.Equals("Oproto.FluentDynamoDb.Encryption.Kms", StringComparison.OrdinalIgnoreCase));
+
+        // Check for encrypted properties
+        foreach (var property in entityModel.Properties)
+        {
+            if (property.Security?.IsEncrypted == true && !hasEncryptionKms)
+            {
+                ReportDiagnostic(
+                    DiagnosticDescriptors.MissingEncryptionKms,
+                    property.PropertyDeclaration?.Identifier.GetLocation(),
+                    property.PropertyName,
+                    entityModel.ClassName);
+            }
+        }
     }
 
     private void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, params object[] messageArgs)

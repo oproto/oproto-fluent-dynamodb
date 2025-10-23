@@ -660,4 +660,18 @@ public static class DiagnosticDescriptors
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         description: "Discriminator patterns must use valid syntax with '*' as wildcard. Complex patterns with multiple wildcards in non-standard positions may not be supported.");
+
+    // Security Diagnostics (SEC001-SEC002)
+
+    /// <summary>
+    /// Warning when [Encrypted] is used without referencing the Encryption.Kms package.
+    /// </summary>
+    public static readonly DiagnosticDescriptor MissingEncryptionKms = new(
+        "SEC001",
+        "Missing Encryption.Kms package",
+        "Property '{0}' on entity '{1}' is marked with [Encrypted] but the Oproto.FluentDynamoDb.Encryption.Kms package is not referenced. Add the package reference to enable field-level encryption.",
+        "DynamoDb.Security",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "The [Encrypted] attribute requires the Oproto.FluentDynamoDb.Encryption.Kms package to provide encryption functionality.");
 }
