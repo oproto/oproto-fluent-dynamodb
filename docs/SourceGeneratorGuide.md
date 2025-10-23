@@ -460,6 +460,210 @@ public static partial class YourEntityFields
 - Each generator focuses on one output type
 - No circular dependencies between components
 
+## Field-Level Security
+
+The source generator supports field-level security through the `[Sensitive]` and `[Encrypted]` attributes.
+
+### Sensitive Fields (Logging Redaction)
+
+Mark fields with `[Sensitive]` to exclude their values from log output:
+
+```csharp
+[DynamoDbTable("users")]
+public partial class User
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string UserId { get; set; } = string.Empty;
+    
+    [DynamoDbAttribute("name")]
+    public string Name { get; set; } = string.Empty;
+    
+    [Sensitive]  // Redacted from logs
+    [DynamoDbAttribute("email")]
+    public string Email { get; set; } = string.Empty;
+    
+    [Sensitive]  // Redacted from logs
+    [DynamoDbAttribute("phone")]
+    public string PhoneNumber { get; set; } = string.Empty;
+}
+```
+
+**Generated Code:**
+
+The source generator creates a static set of sensitive field names:
+
+```csharp
+// Generated: UserMetadata.g.cs
+public static partial class UserMetadata
+{
+    private static readonly HashSet<string> SensitiveFields = new()
+    {
+        "email",
+        "phone"
+    };
+    
+    public static bool IsSensitiveField(string fieldName) 
+        => SensitiveFields.Contains(fieldName);
+}
+```
+
+This metadata is used by the logging infrastructure to replace sensitive values with `[REDACTED]`.
+
+### Encrypted Fields
+
+Mark fields with `[Encrypted]` for encryption at rest using AWS KMS:
+
+```csharp
+[DynamoDbTable("customers")]
+public partial class CustomerData
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string CustomerId { get; set; } = string.Empty;
+    
+    [Encrypted]  // Encrypted at rest
+    [Sensitive]  // Also redacted from logs
+    [DynamoDbAttribute("ssn")]
+    public string SocialSecurityNumber { get; set; } = string.Empty;
+    
+    [Encrypted(CacheTtlSeconds = 600)]  // Custom cache TTL
+    [Sensitive]
+    [DynamoDbAttribute("cc")]
+    public string CreditCardNumber { get; set; } = string.Empty;
+}
+```
+
+**Generated Code:**
+
+The source generator modifies the `ToDynamoDb` and `FromDynamoDb` methods to include encryption/decryption calls:
+
+```csharp
+// Generated: CustomerData.g.cs
+public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)
+{
+    var typedEntity = (CustomerData)(object)entity;
+    var item = new Dictionary<string, AttributeValue>(propertyCount);
+    
+    // Regular field
+    item["pk"] = new AttributeValue { S = typedEntity.CustomerId };
+    
+    // Encrypted field - calls IFieldEncryptor if available
+    if (_fieldEncryptor != null)
+    {
+        var plaintext = Encoding.UTF8.GetBytes(typedEntity.SocialSecurityNumber);
+        var context = new FieldEncryptionContext
+        {
+            ContextId = _encryptionContext,
+            CacheTtlSeconds = 300  // From attribute
+        };
+        var ciphertext = await _fieldEncryptor.EncryptAsync(
+            plaintext, 
+            "ssn", 
+            context, 
+            cancellationToken);
+        item["ssn"] = new AttributeValue { B = new MemoryStream(ciphertext) };
+    }
+    else
+    {
+        // Fallback to plaintext if no encryptor configured
+        item["ssn"] = new AttributeValue { S = typedEntity.SocialSecurityNumber };
+    }
+    
+    return item;
+}
+
+public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)
+{
+    var entity = new CustomerData();
+    
+    // Regular field
+    if (item.TryGetValue("pk", out var pkValue))
+        entity.CustomerId = pkValue.S;
+    
+    // Encrypted field - calls IFieldEncryptor if available
+    if (item.TryGetValue("ssn", out var ssnValue))
+    {
+        if (_fieldEncryptor != null && ssnValue.B != null)
+        {
+            var context = new FieldEncryptionContext
+            {
+                ContextId = _encryptionContext,
+                CacheTtlSeconds = 300
+            };
+            var plaintext = await _fieldEncryptor.DecryptAsync(
+                ssnValue.B.ToArray(), 
+                "ssn", 
+                context, 
+                cancellationToken);
+            entity.SocialSecurityNumber = Encoding.UTF8.GetString(plaintext);
+        }
+        else if (ssnValue.S != null)
+        {
+            // Fallback for plaintext data
+            entity.SocialSecurityNumber = ssnValue.S;
+        }
+    }
+    
+    return (TSelf)(object)entity;
+}
+```
+
+### Diagnostic Warning
+
+If you use `[Encrypted]` without the `Oproto.FluentDynamoDb.Encryption.Kms` package, the source generator emits a warning:
+
+```
+Warning FDDB4001: Property 'SocialSecurityNumber' has [Encrypted] attribute but Oproto.FluentDynamoDb.Encryption.Kms package is not referenced. 
+Add the package to enable field encryption: dotnet add package Oproto.FluentDynamoDb.Encryption.Kms
+```
+
+**Solution:**
+
+```bash
+dotnet add package Oproto.FluentDynamoDb.Encryption.Kms
+```
+
+### Combined Attributes
+
+You can combine `[Sensitive]` and `[Encrypted]` for maximum protection:
+
+```csharp
+[Encrypted]  // Encrypted at rest in DynamoDB
+[Sensitive]  // Redacted from logs
+[DynamoDbAttribute("ssn")]
+public string SocialSecurityNumber { get; set; } = string.Empty;
+```
+
+The source generator applies both features:
+1. **Encryption**: Data is encrypted before storing in DynamoDB
+2. **Logging Redaction**: Field value is replaced with `[REDACTED]` in logs
+
+### Storage Format
+
+Encrypted fields are stored as Binary (B) attribute type in DynamoDB using the AWS Encryption SDK message format:
+
+```json
+{
+  "pk": { "S": "customer-123" },
+  "ssn": { "B": "<AWS Encryption SDK binary message>" }
+}
+```
+
+The AWS Encryption SDK format includes:
+- Algorithm suite identifier
+- Encrypted data key(s)
+- Initialization vector (IV)
+- Encrypted content
+- Authentication tag
+- Digital signature (for key commitment)
+
+### See Also
+
+- **[Field-Level Security Guide](advanced-topics/FieldLevelSecurity.md)** - Complete security guide
+- **[Encryption.Kms Package](../Oproto.FluentDynamoDb.Encryption.Kms/README.md)** - Encryption package documentation
+- **[Attribute Reference](reference/AttributeReference.md)** - Complete attribute documentation
+
 ## Compatibility
 
 ### .NET Versions

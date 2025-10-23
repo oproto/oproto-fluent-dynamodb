@@ -32,6 +32,16 @@ Master flexible entity type identification for single-table designs. Covers:
 - Discriminator validation and error handling
 - Migration from legacy discriminator syntax
 
+### [Field-Level Security](FieldLevelSecurity.md)
+Protect sensitive data with logging redaction and optional KMS-based encryption. Covers:
+- Logging redaction with `[Sensitive]` attribute
+- Field encryption with `[Encrypted]` attribute and AWS KMS
+- Multi-context encryption for multi-tenant applications
+- AWS Encryption SDK integration
+- Combined security features
+- Integration with external blob storage
+- Best practices and troubleshooting
+
 ### [Global Secondary Indexes](GlobalSecondaryIndexes.md)
 Master GSI configuration and querying for alternative access patterns. Covers:
 - GSI attribute configuration
@@ -82,8 +92,9 @@ If you're new to advanced topics, we recommend starting with:
 1. **[Advanced Type System](AdvancedTypes.md)** - Use native DynamoDB types and advanced storage
 2. **[Composite Entities](CompositeEntities.md)** - Essential for modeling complex data
 3. **[Discriminators](Discriminators.md)** - Configure entity type identification for single-table design
-4. **[Global Secondary Indexes](GlobalSecondaryIndexes.md)** - Enable alternative query patterns
-5. **[Performance Optimization](PerformanceOptimization.md)** - Improve efficiency and reduce costs
+4. **[Field-Level Security](FieldLevelSecurity.md)** - Protect sensitive data with encryption and redaction
+5. **[Global Secondary Indexes](GlobalSecondaryIndexes.md)** - Enable alternative query patterns
+6. **[Performance Optimization](PerformanceOptimization.md)** - Improve efficiency and reduce costs
 
 ## Prerequisites
 

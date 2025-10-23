@@ -34,6 +34,7 @@ Explore advanced patterns and optimizations.
 - **[Advanced Type System](advanced-topics/AdvancedTypes.md)** - Maps, Sets, Lists, TTL, JSON blobs, and blob storage
 - **[Composite Entities](advanced-topics/CompositeEntities.md)** - Multi-item and related entities
 - **[Discriminators](advanced-topics/Discriminators.md)** - Flexible entity type identification for single-table design
+- **[Field-Level Security](advanced-topics/FieldLevelSecurity.md)** - Logging redaction and KMS-based encryption
 - **[Global Secondary Indexes](advanced-topics/GlobalSecondaryIndexes.md)** - GSI configuration and querying
 - **[STS Integration](advanced-topics/STSIntegration.md)** - Custom client support for multi-tenancy
 - **[Performance Optimization](advanced-topics/PerformanceOptimization.md)** - Performance tuning guide
@@ -99,6 +100,9 @@ Practical code examples for common scenarios.
 
 **Configure discriminators for single-table design**
 → [Discriminators](advanced-topics/Discriminators.md)
+
+**Protect sensitive data**
+→ [Field-Level Security](advanced-topics/FieldLevelSecurity.md)
 
 **Implement multi-tenancy**
 → [STS Integration](advanced-topics/STSIntegration.md)

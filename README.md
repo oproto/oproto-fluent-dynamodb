@@ -127,6 +127,10 @@ Efficient batch get/write operations and full transaction support with expressio
 Fluent pattern matching for DynamoDB Streams in Lambda functions with support for INSERT, UPDATE, DELETE, and TTL events.
 - **Learn more:** [Developer Guide](docs/DeveloperGuide.md)
 
+### 🔒 Field-Level Security
+Protect sensitive data with logging redaction and optional KMS-based encryption. Mark fields with `[Sensitive]` to exclude from logs, or `[Encrypted]` for encryption at rest with AWS KMS. Supports multi-tenant encryption with per-context keys.
+- **Learn more:** [Field-Level Security Guide](docs/advanced-topics/FieldLevelSecurity.md)
+
 ### 📊 Logging and Diagnostics
 Comprehensive logging support for debugging and monitoring DynamoDB operations, especially useful in AOT environments where stack traces are limited.
 - **Learn more:** [Logging Configuration](docs/core-features/LoggingConfiguration.md)

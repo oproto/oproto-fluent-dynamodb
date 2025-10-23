@@ -231,8 +231,8 @@
     - Test custom configuration
     - _Requirements: 6.1, 6.2_
 
-- [ ] 14. Write integration tests
-  - [ ] 14.1 Test end-to-end encryption with real DynamoDB Local
+- [x] 14. Write integration tests
+  - [x] 14.1 Test end-to-end encryption with real DynamoDB Local
     - Create entity with encrypted fields
     - Put to DynamoDB
     - Verify encrypted format in DynamoDB (Binary type, AWS Encryption SDK format)
@@ -241,35 +241,35 @@
     - Verify encryption context is preserved
     - _Requirements: 2.2, 2.3, 2.5_
   
-  - [ ] 14.2 Test multi-context encryption
+  - [x] 14.2 Test multi-context encryption
     - Encrypt data for context A
     - Encrypt data for context B
     - Verify different keys used
     - Verify data encrypted with context A cannot be decrypted with context B
     - _Requirements: 3.1, 3.2, 3.5_
   
-  - [ ] 14.3 Test logging redaction integration
+  - [x] 14.3 Test logging redaction integration
     - Enable logging
     - Perform operations on entities with sensitive fields
     - Verify log output contains [REDACTED] for sensitive fields
     - Verify non-sensitive fields logged normally
     - _Requirements: 1.1, 1.2, 1.3_
   
-  - [ ] 14.4 Test combined security features
+  - [x] 14.4 Test combined security features
     - Entity with both Sensitive and Encrypted attributes
     - Verify encryption happens
     - Verify logging redaction happens
     - Verify decryption works
     - _Requirements: 4.5_
   
-  - [ ] 14.5 Test ambient context flow
+  - [x] 14.5 Test ambient context flow
     - Set EncryptionContext.Current
     - Perform multiple operations
     - Verify context flows through async calls
     - Verify context isolation between async flows
     - _Requirements: 3.6_
   
-  - [ ] 14.6 Test encrypted field with BlobReferenceAttribute
+  - [x] 14.6 Test encrypted field with BlobReferenceAttribute
     - Create entity with both [Encrypted] and [BlobReference] attributes
     - Put to DynamoDB
     - Verify blob reference stored in DynamoDB
@@ -278,3 +278,40 @@
     - Verify transparent decryption from blob storage
     - Note: Tests integration with existing BlobReferenceAttribute infrastructure
     - _Requirements: 8.1, 8.2, 8.6_
+
+- [x] 15. Update core project documentation
+  - [x] 15.1 Add field-level security guide to docs/
+    - Document SensitiveAttribute usage and logging redaction
+    - Document EncryptedAttribute usage with code examples
+    - Explain multi-context encryption patterns
+    - Document IKmsKeyResolver interface and DefaultKmsKeyResolver
+    - Document AwsEncryptionSdkOptions configuration
+    - Include examples of combined Sensitive + Encrypted attributes
+    - Document integration with BlobReferenceAttribute for large encrypted fields
+    - _Requirements: 1.1, 1.2, 1.5, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 4.5, 6.1, 6.2, 8.1, 8.2_
+  
+  - [x] 15.2 Update main README.md
+    - Add field-level security to key features list
+    - Add brief overview of SensitiveAttribute and EncryptedAttribute
+    - Link to detailed field-level security guide
+    - _Requirements: 1.1, 2.1_
+  
+  - [x] 15.3 Update docs/INDEX.md
+    - Add field-level security guide to documentation index
+    - Categorize under security or advanced topics section
+    - _Requirements: 1.1, 2.1_
+  
+  - [x] 15.4 Create Encryption.Kms package README
+    - Document package purpose and when to use it
+    - Document setup and configuration steps
+    - Include complete working examples
+    - Document error handling and troubleshooting
+    - Document AWS Encryption SDK integration details
+    - Document caching behavior and configuration
+    - _Requirements: 2.1, 3.3, 3.4, 3.5, 5.1, 5.2, 5.3, 6.1, 6.2, 6.3, 7.1, 7.2, 7.3, 7.4_
+  
+  - [x] 15.5 Update SourceGeneratorGuide.md
+    - Document how EncryptedAttribute affects code generation
+    - Document the diagnostic warning for missing Encryption.Kms reference
+    - Include generated code examples for encrypted fields
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_

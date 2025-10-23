@@ -359,6 +359,16 @@ Comprehensive alphabetical index of all topics covered in the Oproto.FluentDynam
 - Overview: [Querying Data](core-features/QueryingData.md#scan-operations)
 - Performance warnings: [Querying Data](core-features/QueryingData.md#scan-operations)
 
+**Sensitive Attribute**
+- Reference: [Attribute Reference](reference/AttributeReference.md#sensitive-attribute)
+- Usage: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#logging-redaction)
+- Combined with encryption: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#combined-security-features)
+
+**Sensitive Data**
+- Logging redaction: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#logging-redaction)
+- Encryption: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#field-encryption)
+- Best practices: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#best-practices)
+
 **Separators**
 - Custom separators: [Entity Definition](core-features/EntityDefinition.md#custom-separators)
 - In computed keys: [Entity Definition](core-features/EntityDefinition.md#default-separator-no-format)
@@ -463,6 +473,7 @@ Comprehensive alphabetical index of all topics covered in the Oproto.FluentDynam
 **Advanced Topics**
 - [Composite Entities](advanced-topics/CompositeEntities.md)
 - [Global Secondary Indexes](advanced-topics/GlobalSecondaryIndexes.md)
+- [Field-Level Security](advanced-topics/FieldLevelSecurity.md)
 - [STS Integration](advanced-topics/STSIntegration.md)
 - [Performance Optimization](advanced-topics/PerformanceOptimization.md)
 - [Manual Patterns](advanced-topics/ManualPatterns.md)
@@ -484,6 +495,7 @@ Comprehensive alphabetical index of all topics covered in the Oproto.FluentDynam
 - Optimize queries with projections → [Projection Models](core-features/ProjectionModels.md)
 - Model complex relationships → [Composite Entities](advanced-topics/CompositeEntities.md)
 - Create GSIs → [Global Secondary Indexes](advanced-topics/GlobalSecondaryIndexes.md)
+- Protect sensitive data → [Field-Level Security](advanced-topics/FieldLevelSecurity.md)
 - Optimize performance → [Performance Optimization](advanced-topics/PerformanceOptimization.md)
 - Handle errors → [Error Handling](reference/ErrorHandling.md)
 - Fix issues → [Troubleshooting](reference/Troubleshooting.md)
@@ -520,6 +532,25 @@ Comprehensive alphabetical index of all topics covered in the Oproto.FluentDynam
 **Empty Collections**
 - Handling: [Advanced Types](advanced-topics/AdvancedTypes.md#empty-collection-handling)
 - Best practices: [Advanced Types Examples](examples/AdvancedTypesExamples.md#empty-collection-handling)
+
+**Encrypted Attribute**
+- Reference: [Attribute Reference](reference/AttributeReference.md#encrypted-attribute)
+- Usage: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#field-encryption)
+- Multi-context: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#multi-context-encryption)
+
+**Encryption**
+- Complete guide: [Field-Level Security](advanced-topics/FieldLevelSecurity.md)
+- KMS integration: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#field-encryption)
+- Multi-tenant: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#multi-context-encryption)
+- Blob storage: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#integration-with-blob-storage)
+
+## F
+
+**Field-Level Security**
+- Complete guide: [Field-Level Security](advanced-topics/FieldLevelSecurity.md)
+- Logging redaction: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#logging-redaction)
+- Field encryption: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#field-encryption)
+- Multi-context: [Field-Level Security](advanced-topics/FieldLevelSecurity.md#multi-context-encryption)
 
 ## J
 

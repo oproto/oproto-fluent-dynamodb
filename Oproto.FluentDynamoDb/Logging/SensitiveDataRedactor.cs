@@ -7,7 +7,7 @@ namespace Oproto.FluentDynamoDb.Logging;
 /// This ensures compliance with data protection regulations by preventing sensitive data
 /// from appearing in log output.
 /// </summary>
-internal static class SensitiveDataRedactor
+public static class SensitiveDataRedactor
 {
     private const string RedactedPlaceholder = "[REDACTED]";
 
