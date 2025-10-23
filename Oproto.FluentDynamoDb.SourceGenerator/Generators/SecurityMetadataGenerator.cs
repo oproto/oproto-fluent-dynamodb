@@ -6,7 +6,7 @@ namespace Oproto.FluentDynamoDb.SourceGenerator.Generators;
 /// <summary>
 /// Generates security metadata for entities with sensitive or encrypted fields.
 /// </summary>
-internal static class SecurityMetadataGenerator
+public static class SecurityMetadataGenerator
 {
     /// <summary>
     /// Generates a static metadata class with sensitive field information.

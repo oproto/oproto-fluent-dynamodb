@@ -154,54 +154,55 @@
   - Store context in request builder state
   - _Requirements: 3.1_
 
-- [ ] 10. Write unit tests for attributes
-  - [ ] 10.1 Test SensitiveAttribute application to properties
-    - Verify attribute can be applied
-    - Test reflection access
+- [x] 10. Write unit tests for attributes
+  - [x] 10.1 Test SensitiveAttribute instantiation
+    - Verify attribute can be instantiated
+    - Verify attribute has correct AttributeUsage settings
     - _Requirements: 1.5_
   
-  - [ ] 10.2 Test EncryptedAttribute default values and customization
+  - [x] 10.2 Test EncryptedAttribute default values and customization
     - Verify default CacheTtlSeconds is 300
     - Test custom CacheTtlSeconds values
+    - Verify attribute has correct AttributeUsage settings
     - _Requirements: 6.1, 6.2_
 
-- [ ] 11. Write unit tests for logging redaction
-  - [ ] 11.1 Test SensitiveDataRedactor with single sensitive field
+- [x] 11. Write unit tests for logging redaction
+  - [x] 11.1 Test SensitiveDataRedactor with single sensitive field
     - Verify sensitive value replaced with [REDACTED]
     - Verify field name preserved
     - _Requirements: 1.1, 1.2, 1.4_
   
-  - [ ] 11.2 Test SensitiveDataRedactor with multiple sensitive fields
+  - [x] 11.2 Test SensitiveDataRedactor with multiple sensitive fields
     - Verify all sensitive fields redacted
     - Verify non-sensitive fields unchanged
     - _Requirements: 1.1, 1.2_
   
-  - [ ] 11.3 Test SensitiveDataRedactor with empty/null items
+  - [x] 11.3 Test SensitiveDataRedactor with empty/null items
     - Verify graceful handling of edge cases
     - _Requirements: 1.1_
 
-- [ ] 12. Write unit tests for source generator
-  - [ ] 12.1 Test sensitive field metadata generation
+- [x] 12. Write unit tests for source generator
+  - [x] 12.1 Test sensitive field metadata generation
     - Verify HashSet generation
     - Verify IsSensitiveField method
     - _Requirements: 1.1, 1.4_
   
-  - [ ] 12.2 Test encryption code generation in ToItem
+  - [x] 12.2 Test encryption code generation in ToItem
     - Verify EncryptAsync calls generated
     - Verify FieldEncryptionContext passed correctly
     - Verify Binary AttributeValue storage
     - _Requirements: 2.2, 2.5, 4.1_
   
-  - [ ] 12.3 Test decryption code generation in FromItem
+  - [x] 12.3 Test decryption code generation in FromItem
     - Verify DecryptAsync calls generated
     - Verify Binary AttributeValue reading
     - _Requirements: 2.3, 4.2_
   
-  - [ ] 12.4 Test diagnostic for missing Encryption.Kms reference
+  - [x] 12.4 Test diagnostic for missing Encryption.Kms reference
     - Verify warning emitted when EncryptedAttribute used without package
     - _Requirements: 4.4_
   
-  - [ ] 12.5 Test combined Sensitive + Encrypted attributes
+  - [x] 12.5 Test combined Sensitive + Encrypted attributes
     - Verify both features applied
     - _Requirements: 4.5_
 

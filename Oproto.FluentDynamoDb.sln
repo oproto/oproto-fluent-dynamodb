@@ -28,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oproto.FluentDynamoDb.Loggi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oproto.FluentDynamoDb.Encryption.Kms", "Oproto.FluentDynamoDb.Encryption.Kms\Oproto.FluentDynamoDb.Encryption.Kms.csproj", "{EF169CFD-1510-4E41-923B-756FAFFF1B7C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Oproto.FluentDynamoDb.Attributes.UnitTests", "Oproto.FluentDynamoDb.Attributes.UnitTests\Oproto.FluentDynamoDb.Attributes.UnitTests.csproj", "{8E87C0C5-7C83-4248-A713-6E387D01BE33}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -74,5 +76,9 @@ Global
 		{EF169CFD-1510-4E41-923B-756FAFFF1B7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF169CFD-1510-4E41-923B-756FAFFF1B7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF169CFD-1510-4E41-923B-756FAFFF1B7C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E87C0C5-7C83-4248-A713-6E387D01BE33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E87C0C5-7C83-4248-A713-6E387D01BE33}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E87C0C5-7C83-4248-A713-6E387D01BE33}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E87C0C5-7C83-4248-A713-6E387D01BE33}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
