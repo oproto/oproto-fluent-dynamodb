@@ -112,21 +112,21 @@
     - Include GSI name, expected type, and actual type in error message
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 7. Implement discriminator support for multi-entity projections
-  - [ ] 7.1 Detect discriminator properties in projection analysis
+- [x] 7. Implement discriminator support for multi-entity projections
+  - [x] 7.1 Detect discriminator properties in projection analysis
     - Check if source entity has EntityDiscriminator configured
     - Include discriminator property in projection expression
     - Store discriminator value in ProjectionModel
     - _Requirements: 4.1, 4.2, 4.3_
   
-  - [ ] 7.2 Implement discriminator-based routing in hydration
+  - [x] 7.2 Implement discriminator-based routing in hydration
     - Read discriminator value from DynamoDB item
     - Route to correct projection type based on discriminator
     - Handle items with unknown discriminator values
     - Throw DiscriminatorMismatchException if discriminator doesn't match
     - _Requirements: 4.1, 4.3, 4.4_
   
-  - [ ] 7.3 Support multiple projection types in single query
+  - [x] 7.3 Support multiple projection types in single query
     - Handle query results containing multiple entity types
     - Route each item to its corresponding projection type
     - Return heterogeneous list if needed (or skip incompatible items)

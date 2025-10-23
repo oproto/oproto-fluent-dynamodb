@@ -54,7 +54,7 @@ public class TestMetricsReporter
                 GeneratedAt = DateTime.UtcNow,
                 TotalTests = _metrics.Count,
                 PassedTests = _metrics.Count(m => m.Passed),
-                FailedTests = _metrics.Count(m => !m.Passed),
+                FailedTestCount = _metrics.Count(m => !m.Passed),
                 TotalDurationMs = _metrics.Sum(m => m.DurationMs),
                 AverageDurationMs = _metrics.Any() ? _metrics.Average(m => m.DurationMs) : 0,
                 MinDurationMs = _metrics.Any() ? _metrics.Min(m => m.DurationMs) : 0,
@@ -129,7 +129,7 @@ public class TestMetricsReporter
         sb.AppendLine("═══ OVERALL SUMMARY ═══");
         sb.AppendLine($"Total Tests:      {report.TotalTests}");
         sb.AppendLine($"Passed:           {report.PassedTests} ({GetPercentage(report.PassedTests, report.TotalTests):F1}%)");
-        sb.AppendLine($"Failed:           {report.FailedTests} ({GetPercentage(report.FailedTests, report.TotalTests):F1}%)");
+        sb.AppendLine($"Failed:           {report.FailedTestCount} ({GetPercentage(report.FailedTestCount, report.TotalTests):F1}%)");
         sb.AppendLine($"Total Duration:   {FormatDuration(report.TotalDurationMs)}");
         sb.AppendLine($"Average Duration: {report.AverageDurationMs:F2}ms");
         sb.AppendLine($"Min Duration:     {report.MinDurationMs}ms");
@@ -234,7 +234,7 @@ public class TestMetricsReporter
         sb.AppendLine("|--------|-------|");
         sb.AppendLine($"| Total Tests | {report.TotalTests} |");
         sb.AppendLine($"| ✅ Passed | {report.PassedTests} ({GetPercentage(report.PassedTests, report.TotalTests):F1}%) |");
-        sb.AppendLine($"| ❌ Failed | {report.FailedTests} ({GetPercentage(report.FailedTests, report.TotalTests):F1}%) |");
+        sb.AppendLine($"| ❌ Failed | {report.FailedTestCount} ({GetPercentage(report.FailedTestCount, report.TotalTests):F1}%) |");
         sb.AppendLine($"| ⏱️ Total Duration | {FormatDuration(report.TotalDurationMs)} |");
         sb.AppendLine($"| 📈 Average Duration | {report.AverageDurationMs:F2}ms |");
         sb.AppendLine();
@@ -363,7 +363,7 @@ public class TestMetricsReport
     public DateTime GeneratedAt { get; set; }
     public int TotalTests { get; set; }
     public int PassedTests { get; set; }
-    public int FailedTests { get; set; }
+    public int FailedTestCount { get; set; }
     public long TotalDurationMs { get; set; }
     public double AverageDurationMs { get; set; }
     public long MinDurationMs { get; set; }

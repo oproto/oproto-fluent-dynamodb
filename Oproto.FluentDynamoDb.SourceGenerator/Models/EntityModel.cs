@@ -26,7 +26,13 @@ public class EntityModel
     /// <summary>
     /// Gets or sets the optional entity discriminator for multi-type tables.
     /// </summary>
+    [Obsolete("Use Discriminator property instead")]
     public string? EntityDiscriminator { get; set; }
+
+    /// <summary>
+    /// Gets or sets the discriminator configuration for this entity.
+    /// </summary>
+    public DiscriminatorConfig? Discriminator { get; set; }
 
     /// <summary>
     /// Gets or sets the properties of the entity.

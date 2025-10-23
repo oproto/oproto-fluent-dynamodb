@@ -99,6 +99,43 @@ public string GsiSortKey { get; set; } = string.Empty;
 
 **Details:** [Global Secondary Indexes](advanced-topics/GlobalSecondaryIndexes.md)
 
+### Discriminators
+
+```csharp
+// Attribute-based discriminator
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "entity_type",
+    DiscriminatorValue = "USER")]
+public partial class User { }
+
+// Sort key pattern discriminator
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "SK",
+    DiscriminatorPattern = "USER#*")]
+public partial class User 
+{
+    [SortKey]
+    [DynamoDbAttribute("sk")]
+    public string SortKey { get; set; } = string.Empty;
+}
+
+// GSI-specific discriminator
+[GlobalSecondaryIndex("StatusIndex",
+    IsPartitionKey = true,
+    DiscriminatorProperty = "GSI1SK",
+    DiscriminatorPattern = "USER#*")]
+[DynamoDbAttribute("status")]
+public string Status { get; set; } = string.Empty;
+```
+
+**Pattern Matching:**
+- `USER#*` - Starts with "USER#"
+- `*#USER` - Ends with "#USER"
+- `*#USER#*` - Contains "#USER#"
+- `USER` - Exact match
+
+**Details:** [Entity Definition](core-features/EntityDefinition.md#flexible-discriminator-configuration)
+
 ---
 
 ## Advanced Types

@@ -34,4 +34,9 @@ public class GlobalSecondaryIndexModel
     /// Gets a value indicating whether this GSI has custom key formatting.
     /// </summary>
     public bool HasCustomKeyFormat => !string.IsNullOrEmpty(KeyFormat);
+
+    /// <summary>
+    /// Gets or sets the GSI-specific discriminator configuration.
+    /// </summary>
+    public DiscriminatorConfig? Discriminator { get; set; }
 }

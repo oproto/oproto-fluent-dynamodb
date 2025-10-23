@@ -35,11 +35,101 @@ This attribute is required on every entity class. It tells the source generator 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `tableName` | `string` | Yes | The DynamoDB table name |
-| `EntityDiscriminator` | `string` | No | Optional discriminator for multi-type tables |
 
 ### Properties
 
-**EntityDiscriminator**: When multiple entity types share the same table, use this property to distinguish between them. The discriminator is typically stored in a dedicated attribute.
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `EntityDiscriminator` | `string?` | `null` | **[Obsolete]** Legacy discriminator (use DiscriminatorProperty/Value instead) |
+| `DiscriminatorProperty` | `string?` | `null` | DynamoDB attribute name containing the discriminator (e.g., "entity_type", "SK", "PK") |
+| `DiscriminatorValue` | `string?` | `null` | Exact value to match for this entity type |
+| `DiscriminatorPattern` | `string?` | `null` | Pattern to match with wildcard support (e.g., "USER#*") |
+
+### Discriminator Configuration
+
+The discriminator system supports flexible entity type identification for single-table designs:
+
+#### Attribute-Based Discriminator
+
+Use a dedicated attribute to store entity type:
+
+```csharp
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "entity_type",
+    DiscriminatorValue = "USER")]
+public partial class User { }
+
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "entity_type",
+    DiscriminatorValue = "ORDER")]
+public partial class Order { }
+```
+
+**DynamoDB Item:**
+```json
+{
+  "pk": "USER#123",
+  "sk": "METADATA",
+  "entity_type": "USER",
+  "name": "John"
+}
+```
+
+#### Sort Key Pattern Discriminator
+
+Use sort key prefixes to identify entity types:
+
+```csharp
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "SK",
+    DiscriminatorPattern = "USER#*")]
+public partial class User 
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string TenantId { get; set; } = string.Empty;
+    
+    [SortKey]
+    [DynamoDbAttribute("sk")]
+    public string SortKey { get; set; } = string.Empty;
+}
+```
+
+**DynamoDB Item:**
+```json
+{
+  "pk": "TENANT#abc",
+  "sk": "USER#123",
+  "name": "John"
+}
+```
+
+#### Pattern Matching
+
+Discriminator patterns support wildcard matching:
+
+| Pattern | Strategy | Matches | Example |
+|---------|----------|---------|---------|
+| `USER#*` | StartsWith | Starts with "USER#" | `USER#123`, `USER#abc` |
+| `*#USER` | EndsWith | Ends with "#USER" | `TENANT#abc#USER` |
+| `*#USER#*` | Contains | Contains "#USER#" | `TENANT#abc#USER#123` |
+| `USER` | ExactMatch | Exact match only | `USER` |
+
+#### Partition Key Discriminator
+
+Use partition key for entity type identification:
+
+```csharp
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "PK",
+    DiscriminatorPattern = "USER#*")]
+public partial class User 
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string PartitionKey { get; set; } = string.Empty;
+}
+```
 
 ### Example
 
@@ -51,19 +141,53 @@ public partial class User
     // Properties...
 }
 
-// With entity discriminator for multi-type tables
-[DynamoDbTable("entities", EntityDiscriminator = "USER")]
+// Attribute-based discriminator
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "entity_type",
+    DiscriminatorValue = "USER")]
 public partial class User
 {
     // Properties...
 }
 
-[DynamoDbTable("entities", EntityDiscriminator = "ORDER")]
-public partial class Order
+// Sort key pattern discriminator
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "SK",
+    DiscriminatorPattern = "USER#*")]
+public partial class User
 {
-    // Properties...
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string TenantId { get; set; } = string.Empty;
+    
+    [SortKey]
+    [DynamoDbAttribute("sk")]
+    public string SortKey { get; set; } = string.Empty;
+}
+
+// Legacy (deprecated but still supported)
+[DynamoDbTable("entities", EntityDiscriminator = "USER")]
+public partial class LegacyUser
+{
+    // Equivalent to:
+    // DiscriminatorProperty = "entity_type"
+    // DiscriminatorValue = "USER"
 }
 ```
+
+### Validation Rules
+
+- `DiscriminatorValue` and `DiscriminatorPattern` are mutually exclusive
+- If both are specified, `DiscriminatorValue` takes precedence and a warning is emitted
+- `DiscriminatorValue` or `DiscriminatorPattern` require `DiscriminatorProperty` to be set
+- If no discriminator is configured, no validation is performed
+
+### Behavior
+
+- Discriminator validation occurs during entity hydration from DynamoDB
+- If validation fails, a `DiscriminatorMismatchException` is thrown with expected and actual values
+- Discriminator properties are automatically included in projection expressions
+- Pattern matching is optimized at compile-time for performance
 
 
 ## [DynamoDbAttribute]
@@ -280,6 +404,9 @@ Defines properties that participate in Global Secondary Indexes, enabling altern
 | `IsPartitionKey` | `bool` | `false` | Whether this property is the GSI partition key |
 | `IsSortKey` | `bool` | `false` | Whether this property is the GSI sort key |
 | `KeyFormat` | `string?` | `null` | Format pattern for composite keys |
+| `DiscriminatorProperty` | `string?` | `null` | GSI-specific discriminator property (overrides table-level discriminator) |
+| `DiscriminatorValue` | `string?` | `null` | GSI-specific discriminator exact value |
+| `DiscriminatorPattern` | `string?` | `null` | GSI-specific discriminator pattern with wildcard support |
 
 ### Example
 
@@ -329,6 +456,34 @@ public partial class Product
     [Computed(nameof(Category), nameof(Subcategory))]
     [DynamoDbAttribute("category_sk")]
     public string CategoryKey { get; set; } = string.Empty;
+}
+
+// GSI-specific discriminator
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "SK",
+    DiscriminatorPattern = "USER#*")]
+public partial class User
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string TenantId { get; set; } = string.Empty;
+    
+    [SortKey]
+    [DynamoDbAttribute("sk")]
+    public string SortKey { get; set; } = string.Empty;
+    
+    // GSI uses different discriminator pattern
+    [GlobalSecondaryIndex("StatusIndex",
+        IsPartitionKey = true,
+        DiscriminatorProperty = "GSI1SK",
+        DiscriminatorPattern = "USER#*")]
+    [DynamoDbAttribute("status")]
+    public string Status { get; set; } = string.Empty;
+    
+    [GlobalSecondaryIndex("StatusIndex",
+        IsSortKey = true)]
+    [DynamoDbAttribute("gsi1sk")]
+    public string StatusSortKey { get; set; } = string.Empty;
 }
 ```
 

@@ -32,15 +32,20 @@ public static class ProjectionExpressionGenerator
             }
         }
         
-        // Include discriminator property if source entity uses discriminators
-        if (!string.IsNullOrEmpty(projection.DiscriminatorProperty))
+        // Include entity-level discriminator property if configured
+        var discriminatorProp = DiscriminatorCodeGenerator.GetDiscriminatorPropertyName(projection.Discriminator);
+        if (!string.IsNullOrEmpty(discriminatorProp) && !attributeNames.Contains(discriminatorProp))
         {
-            // Check if discriminator is not already included
-            var discriminatorAttributeName = GetDiscriminatorAttributeName(projection);
-            if (!attributeNames.Contains(discriminatorAttributeName))
-            {
-                attributeNames.Add(discriminatorAttributeName);
-            }
+            attributeNames.Add(discriminatorProp);
+        }
+        
+        // Include GSI-specific discriminator if different from entity discriminator
+        var gsiDiscriminatorProp = DiscriminatorCodeGenerator.GetDiscriminatorPropertyName(projection.GsiDiscriminator);
+        if (!string.IsNullOrEmpty(gsiDiscriminatorProp) && 
+            gsiDiscriminatorProp != discriminatorProp &&
+            !attributeNames.Contains(gsiDiscriminatorProp))
+        {
+            attributeNames.Add(gsiDiscriminatorProp);
         }
         
         // Join with comma and space for readability
@@ -95,20 +100,29 @@ public static class ProjectionExpressionGenerator
         sb.AppendLine();
         
         // Discriminator information if applicable
-        if (!string.IsNullOrEmpty(projection.DiscriminatorProperty))
+        if (projection.Discriminator != null && projection.Discriminator.IsValid)
         {
             sb.AppendLine($"        /// <summary>");
             sb.AppendLine($"        /// The discriminator property name for multi-entity queries.");
             sb.AppendLine($"        /// </summary>");
-            sb.AppendLine($"        public const string DiscriminatorProperty = \"{projection.DiscriminatorProperty}\";");
+            sb.AppendLine($"        public const string DiscriminatorProperty = \"{projection.Discriminator.PropertyName}\";");
             sb.AppendLine();
             
-            if (!string.IsNullOrEmpty(projection.DiscriminatorValue))
+            if (projection.Discriminator.Strategy == DiscriminatorStrategy.ExactMatch && 
+                !string.IsNullOrEmpty(projection.Discriminator.ExactValue))
             {
                 sb.AppendLine($"        /// <summary>");
                 sb.AppendLine($"        /// The discriminator value for the source entity.");
                 sb.AppendLine($"        /// </summary>");
-                sb.AppendLine($"        public const string DiscriminatorValue = \"{projection.DiscriminatorValue}\";");
+                sb.AppendLine($"        public const string DiscriminatorValue = \"{projection.Discriminator.ExactValue}\";");
+                sb.AppendLine();
+            }
+            else if (!string.IsNullOrEmpty(projection.Discriminator.Pattern))
+            {
+                sb.AppendLine($"        /// <summary>");
+                sb.AppendLine($"        /// The discriminator pattern for the source entity.");
+                sb.AppendLine($"        /// </summary>");
+                sb.AppendLine($"        public const string DiscriminatorPattern = \"{projection.Discriminator.Pattern}\";");
                 sb.AppendLine();
             }
         }
@@ -190,6 +204,16 @@ public static class ProjectionExpressionGenerator
         sb.AppendLine();
         sb.AppendLine("            try");
         sb.AppendLine("            {");
+        
+        // Generate discriminator validation if applicable
+        if (projection.Discriminator != null && projection.Discriminator.IsValid)
+        {
+            var validationCode = DiscriminatorCodeGenerator.GenerateDiscriminatorValidation(
+                projection.Discriminator, 
+                projection.ClassName);
+            sb.Append(validationCode);
+        }
+        
         sb.AppendLine($"                var projection = new {projection.ClassName}();");
         sb.AppendLine();
         

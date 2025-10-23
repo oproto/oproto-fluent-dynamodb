@@ -622,4 +622,42 @@ public static class DiagnosticDescriptors
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "Projections with many properties may not provide significant performance benefits.");
+
+    // Discriminator Configuration Diagnostics (DISC001-DISC003)
+
+    /// <summary>
+    /// Warning when both DiscriminatorValue and DiscriminatorPattern are specified.
+    /// </summary>
+    public static readonly DiagnosticDescriptor BothDiscriminatorValueAndPattern = new(
+        "DISC001",
+        "Both DiscriminatorValue and DiscriminatorPattern specified",
+        "Entity '{0}' has both DiscriminatorValue and DiscriminatorPattern specified. Only one should be used. DiscriminatorValue will take precedence.",
+        "DynamoDb.Discriminator",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "DiscriminatorValue and DiscriminatorPattern are mutually exclusive. Specify only one to avoid confusion.");
+
+    /// <summary>
+    /// Error when DiscriminatorValue or DiscriminatorPattern is specified without DiscriminatorProperty.
+    /// </summary>
+    public static readonly DiagnosticDescriptor DiscriminatorValueWithoutProperty = new(
+        "DISC002",
+        "DiscriminatorValue or DiscriminatorPattern without DiscriminatorProperty",
+        "Entity '{0}' has DiscriminatorValue or DiscriminatorPattern specified but DiscriminatorProperty is missing. Specify DiscriminatorProperty to indicate which attribute contains the discriminator.",
+        "DynamoDb.Discriminator",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "DiscriminatorProperty must be specified when using DiscriminatorValue or DiscriminatorPattern to indicate which DynamoDB attribute contains the discriminator.");
+
+    /// <summary>
+    /// Error when discriminator pattern has invalid syntax.
+    /// </summary>
+    public static readonly DiagnosticDescriptor InvalidDiscriminatorPattern = new(
+        "DISC003",
+        "Invalid discriminator pattern syntax",
+        "Entity '{0}' has invalid discriminator pattern '{1}': {2}. Patterns should use '*' as a wildcard (e.g., 'USER#*', '*#USER', '*USER*').",
+        "DynamoDb.Discriminator",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Discriminator patterns must use valid syntax with '*' as wildcard. Complex patterns with multiple wildcards in non-standard positions may not be supported.");
 }

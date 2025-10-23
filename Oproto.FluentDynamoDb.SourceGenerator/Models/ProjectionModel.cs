@@ -36,12 +36,24 @@ public class ProjectionModel
     /// <summary>
     /// Gets or sets the discriminator property name if source entity uses discriminators.
     /// </summary>
+    [Obsolete("Use Discriminator property instead")]
     public string? DiscriminatorProperty { get; set; }
     
     /// <summary>
     /// Gets or sets the discriminator value for the source entity.
     /// </summary>
+    [Obsolete("Use Discriminator property instead")]
     public string? DiscriminatorValue { get; set; }
+
+    /// <summary>
+    /// Gets or sets the discriminator configuration for the projection (inherited from source entity).
+    /// </summary>
+    public DiscriminatorConfig? Discriminator { get; set; }
+
+    /// <summary>
+    /// Gets or sets the GSI-specific discriminator if this projection is for a specific GSI.
+    /// </summary>
+    public DiscriminatorConfig? GsiDiscriminator { get; set; }
     
     /// <summary>
     /// Gets or sets the original class declaration syntax node.

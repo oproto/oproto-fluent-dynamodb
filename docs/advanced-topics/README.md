@@ -23,6 +23,15 @@ Learn how to model complex relationships using multi-item entities and related d
 - Sort key pattern matching
 - Real-world examples (orders with items, customers with addresses)
 
+### [Discriminators](Discriminators.md)
+Master flexible entity type identification for single-table designs. Covers:
+- Attribute-based discriminators
+- Sort key and partition key pattern discriminators
+- Pattern matching with wildcards
+- GSI-specific discriminators
+- Discriminator validation and error handling
+- Migration from legacy discriminator syntax
+
 ### [Global Secondary Indexes](GlobalSecondaryIndexes.md)
 Master GSI configuration and querying for alternative access patterns. Covers:
 - GSI attribute configuration
@@ -72,8 +81,9 @@ If you're new to advanced topics, we recommend starting with:
 
 1. **[Advanced Type System](AdvancedTypes.md)** - Use native DynamoDB types and advanced storage
 2. **[Composite Entities](CompositeEntities.md)** - Essential for modeling complex data
-3. **[Global Secondary Indexes](GlobalSecondaryIndexes.md)** - Enable alternative query patterns
-4. **[Performance Optimization](PerformanceOptimization.md)** - Improve efficiency and reduce costs
+3. **[Discriminators](Discriminators.md)** - Configure entity type identification for single-table design
+4. **[Global Secondary Indexes](GlobalSecondaryIndexes.md)** - Enable alternative query patterns
+5. **[Performance Optimization](PerformanceOptimization.md)** - Improve efficiency and reduce costs
 
 ## Prerequisites
 

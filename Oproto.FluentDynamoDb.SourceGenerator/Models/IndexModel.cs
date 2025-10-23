@@ -44,4 +44,10 @@ public class IndexModel
     /// Gets a value indicating whether this GSI has custom key formatting.
     /// </summary>
     public bool HasCustomKeyFormat => !string.IsNullOrEmpty(PartitionKeyFormat) || !string.IsNullOrEmpty(SortKeyFormat);
+
+    /// <summary>
+    /// Gets or sets the GSI-specific discriminator configuration.
+    /// Overrides the entity-level discriminator for queries on this GSI.
+    /// </summary>
+    public DiscriminatorConfig? GsiDiscriminator { get; set; }
 }

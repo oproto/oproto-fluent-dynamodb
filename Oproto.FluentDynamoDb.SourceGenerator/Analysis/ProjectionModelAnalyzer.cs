@@ -81,6 +81,8 @@ public class ProjectionModelAnalyzer
             Namespace = classSymbol.ContainingNamespace.ToDisplayString(),
             SourceEntityType = sourceEntityType,
             ClassDeclaration = classDecl,
+            Discriminator = sourceEntity.Discriminator,
+            // Keep legacy properties for backward compatibility
             DiscriminatorProperty = sourceEntity.EntityDiscriminator != null ? "EntityType" : null,
             DiscriminatorValue = sourceEntity.EntityDiscriminator
         };

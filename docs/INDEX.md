@@ -113,6 +113,15 @@ Comprehensive alphabetical index of all topics covered in the Oproto.FluentDynam
 - Troubleshooting: [Troubleshooting](reference/Troubleshooting.md)
 - Error handling: [Error Handling](reference/ErrorHandling.md)
 
+**Discriminators**
+- Complete guide: [Discriminators](advanced-topics/Discriminators.md)
+- Flexible configuration: [Entity Definition](core-features/EntityDefinition.md#flexible-discriminator-configuration)
+- Attribute reference: [Attribute Reference](reference/AttributeReference.md#discriminator-configuration)
+- Pattern matching: [Discriminators](advanced-topics/Discriminators.md#pattern-matching)
+- GSI-specific: [Discriminators](advanced-topics/Discriminators.md#gsi-specific-discriminators)
+- Validation: [Discriminators](advanced-topics/Discriminators.md#discriminator-validation)
+- Migration guide: [Discriminators](advanced-topics/Discriminators.md#migration-from-legacy-discriminator)
+
 **DynamoDbAttribute**
 - Reference: [Attribute Reference](reference/AttributeReference.md#dynamodbattribute-attribute)
 - Usage: [Entity Definition](core-features/EntityDefinition.md#dynamodbattribute-attribute)
@@ -267,6 +276,11 @@ Comprehensive alphabetical index of all topics covered in the Oproto.FluentDynam
 **Partition Key**
 - Definition: [Entity Definition](core-features/EntityDefinition.md#partition-key)
 - Attribute reference: [Attribute Reference](reference/AttributeReference.md#partitionkey-attribute)
+- Pattern discriminator: [Discriminators](advanced-topics/Discriminators.md#3-partition-key-pattern-discriminator)
+
+**Pattern Matching**
+- Discriminator patterns: [Discriminators](advanced-topics/Discriminators.md#pattern-matching)
+- Wildcard syntax: [Discriminators](advanced-topics/Discriminators.md#pattern-syntax)
 
 **PartitionKey Attribute**
 - Reference: [Attribute Reference](reference/AttributeReference.md#partitionkey-attribute)
@@ -340,12 +354,14 @@ Comprehensive alphabetical index of all topics covered in the Oproto.FluentDynam
 - In computed keys: [Entity Definition](core-features/EntityDefinition.md#default-separator-no-format)
 
 **Single-Table Design**
-- Entity discriminator: [Entity Definition](core-features/EntityDefinition.md#dynamodbtable-attribute)
+- Discriminators: [Discriminators](advanced-topics/Discriminators.md)
+- Entity discriminator: [Entity Definition](core-features/EntityDefinition.md#flexible-discriminator-configuration)
 - Composite entities: [Composite Entities](advanced-topics/CompositeEntities.md)
 
 **Sort Key**
 - Definition: [Entity Definition](core-features/EntityDefinition.md#sort-key)
 - Attribute reference: [Attribute Reference](reference/AttributeReference.md#sortkey-attribute)
+- Pattern discriminator: [Discriminators](advanced-topics/Discriminators.md#2-sort-key-pattern-discriminator)
 - Pattern matching: [Composite Entities](advanced-topics/CompositeEntities.md#sort-key-pattern-matching)
 
 **SortKey Attribute**

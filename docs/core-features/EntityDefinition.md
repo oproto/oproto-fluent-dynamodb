@@ -51,15 +51,97 @@ Marks a class as a DynamoDB entity and specifies the table name:
 [DynamoDbTable("users")]
 public partial class User { }
 
-// With entity discriminator for multi-type tables
+// Legacy entity discriminator (deprecated - use new discriminator properties)
 [DynamoDbTable("entities", EntityDiscriminator = "USER")]
 public partial class User { }
-
-[DynamoDbTable("entities", EntityDiscriminator = "ORDER")]
-public partial class Order { }
 ```
 
 **Entity Discriminator Use Case:** When storing multiple entity types in a single table (single-table design), the discriminator helps identify the entity type.
+
+### Flexible Discriminator Configuration
+
+The library supports flexible discriminator strategies for single-table designs:
+
+#### Attribute-Based Discriminator
+
+Use a dedicated attribute to identify entity types:
+
+```csharp
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "entity_type",
+    DiscriminatorValue = "USER")]
+public partial class User { }
+
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "entity_type",
+    DiscriminatorValue = "ORDER")]
+public partial class Order { }
+```
+
+#### Sort Key Pattern Discriminator
+
+Use sort key prefixes to identify entity types:
+
+```csharp
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "SK",
+    DiscriminatorPattern = "USER#*")]
+public partial class User 
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string TenantId { get; set; } = string.Empty;
+    
+    [SortKey]
+    [DynamoDbAttribute("sk")]
+    public string SortKey { get; set; } = string.Empty; // e.g., "USER#user123"
+}
+```
+
+#### Pattern Matching Syntax
+
+Discriminator patterns support wildcard matching:
+
+| Pattern | Matches | Example |
+|---------|---------|---------|
+| `USER#*` | Starts with "USER#" | `USER#123`, `USER#abc` |
+| `*#USER` | Ends with "#USER" | `TENANT#abc#USER` |
+| `*#USER#*` | Contains "#USER#" | `TENANT#abc#USER#123` |
+| `USER` | Exact match | `USER` only |
+
+#### GSI-Specific Discriminators
+
+Different discriminators can be used for GSI queries:
+
+```csharp
+[DynamoDbTable("entities",
+    DiscriminatorProperty = "SK",
+    DiscriminatorPattern = "USER#*")]
+public partial class User 
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string TenantId { get; set; } = string.Empty;
+    
+    [SortKey]
+    [DynamoDbAttribute("sk")]
+    public string SortKey { get; set; } = string.Empty;
+    
+    // GSI uses different discriminator pattern
+    [GlobalSecondaryIndex("StatusIndex",
+        IsPartitionKey = true,
+        DiscriminatorProperty = "GSI1SK",
+        DiscriminatorPattern = "USER#*")]
+    [DynamoDbAttribute("status")]
+    public string Status { get; set; } = string.Empty;
+    
+    [GlobalSecondaryIndex("StatusIndex", IsSortKey = true)]
+    [DynamoDbAttribute("gsi1sk")]
+    public string StatusSortKey { get; set; } = string.Empty;
+}
+```
+
+**Backward Compatibility:** The legacy `EntityDiscriminator` property is still supported but deprecated. It's equivalent to setting `DiscriminatorProperty="entity_type"` and `DiscriminatorValue` to the discriminator value.
 
 ### DynamoDbAttribute Attribute
 

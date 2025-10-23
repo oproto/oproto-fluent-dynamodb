@@ -114,13 +114,17 @@ public class EntityAnalyzer
             entityModel.TableName = tableNameLiteral.Token.ValueText;
         }
 
-        // Extract entity discriminator from named argument
-        var discriminatorArg = tableAttribute.ArgumentList?.Arguments
-            .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.ValueText == "EntityDiscriminator");
-
-        if (discriminatorArg?.Expression is LiteralExpressionSyntax discriminatorLiteral)
+        // Extract discriminator configuration
+        entityModel.Discriminator = DiscriminatorAnalyzer.AnalyzeTableDiscriminator(
+            tableAttribute, 
+            semanticModel, 
+            entityModel.ClassName, 
+            _diagnostics);
+        
+        // Keep legacy property for backward compatibility
+        if (entityModel.Discriminator != null && entityModel.Discriminator.Strategy == DiscriminatorStrategy.ExactMatch)
         {
-            entityModel.EntityDiscriminator = discriminatorLiteral.Token.ValueText;
+            entityModel.EntityDiscriminator = entityModel.Discriminator.ExactValue;
         }
 
         return !string.IsNullOrEmpty(entityModel.TableName);
@@ -273,6 +277,13 @@ public class EntityAnalyzer
                 }
             }
 
+            // Extract GSI-specific discriminator configuration
+            gsiModel.Discriminator = DiscriminatorAnalyzer.AnalyzeGsiDiscriminator(
+                gsiAttr, 
+                semanticModel, 
+                gsiModel.IndexName, 
+                _diagnostics);
+
             gsiModels.Add(gsiModel);
         }
 
@@ -419,6 +430,12 @@ public class EntityAnalyzer
                 {
                     indexModel.SortKeyProperty = property.PropertyName;
                     indexModel.SortKeyFormat = gsi.KeyFormat;
+                }
+
+                // Propagate GSI discriminator (use first one found if multiple properties define it)
+                if (gsi.Discriminator != null && indexModel.GsiDiscriminator == null)
+                {
+                    indexModel.GsiDiscriminator = gsi.Discriminator;
                 }
             }
         }
