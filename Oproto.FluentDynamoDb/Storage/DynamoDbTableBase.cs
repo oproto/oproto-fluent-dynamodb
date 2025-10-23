@@ -26,10 +26,23 @@ public abstract class DynamoDbTableBase : IDynamoDbTable
     /// <param name="tableName">The name of the table.</param>
     /// <param name="logger">Optional logger for DynamoDB operations. If null, uses a no-op logger.</param>
     public DynamoDbTableBase(IAmazonDynamoDB client, string tableName, IDynamoDbLogger? logger)
+        : this(client, tableName, logger, null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the DynamoDbTableBase class with optional logger and field encryptor.
+    /// </summary>
+    /// <param name="client">The DynamoDB client.</param>
+    /// <param name="tableName">The name of the table.</param>
+    /// <param name="logger">Optional logger for DynamoDB operations. If null, uses a no-op logger.</param>
+    /// <param name="fieldEncryptor">Optional field encryptor for encrypting sensitive properties. If null, encryption is disabled.</param>
+    public DynamoDbTableBase(IAmazonDynamoDB client, string tableName, IDynamoDbLogger? logger, IFieldEncryptor? fieldEncryptor)
     {
         DynamoDbClient = client;
         Name = tableName;
         Logger = logger ?? NoOpLogger.Instance;
+        FieldEncryptor = fieldEncryptor;
     }
 
     public IAmazonDynamoDB DynamoDbClient { get; private init; }
@@ -39,6 +52,27 @@ public abstract class DynamoDbTableBase : IDynamoDbTable
     /// Gets the logger for DynamoDB operations.
     /// </summary>
     protected IDynamoDbLogger Logger { get; private init; }
+
+    /// <summary>
+    /// Gets the field encryptor for encrypting and decrypting sensitive properties.
+    /// Returns null if encryption is not configured for this table.
+    /// </summary>
+    protected IFieldEncryptor? FieldEncryptor { get; private init; }
+
+    /// <summary>
+    /// Gets the current encryption context identifier from the ambient context.
+    /// This context is used by the field encryptor to determine the appropriate encryption key.
+    /// </summary>
+    /// <returns>The current encryption context identifier, or null if not set.</returns>
+    /// <remarks>
+    /// The encryption context can be set using EncryptionContext.Current or per-operation
+    /// using WithEncryptionContext() on request builders. The per-operation context takes
+    /// precedence over the ambient context.
+    /// </remarks>
+    protected string? GetEncryptionContext()
+    {
+        return EncryptionContext.Current;
+    }
 
     /// <summary>
     /// Gets a builder for GetItem operations on this table.

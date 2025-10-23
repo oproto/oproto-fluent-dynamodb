@@ -385,4 +385,81 @@ public static class LoggingCodeGenerator
         
         return sb.ToString();
     }
+
+    /// <summary>
+    /// Generates code to redact sensitive fields from a DynamoDB item before logging.
+    /// Uses the SensitiveDataRedactor utility to replace sensitive values with [REDACTED].
+    /// </summary>
+    /// <param name="itemVariableName">The name of the variable containing the DynamoDB item dictionary.</param>
+    /// <param name="sensitiveFieldsExpression">Expression that evaluates to a HashSet of sensitive field names (e.g., "SensitiveFields").</param>
+    /// <param name="redactedVariableName">The name of the variable to store the redacted item (default: "redactedItem").</param>
+    /// <returns>Generated code that creates a redacted copy of the item.</returns>
+    /// <remarks>
+    /// This method generates code that calls SensitiveDataRedactor.RedactSensitiveFields to create
+    /// a copy of the item with sensitive values replaced. The redacted item can then be safely logged.
+    /// </remarks>
+    public static string GenerateItemRedactionCode(
+        string itemVariableName,
+        string sensitiveFieldsExpression,
+        string redactedVariableName = "redactedItem")
+    {
+        var sb = new StringBuilder();
+        
+        sb.AppendLine($"            var {redactedVariableName} = SensitiveDataRedactor.RedactSensitiveFields(");
+        sb.AppendLine($"                {itemVariableName},");
+        sb.AppendLine($"                {sensitiveFieldsExpression});");
+        
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Generates logging code for DynamoDB items with sensitive field redaction.
+    /// Logs at the specified level with the item data, automatically redacting sensitive fields.
+    /// </summary>
+    /// <param name="logLevel">The log level (e.g., "Debug", "Trace").</param>
+    /// <param name="eventId">The event ID constant (e.g., "LogEventIds.ExecutingPutItem").</param>
+    /// <param name="message">The log message template.</param>
+    /// <param name="itemVariableName">The name of the variable containing the DynamoDB item.</param>
+    /// <param name="sensitiveFieldsExpression">Expression that evaluates to a HashSet of sensitive field names.</param>
+    /// <param name="additionalArgs">Additional arguments to include in the log message (optional).</param>
+    /// <returns>Generated logging code with redaction wrapped in conditional compilation directives.</returns>
+    public static string GenerateItemLoggingWithRedaction(
+        string logLevel,
+        string eventId,
+        string message,
+        string itemVariableName,
+        string sensitiveFieldsExpression,
+        params string[] additionalArgs)
+    {
+        var sb = new StringBuilder();
+        
+        sb.AppendLine("            #if !DISABLE_DYNAMODB_LOGGING");
+        sb.AppendLine($"            if (logger?.IsEnabled(LogLevel.{logLevel}) == true)");
+        sb.AppendLine("            {");
+        
+        // Generate redaction code
+        sb.AppendLine($"                var redactedItem = SensitiveDataRedactor.RedactSensitiveFields(");
+        sb.AppendLine($"                    {itemVariableName},");
+        sb.AppendLine($"                    {sensitiveFieldsExpression});");
+        sb.AppendLine();
+        
+        // Generate logging call
+        sb.AppendLine($"                logger.Log{logLevel}({eventId},");
+        sb.AppendLine($"                    \"{message}\",");
+        
+        // Add item as first argument
+        sb.Append($"                    redactedItem");
+        
+        // Add additional arguments
+        foreach (var arg in additionalArgs)
+        {
+            sb.Append($", {arg}");
+        }
+        
+        sb.AppendLine(");");
+        sb.AppendLine("            }");
+        sb.AppendLine("            #endif");
+        
+        return sb.ToString();
+    }
 }
