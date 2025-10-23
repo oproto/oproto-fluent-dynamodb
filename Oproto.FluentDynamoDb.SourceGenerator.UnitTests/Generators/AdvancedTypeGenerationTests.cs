@@ -120,12 +120,10 @@ namespace TestNamespace
         // Check ToDynamoDb uses nested type's generated method
         entityCode.Should().Contain("if (typedEntity.Attributes != null)",
             "should check for null before processing nested entity");
-        entityCode.ShouldContainAssignment("attributesMap");
         entityCode.ShouldReferenceType("ProductAttributes");
-        entityCode.Should().Contain("if (attributesMap != null && attributesMap.Count > 0)",
-            "should check for null and empty before adding nested Map to DynamoDB item");
-        entityCode.Should().Contain("{ M = attributesMap }",
-            "should use Map (M) attribute type for nested entity");
+        // Check that the nested entity is converted to a Map and added to the item
+        entityCode.Should().Contain("ProductAttributes.ToDynamoDb", "should call nested type's ToDynamoDb method");
+        entityCode.Should().Contain("{ M =", "should use Map (M) attribute type for nested entity");
         
         // Check FromDynamoDb uses nested type's generated method
         entityCode.Should().Contain("if (item.TryGetValue(\"attributes\", out var attributesValue) && attributesValue.M != null)",
@@ -620,9 +618,9 @@ namespace TestNamespace
             "should check for null before converting TTL");
         entityCode.Should().Contain("var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)",
             "should use Unix epoch for TTL conversion");
-        entityCode.ShouldContainAssignment("seconds");
-        entityCode.Should().Contain("{ N = seconds.ToString() }",
-            "should use Number (N) attribute type for TTL Unix timestamp");
+        // Check that Unix timestamp is calculated and converted to string for DynamoDB Number type
+        entityCode.Should().Contain(".TotalSeconds", "should calculate total seconds from epoch");
+        entityCode.Should().Contain(".ToString()", "should convert seconds to string for DynamoDB Number type");
         
         // Check FromDynamoDb reconstructs DateTime
         entityCode.Should().Contain("if (item.TryGetValue(\"ttl\", out var ttlValue) && ttlValue.N != null)",

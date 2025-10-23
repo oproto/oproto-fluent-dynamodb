@@ -993,6 +993,44 @@ public static class MapperGenerator
             sb.AppendLine("                }");
             sb.AppendLine("            }");
         }
+        // Check if it's Dictionary<string, object>
+        else if (propertyType.Contains("Dictionary<string, object>") ||
+                 propertyType.Contains("Dictionary<System.String, System.Object>"))
+        {
+            // Dictionary<string, object> - convert object to AttributeValue
+            sb.AppendLine($"            if (typedEntity.{propertyName} != null && typedEntity.{propertyName}.Count > 0)");
+            sb.AppendLine("            {");
+            // Generate logging for Map conversion
+            sb.Append(LoggingCodeGenerator.GenerateMapConversionLogging(propertyName, $"typedEntity.{propertyName}.Count", "ToDynamoDb"));
+            sb.AppendLine("                try");
+            sb.AppendLine("                {");
+            sb.AppendLine($"                    var {propertyName.ToLowerInvariant()}Map = new Dictionary<string, AttributeValue>();");
+            sb.AppendLine($"                    foreach (var kvp in typedEntity.{propertyName})");
+            sb.AppendLine("                    {");
+            sb.AppendLine($"                        if (kvp.Value is AttributeValue av)");
+            sb.AppendLine($"                            {propertyName.ToLowerInvariant()}Map[kvp.Key] = av;");
+            sb.AppendLine($"                        else");
+            sb.AppendLine($"                            {propertyName.ToLowerInvariant()}Map[kvp.Key] = new AttributeValue {{ S = kvp.Value?.ToString() ?? string.Empty }};");
+            sb.AppendLine("                    }");
+            sb.AppendLine($"                    item[\"{attributeName}\"] = new AttributeValue {{ M = {propertyName.ToLowerInvariant()}Map }};");
+            sb.AppendLine("                }");
+            sb.AppendLine("                catch (Exception ex)");
+            sb.AppendLine("                {");
+            
+            // Generate error logging for Map conversion
+            sb.Append(LoggingCodeGenerator.GenerateConversionErrorLogging(propertyName, "Dictionary<string, object>", "DynamoDB Map", "ex"));
+            
+            sb.AppendLine("                    throw DynamoDbMappingException.PropertyConversionFailed(");
+            sb.AppendLine($"                        typeof({entity.ClassName}),");
+            sb.AppendLine($"                        \"{propertyName}\",");
+            sb.AppendLine($"                        new AttributeValue {{ M = new Dictionary<string, AttributeValue>() }},");
+            sb.AppendLine($"                        typeof({GetTypeForMetadata(propertyType)}),");
+            sb.AppendLine("                        ex)");
+            sb.AppendLine($"                        .WithContext(\"MapType\", \"Dictionary<string, object>\")");
+            sb.AppendLine($"                        .WithContext(\"Operation\", \"ToDynamoDb\");");
+            sb.AppendLine("                }");
+            sb.AppendLine("            }");
+        }
         // Check if it's Dictionary<string, AttributeValue>
         else if (propertyType.Contains("Dictionary<string, AttributeValue>") ||
                  propertyType.Contains("Dictionary<System.String, Amazon.DynamoDBv2.Model.AttributeValue>"))
@@ -1692,6 +1730,15 @@ public static class MapperGenerator
             sb.AppendLine("                        kvp => kvp.Key,");
             sb.AppendLine("                        kvp => kvp.Value.S);");
         }
+        // Check if it's Dictionary<string, object>
+        else if (propertyType.Contains("Dictionary<string, object>") ||
+                 propertyType.Contains("Dictionary<System.String, System.Object>"))
+        {
+            // Dictionary<string, object> - convert AttributeValue to object
+            sb.AppendLine($"                    entity.{propertyName} = {propertyName.ToLowerInvariant()}Value.M.ToDictionary(");
+            sb.AppendLine("                        kvp => kvp.Key,");
+            sb.AppendLine("                        kvp => (object)kvp.Value);");
+        }
         // Check if it's Dictionary<string, AttributeValue>
         else if (propertyType.Contains("Dictionary<string, AttributeValue>") ||
                  propertyType.Contains("Dictionary<System.String, Amazon.DynamoDBv2.Model.AttributeValue>"))
@@ -1705,7 +1752,7 @@ public static class MapperGenerator
             // The nested type must also be marked with [DynamoDbEntity] to have its own mapping generated
             var simpleTypeName = GetSimpleTypeName(propertyType);
             sb.AppendLine($"                    // Convert map back to nested entity using its generated FromDynamoDb method");
-            sb.AppendLine($"                    entity.{propertyName} = {simpleTypeName}.FromDynamoDb<{simpleTypeName}>({propertyName.ToLowerInvariant()}Value.M);");
+            sb.AppendLine($"                    entity.{propertyName} = {simpleTypeName}.FromDynamoDb<{simpleTypeName}>({propertyName.ToLowerInvariant()}Value.M, logger);");
         }
 
         sb.AppendLine("                }");
@@ -2573,7 +2620,7 @@ public static class MapperGenerator
             sb.AppendLine($"                        // Map to specific entity type: {relationship.EntityType}");
             sb.AppendLine($"                        if ({relationship.EntityType}.MatchesEntity(item))");
             sb.AppendLine("                        {");
-            sb.AppendLine($"                            var relatedEntity = {relationship.EntityType}.FromDynamoDb<{relationship.EntityType}>(item);");
+            sb.AppendLine($"                            var relatedEntity = {relationship.EntityType}.FromDynamoDb<{relationship.EntityType}>(item, logger);");
             sb.AppendLine($"                            {relationship.PropertyName.ToLowerInvariant()}Items.Add(relatedEntity);");
             sb.AppendLine("                        }");
         }
@@ -2613,7 +2660,7 @@ public static class MapperGenerator
             sb.AppendLine($"                        // Map to specific entity type: {relationship.EntityType}");
             sb.AppendLine($"                        if ({relationship.EntityType}.MatchesEntity(item))");
             sb.AppendLine("                        {");
-            sb.AppendLine($"                            entity.{relationship.PropertyName} = {relationship.EntityType}.FromDynamoDb<{relationship.EntityType}>(item);");
+            sb.AppendLine($"                            entity.{relationship.PropertyName} = {relationship.EntityType}.FromDynamoDb<{relationship.EntityType}>(item, logger);");
             sb.AppendLine("                            break; // Found the related entity");
             sb.AppendLine("                        }");
         }

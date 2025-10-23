@@ -2,6 +2,7 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using FluentResults;
 using Oproto.FluentDynamoDb.FluentResults;
+using Oproto.FluentDynamoDb.Logging;
 using Oproto.FluentDynamoDb.Requests;
 using Oproto.FluentDynamoDb.Storage;
 
@@ -238,7 +239,7 @@ public partial class TestEntity : IDynamoDbEntity
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
 
-    public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity) where TSelf : IDynamoDbEntity
+    public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity, IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity
     {
         var testEntity = entity as TestEntity;
         return new Dictionary<string, AttributeValue>
@@ -248,7 +249,7 @@ public partial class TestEntity : IDynamoDbEntity
         };
     }
 
-    public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item) where TSelf : IDynamoDbEntity
+    public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item, IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity
     {
         var entity = new TestEntity
         {
@@ -258,9 +259,9 @@ public partial class TestEntity : IDynamoDbEntity
         return (TSelf)(object)entity;
     }
 
-    public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items) where TSelf : IDynamoDbEntity
+    public static TSelf FromDynamoDb<TSelf>(IList<Dictionary<string, AttributeValue>> items, IDynamoDbLogger? logger = null) where TSelf : IDynamoDbEntity
     {
-        return FromDynamoDb<TSelf>(items.First());
+        return FromDynamoDb<TSelf>(items.First(), logger);
     }
 
     public static string GetPartitionKey(Dictionary<string, AttributeValue> item)

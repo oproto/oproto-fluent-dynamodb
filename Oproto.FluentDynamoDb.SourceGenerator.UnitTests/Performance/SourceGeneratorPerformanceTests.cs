@@ -148,8 +148,8 @@ public class SourceGeneratorPerformanceTests
         // Verify related entities are included in generated code structure
         var entityCode = GetGeneratedSource(result, "ManyRelatedEntitiesEntity.g.cs");
         entityCode.Should().Contain("public partial class ManyRelatedEntitiesEntity : IDynamoDbEntity");
-        entityCode.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity)");
-        entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item)");
+        entityCode.Should().Contain("public static Dictionary<string, AttributeValue> ToDynamoDb<TSelf>(TSelf entity, IDynamoDbLogger? logger = null)");
+        entityCode.Should().Contain("public static TSelf FromDynamoDb<TSelf>(Dictionary<string, AttributeValue> item, IDynamoDbLogger? logger = null)");
     }
 
     [Fact]
