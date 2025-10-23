@@ -62,4 +62,22 @@ public static class EncryptionContext
         get => _current.Value;
         set => _current.Value = value;
     }
+
+    /// <summary>
+    /// Gets the effective encryption context, checking both operation-specific and ambient contexts.
+    /// Operation-specific context (set via WithEncryptionContext) takes precedence over ambient context.
+    /// </summary>
+    /// <returns>The effective encryption context identifier, or null if neither is set.</returns>
+    internal static string? GetEffectiveContext()
+    {
+        // Check for operation-specific context first (set via WithEncryptionContext extension)
+        var operationContext = Requests.Extensions.EncryptionExtensions.GetOperationContext();
+        if (operationContext != null)
+        {
+            return operationContext;
+        }
+
+        // Fall back to ambient context
+        return Current;
+    }
 }

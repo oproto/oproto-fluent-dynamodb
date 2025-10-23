@@ -1,0 +1,295 @@
+using Oproto.FluentDynamoDb.Storage;
+
+namespace Oproto.FluentDynamoDb.Requests.Extensions;
+
+/// <summary>
+/// Extension methods for adding encryption context to request builders.
+/// Encryption context is used by IFieldEncryptor implementations to determine
+/// which encryption key to use for field-level encryption.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The encryption context (e.g., tenant ID, customer ID, region) is passed to
+/// IKmsKeyResolver at runtime to determine the appropriate encryption key.
+/// The context identifier is NOT the encryption key itself.
+/// </para>
+/// <para>
+/// <strong>Usage Pattern:</strong>
+/// <code>
+/// // Option 1: Per-operation context (recommended - most explicit)
+/// await userTable.PutItem(user)
+///     .WithEncryptionContext("tenant-123")
+///     .ExecuteAsync();
+/// 
+/// // Option 2: Ambient context (for middleware scenarios)
+/// EncryptionContext.Current = "tenant-123";
+/// await userTable.PutItem(user).ExecuteAsync();
+/// </code>
+/// </para>
+/// <para>
+/// When both per-operation and ambient context are set, the per-operation
+/// context takes precedence.
+/// </para>
+/// </remarks>
+public static class EncryptionExtensions
+{
+    // Thread-local storage for per-operation encryption context
+    // This allows the context to flow through the request builder chain
+    // without modifying the builder classes themselves
+    private static readonly AsyncLocal<string?> _operationContext = new();
+
+    /// <summary>
+    /// Sets the encryption context for a PutItem operation.
+    /// This context is used to determine which encryption key to use for encrypted fields.
+    /// </summary>
+    /// <param name="builder">The PutItemRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await table.PutItem(item)
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static PutItemRequestBuilder WithEncryptionContext(
+        this PutItemRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the encryption context for a GetItem operation.
+    /// This context is used to determine which encryption key to use for decrypting encrypted fields.
+    /// </summary>
+    /// <param name="builder">The GetItemRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await table.GetItem()
+    ///     .WithKey("id", "123")
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static GetItemRequestBuilder WithEncryptionContext(
+        this GetItemRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the encryption context for a Query operation.
+    /// This context is used to determine which encryption key to use for decrypting encrypted fields.
+    /// </summary>
+    /// <param name="builder">The QueryRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await table.Query()
+    ///     .Where("pk = :pk")
+    ///     .WithValue(":pk", "USER#123")
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static QueryRequestBuilder WithEncryptionContext(
+        this QueryRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the encryption context for an UpdateItem operation.
+    /// This context is used to determine which encryption key to use for encrypted fields.
+    /// </summary>
+    /// <param name="builder">The UpdateItemRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await table.UpdateItem()
+    ///     .WithKey("id", "123")
+    ///     .Set("SET #name = :name")
+    ///     .WithValue(":name", "John")
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static UpdateItemRequestBuilder WithEncryptionContext(
+        this UpdateItemRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the encryption context for a DeleteItem operation.
+    /// This context is used to determine which encryption key to use for decrypting encrypted fields
+    /// when returning old values.
+    /// </summary>
+    /// <param name="builder">The DeleteItemRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await table.DeleteItem()
+    ///     .WithKey("id", "123")
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ReturnAllOldValues()
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static DeleteItemRequestBuilder WithEncryptionContext(
+        this DeleteItemRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the encryption context for a Scan operation.
+    /// This context is used to determine which encryption key to use for decrypting encrypted fields.
+    /// </summary>
+    /// <param name="builder">The ScanRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await table.AsScannable().Scan()
+    ///     .WithFilter("#status = :active")
+    ///     .WithValue(":active", "ACTIVE")
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static ScanRequestBuilder WithEncryptionContext(
+        this ScanRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the encryption context for a BatchGetItem operation.
+    /// This context is used to determine which encryption key to use for decrypting encrypted fields.
+    /// </summary>
+    /// <param name="builder">The BatchGetItemRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await new BatchGetItemRequestBuilder(client)
+    ///     .GetFromTable("Users", b => b.WithKey("id", "user1"))
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static BatchGetItemRequestBuilder WithEncryptionContext(
+        this BatchGetItemRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the encryption context for a BatchWriteItem operation.
+    /// This context is used to determine which encryption key to use for encrypted fields.
+    /// </summary>
+    /// <param name="builder">The BatchWriteItemRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await new BatchWriteItemRequestBuilder(client)
+    ///     .WriteToTable("Users", b => b.PutItem(userData))
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static BatchWriteItemRequestBuilder WithEncryptionContext(
+        this BatchWriteItemRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the encryption context for a TransactWriteItems operation.
+    /// This context is used to determine which encryption key to use for encrypted fields.
+    /// </summary>
+    /// <param name="builder">The TransactWriteItemsRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await new TransactWriteItemsRequestBuilder(client)
+    ///     .Put(userTable, p => p.WithItem(userData))
+    ///     .Update(accountTable, u => u.WithKey("id", "123").Set("SET balance = :b"))
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static TransactWriteItemsRequestBuilder WithEncryptionContext(
+        this TransactWriteItemsRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the encryption context for a TransactGetItems operation.
+    /// This context is used to determine which encryption key to use for decrypting encrypted fields.
+    /// </summary>
+    /// <param name="builder">The TransactGetItemsRequestBuilder instance.</param>
+    /// <param name="context">The encryption context identifier (e.g., tenant ID, customer ID).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <example>
+    /// <code>
+    /// await new TransactGetItemsRequestBuilder(client)
+    ///     .Get(userTable, g => g.WithKey("id", "123"))
+    ///     .WithEncryptionContext("tenant-123")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public static TransactGetItemsRequestBuilder WithEncryptionContext(
+        this TransactGetItemsRequestBuilder builder,
+        string context)
+    {
+        _operationContext.Value = context;
+        return builder;
+    }
+
+    /// <summary>
+    /// Gets the current operation-specific encryption context.
+    /// This is used internally by the library to retrieve the context set via WithEncryptionContext.
+    /// </summary>
+    /// <returns>The operation-specific encryption context, or null if not set.</returns>
+    internal static string? GetOperationContext()
+    {
+        return _operationContext.Value;
+    }
+
+    /// <summary>
+    /// Clears the operation-specific encryption context.
+    /// This is used internally by the library after an operation completes.
+    /// </summary>
+    internal static void ClearOperationContext()
+    {
+        _operationContext.Value = null;
+    }
+}

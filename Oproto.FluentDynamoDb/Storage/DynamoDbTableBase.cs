@@ -60,7 +60,7 @@ public abstract class DynamoDbTableBase : IDynamoDbTable
     protected IFieldEncryptor? FieldEncryptor { get; private init; }
 
     /// <summary>
-    /// Gets the current encryption context identifier from the ambient context.
+    /// Gets the current encryption context identifier, checking both operation-specific and ambient contexts.
     /// This context is used by the field encryptor to determine the appropriate encryption key.
     /// </summary>
     /// <returns>The current encryption context identifier, or null if not set.</returns>
@@ -71,7 +71,7 @@ public abstract class DynamoDbTableBase : IDynamoDbTable
     /// </remarks>
     protected string? GetEncryptionContext()
     {
-        return EncryptionContext.Current;
+        return EncryptionContext.GetEffectiveContext();
     }
 
     /// <summary>

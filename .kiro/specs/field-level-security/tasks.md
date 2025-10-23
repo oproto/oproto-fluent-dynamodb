@@ -2,13 +2,14 @@
 
 - [x] 1. Add security attributes to Attributes assembly
   - Create SensitiveAttribute as marker attribute
-  - Create EncryptedAttribute with CacheTtlSeconds property (default 300) and IsExternalBlob property (default false)
-  - _Requirements: 1.5, 6.1, 6.2, 6.3, 8.1_
+  - Create EncryptedAttribute with CacheTtlSeconds property (default 300)
+  - Note: External blob storage is handled by existing BlobReferenceAttribute
+  - _Requirements: 1.5, 6.1, 6.2, 6.3_
 
 - [x] 2. Implement core encryption interfaces in main library
   - [x] 2.1 Create IFieldEncryptor interface with EncryptAsync/DecryptAsync methods
-    - Define FieldEncryptionContext class with ContextId, CacheTtlSeconds, IsExternalBlob, and EntityId properties
-    - _Requirements: 2.2, 2.3, 8.1_
+    - Define FieldEncryptionContext class with ContextId and CacheTtlSeconds properties
+    - _Requirements: 2.2, 2.3_
   
   - [x] 2.2 Create EncryptionContext ambient context class
     - Implement using AsyncLocal<string?> for thread-safe context flow
@@ -64,26 +65,25 @@
     - Apply both logging redaction and encryption when both attributes present
     - _Requirements: 4.5_
 
-- [ ] 5. Create Encryption.Kms assembly project
+- [x] 5. Create Encryption.Kms assembly project
   - Create new project Oproto.FluentDynamoDb.Encryption.Kms
   - Add AWS.EncryptionSDK package reference (3.0.0+)
-  - Add AWSSDK.S3 package reference (3.7.0+)
   - Add project reference to Oproto.FluentDynamoDb
   - Configure for .NET 8.0 target
   - _Requirements: 2.1, 8.3_
 
-- [ ] 6. Implement KMS key resolution
-  - [ ] 6.1 Create IKmsKeyResolver interface
+- [x] 6. Implement KMS key resolution
+  - [x] 6.1 Create IKmsKeyResolver interface
     - Define ResolveKeyId(string? contextId) method
     - Add XML documentation with usage examples
     - _Requirements: 3.2_
   
-  - [ ] 6.2 Implement DefaultKmsKeyResolver
+  - [x] 6.2 Implement DefaultKmsKeyResolver
     - Accept defaultKeyId and optional contextKeyMap in constructor
     - Implement dictionary lookup with fallback to default
     - _Requirements: 3.3, 3.4_
   
-  - [ ] 6.3 Create AwsEncryptionSdkOptions configuration class
+  - [x] 6.3 Create AwsEncryptionSdkOptions configuration class
     - Add DefaultKeyId property
     - Add ContextKeyMap property
     - Add EnableCaching property (default true)
@@ -96,179 +96,142 @@
     - Add AutoExternalBlobThreshold property (default 350KB)
     - _Requirements: 3.4, 6.2, 8.5_
 
-- [ ] 7. Configure AWS Encryption SDK caching
-  - [ ] 7.1 Create CachingCryptoMaterialsManager factory method
+- [x] 7. Configure AWS Encryption SDK caching
+  - [x] 7.1 Create CachingCryptoMaterialsManager factory method
     - Configure cache with TTL from options
     - Set MaxMessagesPerDataKey limit
     - Set MaxBytesPerDataKey limit
     - Cache key includes context ID for multi-context support
     - _Requirements: 3.5, 6.2_
   
-  - [ ] 7.2 Support disabling cache when EnableCaching is false
+  - [x] 7.2 Support disabling cache when EnableCaching is false
     - Use non-caching materials manager when caching disabled
     - _Requirements: 6.3_
 
-- [ ] 8. Implement external blob storage
-  - [ ] 8.1 Create IBlobStorage interface
-    - Define UploadAsync method returning blob reference
-    - Define DownloadAsync method accepting blob reference
-    - Define DeleteAsync method for cleanup
-    - _Requirements: 8.3_
-  
-  - [ ] 8.2 Implement S3BlobStorage class
-    - Accept IAmazonS3, bucket name, and optional key prefix in constructor
-    - Implement UploadAsync with S3 key format: {prefix}/{contextId}/{entityId}/{fieldName}/{guid}
-    - Return S3 URI format: s3://{bucket}/{key}
-    - Implement DownloadAsync by parsing S3 URI and downloading
-    - Implement DeleteAsync for cleanup
-    - _Requirements: 8.4_
-
-- [ ] 9. Implement AWS Encryption SDK field encryption
-  - [ ] 9.1 Create FieldEncryptionException class
+- [x] 8. Implement AWS Encryption SDK field encryption
+  - [x] 8.1 Create FieldEncryptionException class
     - Add FieldName, ContextId, and KeyId properties
     - Include constructors with inner exception support
     - _Requirements: 5.1, 5.2, 5.3_
   
-  - [ ] 9.2 Implement AwsEncryptionSdkFieldEncryptor class
-    - Accept IKmsKeyResolver, AwsEncryptionSdkOptions, optional IBlobStorage, and optional logger in constructor
+  - [x] 8.2 Implement AwsEncryptionSdkFieldEncryptor class
+    - Accept IKmsKeyResolver, AwsEncryptionSdkOptions, optional IBlobStorageProvider, and optional logger in constructor
     - Initialize AWS Encryption SDK (ESDK) instance
     - Setup CachingCryptoMaterialsManager if caching enabled
-    - _Requirements: 2.1, 2.2, 2.3, 8.3_
+    - _Requirements: 2.1, 2.2, 2.3_
   
-  - [ ] 9.3 Implement EncryptAsync method
+  - [x] 8.3 Implement EncryptAsync method
     - Resolve KMS key ARN via IKmsKeyResolver.ResolveKeyId
     - Create KMS keyring with resolved key
     - Build encryption context dictionary (field name, context ID, entity type)
     - Call ESDK.EncryptAsync with plaintext and encryption context
-    - If IsExternalBlob or size exceeds AutoExternalBlobThreshold:
-      - Upload encrypted data to blob storage
-      - Return blob reference as bytes
-    - Else: Return AWS Encryption SDK message format
+    - Return AWS Encryption SDK message format (binary)
     - Log encryption operation at Debug level
     - Handle errors with FieldEncryptionException
-    - _Requirements: 2.2, 2.4, 2.5, 5.1, 5.2, 5.4, 8.1, 8.2, 8.5_
+    - Note: External blob storage is handled by existing BlobReferenceAttribute infrastructure
+    - _Requirements: 2.2, 2.4, 2.5, 5.1, 5.2, 5.4_
   
-  - [ ] 9.4 Implement DecryptAsync method
-    - Check if ciphertext is a blob reference (starts with "s3://")
-    - If blob reference: Download encrypted data from blob storage
+  - [x] 8.4 Implement DecryptAsync method
     - Resolve KMS key ARN for keyring
     - Create KMS keyring
-    - Call ESDK.DecryptAsync with ciphertext
+    - Call ESDK.DecryptAsync with ciphertext (binary)
     - Validate encryption context matches expected values
     - Return plaintext
     - Log decryption operation at Debug level
     - Handle errors with FieldEncryptionException
-    - _Requirements: 2.3, 2.4, 5.3, 5.4, 8.6_
+    - Note: External blob storage is handled by existing BlobReferenceAttribute infrastructure
+    - _Requirements: 2.3, 2.4, 5.3, 5.4_
   
-  - [ ] 9.5 Create helper method for building encryption context
+  - [x] 8.5 Create helper method for building encryption context
     - Include field name as "field" key
     - Include context ID as "context" key (if provided)
     - Optionally include entity type
     - _Requirements: 2.4, 5.4, 7.4_
 
-- [ ] 10. Add request builder encryption extensions
+- [x] 9. Add request builder encryption extensions
   - Create EncryptionExtensions class with WithEncryptionContext method
   - Support all request builder types (Put, Get, Query, Update, etc.)
   - Store context in request builder state
   - _Requirements: 3.1_
 
-- [ ] 11. Write unit tests for attributes
-  - [ ] 11.1 Test SensitiveAttribute application to properties
+- [ ] 10. Write unit tests for attributes
+  - [ ] 10.1 Test SensitiveAttribute application to properties
     - Verify attribute can be applied
     - Test reflection access
     - _Requirements: 1.5_
   
-  - [ ] 11.2 Test EncryptedAttribute default values and customization
+  - [ ] 10.2 Test EncryptedAttribute default values and customization
     - Verify default CacheTtlSeconds is 300
-    - Verify default IsExternalBlob is false
-    - Test custom CacheTtlSeconds and IsExternalBlob values
-    - _Requirements: 6.1, 6.2, 8.1_
+    - Test custom CacheTtlSeconds values
+    - _Requirements: 6.1, 6.2_
 
-- [ ] 12. Write unit tests for logging redaction
-  - [ ] 12.1 Test SensitiveDataRedactor with single sensitive field
+- [ ] 11. Write unit tests for logging redaction
+  - [ ] 11.1 Test SensitiveDataRedactor with single sensitive field
     - Verify sensitive value replaced with [REDACTED]
     - Verify field name preserved
     - _Requirements: 1.1, 1.2, 1.4_
   
-  - [ ] 12.2 Test SensitiveDataRedactor with multiple sensitive fields
+  - [ ] 11.2 Test SensitiveDataRedactor with multiple sensitive fields
     - Verify all sensitive fields redacted
     - Verify non-sensitive fields unchanged
     - _Requirements: 1.1, 1.2_
   
-  - [ ] 12.3 Test SensitiveDataRedactor with empty/null items
+  - [ ] 11.3 Test SensitiveDataRedactor with empty/null items
     - Verify graceful handling of edge cases
     - _Requirements: 1.1_
 
-- [ ] 13. Write unit tests for source generator
-  - [ ] 13.1 Test sensitive field metadata generation
+- [ ] 12. Write unit tests for source generator
+  - [ ] 12.1 Test sensitive field metadata generation
     - Verify HashSet generation
     - Verify IsSensitiveField method
     - _Requirements: 1.1, 1.4_
   
-  - [ ] 13.2 Test encryption code generation in ToItem
+  - [ ] 12.2 Test encryption code generation in ToItem
     - Verify EncryptAsync calls generated
     - Verify FieldEncryptionContext passed correctly
     - Verify Binary AttributeValue storage
     - _Requirements: 2.2, 2.5, 4.1_
   
-  - [ ] 13.3 Test decryption code generation in FromItem
+  - [ ] 12.3 Test decryption code generation in FromItem
     - Verify DecryptAsync calls generated
     - Verify Binary AttributeValue reading
     - _Requirements: 2.3, 4.2_
   
-  - [ ] 13.4 Test diagnostic for missing Encryption.Kms reference
+  - [ ] 12.4 Test diagnostic for missing Encryption.Kms reference
     - Verify warning emitted when EncryptedAttribute used without package
     - _Requirements: 4.4_
   
-  - [ ] 13.5 Test combined Sensitive + Encrypted attributes
+  - [ ] 12.5 Test combined Sensitive + Encrypted attributes
     - Verify both features applied
     - _Requirements: 4.5_
 
-- [ ] 14. Write unit tests for blob storage
-  - [ ] 14.1 Test S3BlobStorage upload
-    - Verify S3 key format
-    - Verify S3 URI returned
-    - Mock S3 client
-    - _Requirements: 8.4_
-  
-  - [ ] 14.2 Test S3BlobStorage download
-    - Verify S3 URI parsing
-    - Verify data retrieval
-    - _Requirements: 8.4_
-  
-  - [ ] 14.3 Test S3BlobStorage delete
-    - Verify cleanup operations
-    - _Requirements: 8.4_
-
-- [ ] 15. Write unit tests for encryption components
-  - [ ] 15.1 Test DefaultKmsKeyResolver
+- [ ] 13. Write unit tests for encryption components
+  - [ ] 13.1 Test DefaultKmsKeyResolver
     - Test default key resolution
     - Test context-specific key resolution
     - Test fallback when context not found
     - _Requirements: 3.2, 3.3, 3.4_
   
-  - [ ] 15.2 Test AwsEncryptionSdkFieldEncryptor with mocked ESDK
+  - [ ] 13.2 Test AwsEncryptionSdkFieldEncryptor with mocked ESDK
     - Mock AWS Encryption SDK encrypt/decrypt operations
     - Test encryption context building
     - Test error handling for each failure mode
     - Test caching configuration
     - Verify AWS Encryption SDK message format
-    - Test external blob storage integration
-    - Test automatic external storage threshold
-    - _Requirements: 2.2, 2.3, 2.4, 5.1, 5.2, 5.3, 8.2, 8.5_
+    - _Requirements: 2.2, 2.3, 2.4, 5.1, 5.2, 5.3_
   
-  - [ ] 15.3 Test FieldEncryptionException
+  - [ ] 13.3 Test FieldEncryptionException
     - Verify properties set correctly
     - Test with and without inner exception
     - _Requirements: 5.1, 5.2, 5.3_
   
-  - [ ] 15.4 Test AwsEncryptionSdkOptions
+  - [ ] 13.4 Test AwsEncryptionSdkOptions
     - Verify default values
     - Test custom configuration
     - _Requirements: 6.1, 6.2_
 
-- [ ] 16. Write integration tests
-  - [ ] 16.1 Test end-to-end encryption with real DynamoDB Local
+- [ ] 14. Write integration tests
+  - [ ] 14.1 Test end-to-end encryption with real DynamoDB Local
     - Create entity with encrypted fields
     - Put to DynamoDB
     - Verify encrypted format in DynamoDB (Binary type, AWS Encryption SDK format)
@@ -277,45 +240,40 @@
     - Verify encryption context is preserved
     - _Requirements: 2.2, 2.3, 2.5_
   
-  - [ ] 16.2 Test multi-context encryption
+  - [ ] 14.2 Test multi-context encryption
     - Encrypt data for context A
     - Encrypt data for context B
     - Verify different keys used
     - Verify data encrypted with context A cannot be decrypted with context B
     - _Requirements: 3.1, 3.2, 3.5_
   
-  - [ ] 16.3 Test logging redaction integration
+  - [ ] 14.3 Test logging redaction integration
     - Enable logging
     - Perform operations on entities with sensitive fields
     - Verify log output contains [REDACTED] for sensitive fields
     - Verify non-sensitive fields logged normally
     - _Requirements: 1.1, 1.2, 1.3_
   
-  - [ ] 16.4 Test combined security features
+  - [ ] 14.4 Test combined security features
     - Entity with both Sensitive and Encrypted attributes
     - Verify encryption happens
     - Verify logging redaction happens
     - Verify decryption works
     - _Requirements: 4.5_
   
-  - [ ] 16.5 Test ambient context flow
+  - [ ] 14.5 Test ambient context flow
     - Set EncryptionContext.Current
     - Perform multiple operations
     - Verify context flows through async calls
     - Verify context isolation between async flows
     - _Requirements: 3.6_
   
-  - [ ] 16.6 Test external blob storage end-to-end
-    - Create entity with IsExternalBlob = true
+  - [ ] 14.6 Test encrypted field with BlobReferenceAttribute
+    - Create entity with both [Encrypted] and [BlobReference] attributes
     - Put to DynamoDB
     - Verify blob reference stored in DynamoDB
-    - Verify encrypted data in S3
+    - Verify encrypted data stored via IBlobStorageProvider
     - Get from DynamoDB
-    - Verify transparent decryption from S3
+    - Verify transparent decryption from blob storage
+    - Note: Tests integration with existing BlobReferenceAttribute infrastructure
     - _Requirements: 8.1, 8.2, 8.6_
-  
-  - [ ] 16.7 Test automatic external storage threshold
-    - Create entity with large encrypted field
-    - Verify automatic S3 storage when exceeding threshold
-    - Verify inline storage when below threshold
-    - _Requirements: 8.5_
