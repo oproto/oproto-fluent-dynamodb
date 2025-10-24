@@ -21,39 +21,9 @@ public interface IDynamoDbTable
     /// </summary>
     string Name { get; }
 
-    /// <summary>
-    /// Creates a new Query operation builder for this table.
-    /// Use this to query items using the primary key or a secondary index.
-    /// </summary>
-    /// <returns>A QueryRequestBuilder configured for this table.</returns>
-    QueryRequestBuilder Query();
-
-    /// <summary>
-    /// Creates a new Query operation builder with a key condition expression.
-    /// Uses format string syntax for parameters: {0}, {1}, etc.
-    /// </summary>
-    /// <param name="keyConditionExpression">The key condition expression with format placeholders.</param>
-    /// <param name="values">The values to substitute into the expression.</param>
-    /// <returns>A QueryRequestBuilder configured with the key condition.</returns>
-    QueryRequestBuilder Query(string keyConditionExpression, params object[] values);
-
-    /// <summary>
-    /// Creates a new GetItem operation builder for this table.
-    /// </summary>
-    /// <returns>A GetItemRequestBuilder configured for this table.</returns>
-    GetItemRequestBuilder Get();
-
-    /// <summary>
-    /// Creates a new UpdateItem operation builder for this table.
-    /// </summary>
-    /// <returns>An UpdateItemRequestBuilder configured for this table.</returns>
-    UpdateItemRequestBuilder Update();
-
-    /// <summary>
-    /// Creates a new DeleteItem operation builder for this table.
-    /// </summary>
-    /// <returns>A DeleteItemRequestBuilder configured for this table.</returns>
-    DeleteItemRequestBuilder Delete();
+    // Note: These methods are intentionally removed from the interface.
+    // Derived table classes should provide generic Query<TEntity>(), Get<TEntity>(), etc. methods
+    // that return properly typed builders. The interface now only defines the common properties.
 
     /// <summary>
     /// Creates a new PutItem operation builder for this table.

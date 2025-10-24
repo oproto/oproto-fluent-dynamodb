@@ -309,13 +309,15 @@ public class ProductsTable : DynamoDbTableBase
 }
 
 // Usage with default type
-var products = await table.CategoryIndex.QueryAsync(q => 
-    q.Where("category = {0}", "Electronics"));
+var products = await table.CategoryIndex.Query<ProductListItem>()
+    .Where("category = {0}", "Electronics")
+    .ToListAsync();
 // Returns List<ProductListItem>
 
 // Usage with type override
-var fullProducts = await table.CategoryIndex.QueryAsync<Product>(q => 
-    q.Where("category = {0}", "Electronics"));
+var fullProducts = await table.CategoryIndex.Query<Product>()
+    .Where("category = {0}", "Electronics")
+    .ToListAsync();
 // Returns List<Product>
 ```
 
@@ -415,18 +417,21 @@ public DynamoDbIndex<TransactionSummary> StatusIndex =>
         this, "StatusIndex", "id, amount, status");
 
 // Query with default type
-var summaries = await table.StatusIndex.QueryAsync(q => 
-    q.Where("status = {0}", "ACTIVE"));
+var summaries = await table.StatusIndex.Query<TransactionSummary>()
+    .Where("status = {0}", "ACTIVE")
+    .ToListAsync();
 // Returns List<TransactionSummary>
 
 // Override to use different projection
-var minimal = await table.StatusIndex.QueryAsync<MinimalTransaction>(q => 
-    q.Where("status = {0}", "ACTIVE"));
+var minimal = await table.StatusIndex.Query<MinimalTransaction>()
+    .Where("status = {0}", "ACTIVE")
+    .ToListAsync();
 // Returns List<MinimalTransaction>
 
 // Override to use full entity (ignores projection)
-var full = await table.StatusIndex.QueryAsync<Transaction>(q => 
-    q.Where("status = {0}", "ACTIVE"));
+var full = await table.StatusIndex.Query<Transaction>()
+    .Where("status = {0}", "ACTIVE")
+    .ToListAsync();
 // Returns List<Transaction>
 ```
 

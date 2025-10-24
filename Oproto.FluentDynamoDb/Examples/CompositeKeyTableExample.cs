@@ -106,10 +106,9 @@ public class OrdersTable : DynamoDbTableBase
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public override GetItemRequestBuilder Get() => base.Get();
-    
-    public GetItemRequestBuilder Get(string customerId, string orderId) => 
-        base.Get().WithKey("customer_id", customerId, "order_id", orderId);
+    // Note: In actual implementation, replace 'PlaceholderEntity' with your entity type
+    public GetItemRequestBuilder<PlaceholderEntity> Get(string customerId, string orderId) => 
+        base.Get<PlaceholderEntity>().WithKey("customer_id", customerId, "order_id", orderId);
 
     /// <summary>
     /// Updates an order by customer ID (partition key) and order ID (sort key).
@@ -142,10 +141,9 @@ public class OrdersTable : DynamoDbTableBase
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public override UpdateItemRequestBuilder Update() => base.Update();
-    
-    public UpdateItemRequestBuilder Update(string customerId, string orderId) => 
-        base.Update().WithKey("customer_id", customerId, "order_id", orderId);
+    // Note: In actual implementation, replace 'PlaceholderEntity' with your entity type
+    public UpdateItemRequestBuilder<PlaceholderEntity> Update(string customerId, string orderId) => 
+        base.Update<PlaceholderEntity>().WithKey("customer_id", customerId, "order_id", orderId);
 
     /// <summary>
     /// Deletes an order by customer ID (partition key) and order ID (sort key).
@@ -169,10 +167,9 @@ public class OrdersTable : DynamoDbTableBase
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public override DeleteItemRequestBuilder Delete() => base.Delete();
-    
-    public DeleteItemRequestBuilder Delete(string customerId, string orderId) => 
-        base.Delete().WithKey("customer_id", customerId, "order_id", orderId);
+    // Note: In actual implementation, replace 'PlaceholderEntity' with your entity type
+    public DeleteItemRequestBuilder<PlaceholderEntity> Delete(string customerId, string orderId) => 
+        base.Delete<PlaceholderEntity>().WithKey("customer_id", customerId, "order_id", orderId);
 
     /// <summary>
     /// Global Secondary Index for querying orders by status and creation date.

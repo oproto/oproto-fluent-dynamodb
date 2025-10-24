@@ -193,14 +193,14 @@ public partial class TransactionsTable
 
 ```csharp
 // Projection is automatically applied
-var summaries = await table.StatusIndex.Query
+var summaries = await table.StatusIndex.Query<TransactionSummary>()
     .Where("status = {0}", "ACTIVE")
-    .ToListAsync<TransactionSummary>();
+    .ToListAsync();
 
 // Type override is also supported
-var transactions = await table.StatusIndex.Query
+var transactions = await table.StatusIndex.Query<Transaction>()
     .Where("status = {0}", "ACTIVE")
-    .ToListAsync<Transaction>();
+    .ToListAsync();
 ```
 
 ### Runtime Validation
@@ -262,13 +262,15 @@ public class TransactionsTable : DynamoDbTableBase
 }
 
 // Usage with default type
-var summaries = await table.StatusIndex.QueryAsync(q => 
-    q.Where("status = {0}", "ACTIVE"));
+var summaries = await table.StatusIndex.Query<TransactionSummary>()
+    .Where("status = {0}", "ACTIVE")
+    .ToListAsync();
 // Returns List<TransactionSummary>
 
 // Usage with type override
-var transactions = await table.StatusIndex.QueryAsync<Transaction>(q => 
-    q.Where("status = {0}", "ACTIVE"));
+var transactions = await table.StatusIndex.Query<Transaction>()
+    .Where("status = {0}", "ACTIVE")
+    .ToListAsync();
 // Returns List<Transaction>
 ```
 
@@ -316,40 +318,43 @@ public DynamoDbIndex<TransactionSummary> StatusIndex =>
         this, "StatusIndex", "id, amount, status");
 
 // Query with default type
-var summaries = await table.StatusIndex.QueryAsync(q => 
-    q.Where("status = {0}", "ACTIVE"));
+var summaries = await table.StatusIndex.Query<TransactionSummary>()
+    .Where("status = {0}", "ACTIVE")
+    .ToListAsync();
 // Returns List<TransactionSummary>
 
 // Override to use different projection
-var minimal = await table.StatusIndex.QueryAsync<MinimalTransaction>(q => 
-    q.Where("status = {0}", "ACTIVE"));
+var minimal = await table.StatusIndex.Query<MinimalTransaction>()
+    .Where("status = {0}", "ACTIVE")
+    .ToListAsync();
 // Returns List<MinimalTransaction>
 
 // Override to use full entity (no projection)
-var full = await table.StatusIndex.QueryAsync<Transaction>(q => 
-    q.Where("status = {0}", "ACTIVE"));
+var full = await table.StatusIndex.Query<Transaction>()
+    .Where("status = {0}", "ACTIVE")
+    .ToListAsync();
 // Returns List<Transaction>
 ```
 
 ### ToListAsync Type Override
 
-You can also override the type using `ToListAsync<T>()`:
+You can also override the type using `ToListAsync()`:
 
 ```csharp
 // Using index's default projection
-var summaries = await table.StatusIndex.Query
+var summaries = await table.StatusIndex.Query<TransactionSummary>()
     .Where("status = {0}", "ACTIVE")
-    .ToListAsync<TransactionSummary>();
+    .ToListAsync();
 
 // Override to different projection
-var minimal = await table.StatusIndex.Query
+var minimal = await table.StatusIndex.Query<MinimalTransaction>()
     .Where("status = {0}", "ACTIVE")
-    .ToListAsync<MinimalTransaction>();
+    .ToListAsync();
 
 // Override to full entity
-var full = await table.StatusIndex.Query
+var full = await table.StatusIndex.Query<Transaction>()
     .Where("status = {0}", "ACTIVE")
-    .ToListAsync<Transaction>();
+    .ToListAsync();
 ```
 
 ### Conditional Type Selection
@@ -675,8 +680,9 @@ public DynamoDbIndex<TransactionSummary> StatusIndex =>
         "id, amount, status");
 
 // Query with default type
-var summaries = await table.StatusIndex.QueryAsync(q => 
-    q.Where("status = {0}", "ACTIVE"));
+var summaries = await table.StatusIndex.Query<TransactionSummary>()
+    .Where("status = {0}", "ACTIVE")
+    .ToListAsync();
 ```
 
 ### Example 4: Type Override

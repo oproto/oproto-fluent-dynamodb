@@ -44,18 +44,19 @@ public static class ProjectionExtensions
     ///     .ToListAsync&lt;Transaction&gt;();
     /// </code>
     /// </example>
-    public static async Task<List<TResult>> ToListAsync<TResult>(
-        this QueryRequestBuilder builder,
+    public static async Task<List<TResult>> ToListAsync<TEntity, TResult>(
+        this QueryRequestBuilder<TEntity> builder,
         CancellationToken cancellationToken = default)
+        where TEntity : class
         where TResult : class, new()
     {
         try
         {
             // Apply projection if TResult is a projection model and no manual projection was set
-            builder = ApplyProjectionIfNeeded<TResult>(builder);
+            builder = ApplyProjectionIfNeeded<TEntity, TResult>(builder);
 
             // Validate GSI projection constraints if applicable
-            ValidateGsiProjection<TResult>(builder);
+            ValidateGsiProjection<TEntity, TResult>(builder);
 
             // Execute the query
             var response = await builder.ExecuteAsync(cancellationToken);
@@ -74,7 +75,8 @@ public static class ProjectionExtensions
     /// Applies projection expression if TResult is a projection model
     /// and no manual projection has been set.
     /// </summary>
-    private static QueryRequestBuilder ApplyProjectionIfNeeded<TResult>(QueryRequestBuilder builder)
+    private static QueryRequestBuilder<TEntity> ApplyProjectionIfNeeded<TEntity, TResult>(QueryRequestBuilder<TEntity> builder)
+        where TEntity : class
         where TResult : class, new()
     {
         // Check if a manual projection was already set by inspecting the request
@@ -110,7 +112,8 @@ public static class ProjectionExtensions
     /// Provides clear error messages with GSI name and type information.
     /// Note: Primary validation is enforced at compile-time through source generator diagnostics.
     /// </summary>
-    private static void ValidateGsiProjection<TResult>(QueryRequestBuilder builder)
+    private static void ValidateGsiProjection<TEntity, TResult>(QueryRequestBuilder<TEntity> builder)
+        where TEntity : class
         where TResult : class, new()
     {
         // Get the request to check if we're querying an index

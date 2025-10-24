@@ -90,10 +90,9 @@ public class UsersTable : DynamoDbTableBase
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public override GetItemRequestBuilder Get() => base.Get();
-    
-    public GetItemRequestBuilder Get(string userId) => 
-        base.Get().WithKey("id", userId);
+    // Note: In actual implementation, replace 'PlaceholderEntity' with your entity type
+    public GetItemRequestBuilder<PlaceholderEntity> Get(string userId) => 
+        base.Get<PlaceholderEntity>().WithKey("id", userId);
 
     /// <summary>
     /// Updates a user by their ID (partition key).
@@ -121,10 +120,9 @@ public class UsersTable : DynamoDbTableBase
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public override UpdateItemRequestBuilder Update() => base.Update();
-    
-    public UpdateItemRequestBuilder Update(string userId) => 
-        base.Update().WithKey("id", userId);
+    // Note: In actual implementation, replace 'PlaceholderEntity' with your entity type
+    public UpdateItemRequestBuilder<PlaceholderEntity> Update(string userId) => 
+        base.Update<PlaceholderEntity>().WithKey("id", userId);
 
     /// <summary>
     /// Deletes a user by their ID (partition key).
@@ -147,10 +145,9 @@ public class UsersTable : DynamoDbTableBase
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public override DeleteItemRequestBuilder Delete() => base.Delete();
-    
-    public DeleteItemRequestBuilder Delete(string userId) => 
-        base.Delete().WithKey("id", userId);
+    // Note: In actual implementation, replace 'PlaceholderEntity' with your entity type
+    public DeleteItemRequestBuilder<PlaceholderEntity> Delete(string userId) => 
+        base.Delete<PlaceholderEntity>().WithKey("id", userId);
 
     /// <summary>
     /// Global Secondary Index for querying users by email.

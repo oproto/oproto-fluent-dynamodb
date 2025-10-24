@@ -11,11 +11,21 @@ namespace Oproto.FluentDynamoDb.Examples;
 /// </summary>
 public class FormatStringExamples
 {
-    private readonly IDynamoDbTable _table;
+    private readonly DynamoDbTableBase _table;
 
-    public FormatStringExamples(IDynamoDbTable table)
+    public FormatStringExamples(DynamoDbTableBase table)
     {
         _table = table;
+    }
+    
+    // Placeholder entity for examples
+    public class ExampleEntity
+    {
+        public string Pk { get; set; } = string.Empty;
+        public string Sk { get; set; } = string.Empty;
+        public DateTime Created { get; set; }
+        public OrderStatus Status { get; set; }
+        public decimal Amount { get; set; }
     }
 
     public enum OrderStatus { Pending, Processing, Completed, Cancelled }
@@ -26,14 +36,14 @@ public class FormatStringExamples
     public async Task BasicQueryExample()
     {
         // OLD APPROACH (still supported)
-        var oldResult = await _table.Query()
+        var oldResult = await _table.Query<ExampleEntity>()
             .Where("pk = :pk AND begins_with(sk, :prefix)")
             .WithValue(":pk", "USER#123")
             .WithValue(":prefix", "ORDER#")
             .ExecuteAsync();
 
         // NEW APPROACH - Format strings
-        var newResult = await _table.Query()
+        var newResult = await _table.Query<ExampleEntity>()
             .Where("pk = {0} AND begins_with(sk, {1})", "USER#123", "ORDER#")
             .ExecuteAsync();
     }
@@ -46,7 +56,7 @@ public class FormatStringExamples
         var startDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var endDate = DateTime.UtcNow;
 
-        var result = await _table.Query()
+        var result = await _table.Query<ExampleEntity>()
             .Where("pk = {0} AND created BETWEEN {1:o} AND {2:o}",
                    "USER#123", startDate, endDate)
             .ExecuteAsync();
@@ -60,7 +70,7 @@ public class FormatStringExamples
     {
         var status = OrderStatus.Processing;
 
-        var result = await _table.Query()
+        var result = await _table.Query<ExampleEntity>()
             .Where("pk = {0} AND #status = {1}", "ORDER#123", status)
             .WithAttribute("#status", "status")  // Maps #status to actual "status" attribute
             .ExecuteAsync();
@@ -77,12 +87,12 @@ public class FormatStringExamples
         var expectedVersion = 5;
 
         // Query with format strings
-        await _table.Query()
+        await _table.Query<ExampleEntity>()
             .Where("pk = {0} AND begins_with(sk, {1})", userId, "ORDER#")
             .ExecuteAsync();
 
         // Update with conditional format strings
-        await _table.Update()
+        await _table.Update<ExampleEntity>()
             .WithKey("pk", userId, "sk", orderId)
             .Set("SET #status = :newStatus")  // Set still uses traditional parameters
             .Where("attribute_exists(pk) AND version = {0}", expectedVersion)
@@ -90,7 +100,7 @@ public class FormatStringExamples
             .ExecuteAsync();
 
         // Delete with conditional format strings
-        await _table.Delete()
+        await _table.Delete<ExampleEntity>()
             .WithKey("pk", userId, "sk", orderId)
             .Where("version = {0}", expectedVersion)
             .ExecuteAsync();
@@ -114,7 +124,7 @@ public class FormatStringExamples
         var userId = "USER#123";
         var recentDate = DateTime.UtcNow.AddDays(-7);
 
-        var result = await _table.Query()
+        var result = await _table.Query<ExampleEntity>()
             .Where("pk = {0} AND sk BETWEEN :startSk AND :endSk AND created > {1:o}",
                    userId, recentDate)
             .WithValue(":startSk", "ORDER#2024-01")
@@ -136,7 +146,7 @@ public class FormatStringExamples
         var tag = "important";
 
         // Basic filter with format strings
-        var result1 = await _table.Query()
+        var result1 = await _table.Query<ExampleEntity>()
             .Where("pk = {0}", userId)
             .WithFilter("#status = {0} AND #amount > {1:F2}", status, minAmount)
             .WithAttribute("#status", "status")
@@ -144,7 +154,7 @@ public class FormatStringExamples
             .ExecuteAsync();
 
         // Complex filter with multiple conditions and types
-        var result2 = await _table.Query()
+        var result2 = await _table.Query<ExampleEntity>()
             .Where("pk = {0}", userId)
             .WithFilter("#status = {0} AND #amount BETWEEN {1:F2} AND {2:F2} AND #created > {3:o}",
                        status, minAmount, maxAmount, createdAfter)
@@ -154,7 +164,7 @@ public class FormatStringExamples
             .ExecuteAsync();
 
         // Filter with DynamoDB functions
-        var result3 = await _table.Query()
+        var result3 = await _table.Query<ExampleEntity>()
             .Where("pk = {0}", userId)
             .WithFilter("contains(#tags, {0}) AND size(#items) > {1} AND attribute_exists(#optional)",
                        tag, 5)
@@ -164,7 +174,7 @@ public class FormatStringExamples
             .ExecuteAsync();
 
         // Filter with IN operator
-        var result4 = await _table.Query()
+        var result4 = await _table.Query<ExampleEntity>()
             .Where("pk = {0}", userId)
             .WithFilter("#status IN ({0}, {1}, {2})",
                        OrderStatus.Processing, OrderStatus.Completed, OrderStatus.Pending)
@@ -172,7 +182,7 @@ public class FormatStringExamples
             .ExecuteAsync();
 
         // Mixed filter styles - format strings with traditional parameters
-        var result5 = await _table.Query()
+        var result5 = await _table.Query<ExampleEntity>()
             .Where("pk = {0}", userId)
             .WithFilter("#status = {0} AND #customField = :customValue", status)
             .WithAttribute("#status", "status")
@@ -224,7 +234,7 @@ public class FormatStringExamples
         var newAmount = 99.99m;
 
         // Simple SET operation with format strings
-        await _table.Update()
+        await _table.Update<ExampleEntity>()
             .WithKey("pk", userId, "sk", orderId)
             .Set("SET #name = {0}, #updated = {1:o}", newName, updatedTime)
             .WithAttribute("#name", "name")
@@ -232,7 +242,7 @@ public class FormatStringExamples
             .ExecuteAsync();
 
         // ADD operation with numeric formatting
-        await _table.Update()
+        await _table.Update<ExampleEntity>()
             .WithKey("pk", userId, "sk", orderId)
             .Set("ADD #count {0}, #amount {1:F2}", incrementValue, newAmount)
             .WithAttribute("#count", "count")
@@ -240,7 +250,7 @@ public class FormatStringExamples
             .ExecuteAsync();
 
         // Complex update with multiple operations
-        await _table.Update()
+        await _table.Update<ExampleEntity>()
             .WithKey("pk", userId, "sk", orderId)
             .Set("SET #name = {0}, #updated = {1:o} ADD #count {2} REMOVE #oldField",
                 newName, updatedTime, incrementValue)
@@ -251,7 +261,7 @@ public class FormatStringExamples
             .ExecuteAsync();
 
         // Mixed format strings and traditional parameters
-        await _table.Update()
+        await _table.Update<ExampleEntity>()
             .WithKey("pk", userId, "sk", orderId)
             .Set("SET #name = {0}, #customField = :customValue", newName)
             .WithAttribute("#name", "name")

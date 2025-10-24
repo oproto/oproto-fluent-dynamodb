@@ -89,7 +89,8 @@ public class DynamoDbIndex
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public QueryRequestBuilder<TEntity> Query<TEntity>() where TEntity : class
+    public QueryRequestBuilder<TEntity> Query<TEntity>() 
+        where TEntity : class
     {
         var builder = new QueryRequestBuilder<TEntity>(_table.DynamoDbClient)
             .ForTable(_table.Name)
@@ -122,7 +123,8 @@ public class DynamoDbIndex
     /// var results = await index.Query("gsi1pk = {0} AND begins_with(gsi1sk, {1})", "STATUS#ACTIVE", "USER#").ExecuteAsync();
     /// </code>
     /// </example>
-    public QueryRequestBuilder<TEntity> Query<TEntity>(string keyConditionExpression, params object[] values) where TEntity : class
+    public QueryRequestBuilder<TEntity> Query<TEntity>(string keyConditionExpression, params object[] values) 
+        where TEntity : class
     {
         return Requests.Extensions.WithConditionExpressionExtensions.Where(Query<TEntity>(), keyConditionExpression, values);
     }
@@ -201,7 +203,8 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
     ///     .ExecuteAsync();
     /// </code>
     /// </example>
-    public QueryRequestBuilder<TEntity> Query<TEntity>() where TEntity : class => _innerIndex.Query<TEntity>();
+    public QueryRequestBuilder<TEntity> Query<TEntity>() 
+        where TEntity : class => _innerIndex.Query<TEntity>();
     
     /// <summary>
     /// Creates a new Query operation builder with a key condition expression.
@@ -219,8 +222,9 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
     /// var results = await index.Query("gsi1pk = {0} AND gsi1sk > {1}", "STATUS#ACTIVE", "2024-01-01").ExecuteAsync();
     /// </code>
     /// </example>
-    public QueryRequestBuilder Query(string keyConditionExpression, params object[] values) => 
-        _innerIndex.Query(keyConditionExpression, values);
+    public QueryRequestBuilder<TEntity> Query<TEntity>(string keyConditionExpression, params object[] values) 
+        where TEntity : class => 
+        _innerIndex.Query<TEntity>(keyConditionExpression, values);
 
     /// <summary>
     /// Executes query and returns results as TDefault (the index's default type).
@@ -236,10 +240,10 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
     /// </code>
     /// </example>
     public async Task<List<TDefault>> QueryAsync(
-        Action<QueryRequestBuilder> configure,
+        Action<QueryRequestBuilder<TDefault>> configure,
         CancellationToken cancellationToken = default)
     {
-        var builder = Query();
+        var builder = Query<TDefault>();
         configure(builder);
         
         // Note: This will be enhanced in future tasks to use ToListAsync<TDefault>()
@@ -271,11 +275,11 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
     /// </code>
     /// </example>
     public async Task<List<TResult>> QueryAsync<TResult>(
-        Action<QueryRequestBuilder> configure,
+        Action<QueryRequestBuilder<TResult>> configure,
         CancellationToken cancellationToken = default)
         where TResult : class, new()
     {
-        var builder = Query();
+        var builder = Query<TResult>();
         configure(builder);
         
         // Note: This will be enhanced in future tasks to use ToListAsync<TResult>()

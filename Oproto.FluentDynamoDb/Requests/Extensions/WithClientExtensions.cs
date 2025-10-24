@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2;
+using Oproto.FluentDynamoDb.Storage;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
@@ -17,18 +18,21 @@ public static class WithClientExtensions
     /// <param name="builder">The original GetItemRequestBuilder instance.</param>
     /// <param name="client">The scoped DynamoDB client to use.</param>
     /// <returns>A new GetItemRequestBuilder instance using the specified client with preserved configuration.</returns>
-    public static GetItemRequestBuilder WithClient(this GetItemRequestBuilder builder, IAmazonDynamoDB client)
+    public static GetItemRequestBuilder<TEntity> WithClient<TEntity>(
+        this GetItemRequestBuilder<TEntity> builder, 
+        IAmazonDynamoDB client)
+        where TEntity : class
     {
-        var newBuilder = new GetItemRequestBuilder(client);
+        var newBuilder = new GetItemRequestBuilder<TEntity>(client);
 
         // Copy the request configuration
         var originalRequest = builder.ToGetItemRequest();
-        var newBuilderRequestField = typeof(GetItemRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
+        var newBuilderRequestField = typeof(GetItemRequestBuilder<TEntity>).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
 
         // Copy attribute name mappings
         var originalAttrN = builder.GetAttributeNameHelper();
-        var newBuilderAttrNField = typeof(GetItemRequestBuilder).GetField("_attrN", BindingFlags.NonPublic | BindingFlags.Instance);
+        var newBuilderAttrNField = typeof(GetItemRequestBuilder<TEntity>).GetField("_attrN", BindingFlags.NonPublic | BindingFlags.Instance);
         var newAttrN = (AttributeNameInternal?)newBuilderAttrNField?.GetValue(newBuilder);
         if (newAttrN != null && originalAttrN.AttributeNames != null)
         {
@@ -48,13 +52,16 @@ public static class WithClientExtensions
     /// <param name="builder">The original QueryRequestBuilder instance.</param>
     /// <param name="client">The scoped DynamoDB client to use.</param>
     /// <returns>A new QueryRequestBuilder instance using the specified client with preserved configuration.</returns>
-    public static QueryRequestBuilder WithClient(this QueryRequestBuilder builder, IAmazonDynamoDB client)
+    public static QueryRequestBuilder<TEntity> WithClient<TEntity>(
+        this QueryRequestBuilder<TEntity> builder, 
+        IAmazonDynamoDB client)
+        where TEntity : class
     {
-        var newBuilder = new QueryRequestBuilder(client);
+        var newBuilder = new QueryRequestBuilder<TEntity>(client);
 
         // Copy the request configuration
         var originalRequest = builder.ToQueryRequest();
-        var newBuilderRequestField = typeof(QueryRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
+        var newBuilderRequestField = typeof(QueryRequestBuilder<TEntity>).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
 
         // Copy attribute mappings
@@ -92,13 +99,16 @@ public static class WithClientExtensions
     /// <param name="builder">The original UpdateItemRequestBuilder instance.</param>
     /// <param name="client">The scoped DynamoDB client to use.</param>
     /// <returns>A new UpdateItemRequestBuilder instance using the specified client with preserved configuration.</returns>
-    public static UpdateItemRequestBuilder WithClient(this UpdateItemRequestBuilder builder, IAmazonDynamoDB client)
+    public static UpdateItemRequestBuilder<TEntity> WithClient<TEntity>(
+        this UpdateItemRequestBuilder<TEntity> builder, 
+        IAmazonDynamoDB client)
+        where TEntity : class
     {
-        var newBuilder = new UpdateItemRequestBuilder(client);
+        var newBuilder = new UpdateItemRequestBuilder<TEntity>(client);
 
         // Copy the request configuration
         var originalRequest = builder.ToUpdateItemRequest();
-        var newBuilderRequestField = typeof(UpdateItemRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
+        var newBuilderRequestField = typeof(UpdateItemRequestBuilder<TEntity>).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
 
         // Copy attribute mappings
@@ -114,13 +124,16 @@ public static class WithClientExtensions
     /// <param name="builder">The original DeleteItemRequestBuilder instance.</param>
     /// <param name="client">The scoped DynamoDB client to use.</param>
     /// <returns>A new DeleteItemRequestBuilder instance using the specified client with preserved configuration.</returns>
-    public static DeleteItemRequestBuilder WithClient(this DeleteItemRequestBuilder builder, IAmazonDynamoDB client)
+    public static DeleteItemRequestBuilder<TEntity> WithClient<TEntity>(
+        this DeleteItemRequestBuilder<TEntity> builder, 
+        IAmazonDynamoDB client)
+        where TEntity : class
     {
-        var newBuilder = new DeleteItemRequestBuilder(client);
+        var newBuilder = new DeleteItemRequestBuilder<TEntity>(client);
 
         // Copy the request configuration
         var originalRequest = builder.ToDeleteItemRequest();
-        var newBuilderRequestField = typeof(DeleteItemRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
+        var newBuilderRequestField = typeof(DeleteItemRequestBuilder<TEntity>).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
 
         // Copy attribute mappings
@@ -136,13 +149,16 @@ public static class WithClientExtensions
     /// <param name="builder">The original ScanRequestBuilder instance.</param>
     /// <param name="client">The scoped DynamoDB client to use.</param>
     /// <returns>A new ScanRequestBuilder instance using the specified client with preserved configuration.</returns>
-    public static ScanRequestBuilder WithClient(this ScanRequestBuilder builder, IAmazonDynamoDB client)
+    public static ScanRequestBuilder<TEntity> WithClient<TEntity>(
+        this ScanRequestBuilder<TEntity> builder, 
+        IAmazonDynamoDB client)
+        where TEntity : class
     {
-        var newBuilder = new ScanRequestBuilder(client);
+        var newBuilder = new ScanRequestBuilder<TEntity>(client);
 
         // Copy the request configuration
         var originalRequest = builder.ToScanRequest();
-        var newBuilderRequestField = typeof(ScanRequestBuilder).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
+        var newBuilderRequestField = typeof(ScanRequestBuilder<TEntity>).GetField("_req", BindingFlags.NonPublic | BindingFlags.Instance);
         newBuilderRequestField?.SetValue(newBuilder, originalRequest);
 
         // Copy attribute mappings

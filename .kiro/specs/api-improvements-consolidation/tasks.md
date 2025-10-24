@@ -31,7 +31,18 @@
   - Ensure IndexName is automatically set in generated code
   - _Requirements: 19_
 
-- [-] 5. Remove non-functional QueryAsync methods from DynamoDbIndex
+- [ ] 4.2 Make PutItemRequestBuilder generic and add entity overload
+  - Convert PutItemRequestBuilder to PutItemRequestBuilder<TEntity>
+  - Add WithItem(TEntity entity) method that calls TEntity.ToDynamoDb<TEntity>(entity)
+  - Keep existing WithItem(Dictionary<string, AttributeValue>) for backward compatibility
+  - Update DynamoDbTableBase.Put() to be generic: Put<TEntity>()
+  - Update IDynamoDbTable.Put() to be generic or remove from interface
+  - Update all chained methods to return PutItemRequestBuilder<TEntity>
+  - Update source generator to emit Put<TEntity>() methods
+  - Update extension methods (EncryptionExtensions, WithClientExtensions) to support generic PutItemRequestBuilder
+  - _Requirements: 1, 2, 3, 4, 7, 11, 24_
+
+- [ ] 5. Remove non-functional QueryAsync methods from DynamoDbIndex
   - Remove QueryAsync(Action<QueryRequestBuilder>) from DynamoDbIndex<TDefault>
   - Remove QueryAsync<TResult>(Action<QueryRequestBuilder>) from DynamoDbIndex<TDefault>
   - Update any documentation referencing these methods

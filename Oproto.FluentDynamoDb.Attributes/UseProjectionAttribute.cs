@@ -17,7 +17,7 @@ namespace Oproto.FluentDynamoDb.Attributes;
 /// <para><strong>Limitation:</strong> Currently, only ONE [UseProjection] attribute is supported per GSI.
 /// If multiple entities define the same GSI with different [UseProjection] attributes,
 /// the first one encountered will be used. To query the same GSI with different projections,
-/// use the generic QueryAsync&lt;TResult&gt; override method on the generated index property.</para>
+/// use the Query&lt;TResult&gt;() method with different type parameters on the generated index property.</para>
 /// 
 /// Example:
 /// <code>
@@ -39,10 +39,16 @@ namespace Oproto.FluentDynamoDb.Attributes;
 /// To use an alternative projection on the same GSI:
 /// <code>
 /// // Use default projection (TransactionSummary)
-/// var summaries = await table.StatusIndex.QueryAsync(q => q.Where("status = :s"));
+/// var summaries = await table.StatusIndex.Query&lt;TransactionSummary&gt;()
+///     .Where("status = :s")
+///     .WithValue(":s", "ACTIVE")
+///     .ToListAsync();
 /// 
 /// // Override with different projection
-/// var minimal = await table.StatusIndex.QueryAsync&lt;MinimalTransaction&gt;(q => q.Where("status = :s"));
+/// var minimal = await table.StatusIndex.Query&lt;MinimalTransaction&gt;()
+///     .Where("status = :s")
+///     .WithValue(":s", "ACTIVE")
+///     .ToListAsync();
 /// </code>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]

@@ -82,7 +82,7 @@ public class ManualProjectionConfigurationExamples
         var table = new TransactionsTable(client);
 
         // Projection is automatically applied
-        var response = await table.StatusIndexWithProjection.Query()
+        var response = await table.StatusIndexWithProjection.Query<Transaction>()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .ExecuteAsync();
@@ -115,7 +115,7 @@ public class ManualProjectionConfigurationExamples
         var table = new TransactionsTable(client);
 
         // Manual projection overrides the automatic one
-        var response = await table.StatusIndexWithProjection.Query()
+        var response = await table.StatusIndexWithProjection.Query<Transaction>()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .WithProjection("id, amount") // Overrides automatic projection
@@ -154,7 +154,7 @@ public class ManualProjectionConfigurationExamples
         // 3. No projection (all fields)
 
         // Case 1: Manual projection (highest precedence)
-        var response1 = await table.StatusIndexWithProjection.Query()
+        var response1 = await table.StatusIndexWithProjection.Query<Transaction>()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .WithProjection("id") // Takes precedence over index projection
@@ -162,14 +162,14 @@ public class ManualProjectionConfigurationExamples
         // Result: Only "id" is fetched
 
         // Case 2: Index projection (medium precedence)
-        var response2 = await table.StatusIndexWithProjection.Query()
+        var response2 = await table.StatusIndexWithProjection.Query<Transaction>()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .ExecuteAsync();
         // Result: "id, amount, status, created_date, entity_type" are fetched
 
         // Case 3: No projection (lowest precedence)
-        var response3 = await table.StatusIndexFull.Query()
+        var response3 = await table.StatusIndexFull.Query<Transaction>()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .ExecuteAsync();
@@ -236,21 +236,21 @@ public class ManualProjectionConfigurationExamples
         var table = new FlexibleProjectionsTable(client);
 
         // Use minimal projection for list view (fast, low cost)
-        var listItems = await table.StatusIndexMinimal.Query()
+        var listItems = await table.StatusIndexMinimal.Query<Transaction>()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .Take(100)
             .ExecuteAsync();
 
         // Use standard projection for detail view (balanced)
-        var detailItems = await table.StatusIndexStandard.Query()
+        var detailItems = await table.StatusIndexStandard.Query<Transaction>()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .Take(10)
             .ExecuteAsync();
 
         // Use full projection when all data is needed (slower, higher cost)
-        var fullItems = await table.StatusIndexFull.Query()
+        var fullItems = await table.StatusIndexFull.Query<Transaction>()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE")
             .Take(1)

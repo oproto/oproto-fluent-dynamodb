@@ -67,8 +67,10 @@ public class TransactionsTable : DynamoDbTableBase
 }
 
 // Usage with default type
-var summaries = await table.StatusIndex.QueryAsync(q => 
-    q.Where("status = :status").WithValue(":status", "ACTIVE"));
+var summaries = await table.StatusIndex.Query<TransactionSummary>()
+    .Where("status = :status")
+    .WithValue(":status", "ACTIVE")
+    .ToListAsync();
 // Returns List<TransactionSummary>
 
 // Usage with type override
