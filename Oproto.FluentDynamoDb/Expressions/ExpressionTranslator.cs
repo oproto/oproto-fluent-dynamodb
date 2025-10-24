@@ -12,6 +12,13 @@ namespace Oproto.FluentDynamoDb.Expressions;
 /// </summary>
 public class ExpressionTranslator
 {
+    private static readonly ExpressionCache _cache = new();
+
+    /// <summary>
+    /// Gets the global expression cache instance.
+    /// </summary>
+    public static ExpressionCache Cache => _cache;
+
     /// <summary>
     /// Translates a lambda expression to DynamoDB expression syntax.
     /// </summary>
@@ -35,6 +42,39 @@ public class ExpressionTranslator
 
         // Visit the body of the lambda expression
         return Visit(expression.Body, entityParameter, context);
+    }
+
+    /// <summary>
+    /// Translates a lambda expression to DynamoDB expression syntax with caching.
+    /// </summary>
+    /// <typeparam name="TEntity">The entity type being queried</typeparam>
+    /// <param name="expression">The lambda expression to translate</param>
+    /// <param name="context">The translation context</param>
+    /// <param name="useCache">Whether to use the expression cache</param>
+    /// <returns>The DynamoDB expression string</returns>
+    /// <exception cref="ArgumentNullException">Thrown when expression or context is null</exception>
+    /// <exception cref="ExpressionTranslationException">Thrown when the expression cannot be translated</exception>
+    public string TranslateWithCache<TEntity>(
+        Expression<Func<TEntity, bool>> expression,
+        ExpressionContext context,
+        bool useCache = true)
+    {
+        if (expression == null)
+            throw new ArgumentNullException(nameof(expression));
+        if (context == null)
+            throw new ArgumentNullException(nameof(context));
+
+        if (!useCache)
+        {
+            return Translate(expression, context);
+        }
+
+        // Use cache to avoid repeated translation of the same expression
+        // Note: We cache the expression structure, not the parameter values
+        return _cache.GetOrAdd(
+            expression.Body,
+            context.ValidationMode,
+            () => Translate(expression, context));
     }
 
     /// <summary>
@@ -68,8 +108,10 @@ public class ExpressionTranslator
             var right = Visit(node.Right, entityParameter, context);
             var op = node.NodeType == ExpressionType.AndAlso ? "AND" : "OR";
             
-            // Add parentheses to ensure correct precedence
-            return $"({left}) {op} ({right})";
+            // Use StringBuilder to minimize allocations
+            var sb = new StringBuilder(left.Length + right.Length + op.Length + 6);
+            sb.Append('(').Append(left).Append(") ").Append(op).Append(" (").Append(right).Append(')');
+            return sb.ToString();
         }
 
         // Handle comparison operators (==, !=, <, >, <=, >=)
@@ -90,7 +132,10 @@ public class ExpressionTranslator
                 node)
         };
 
-        return $"{leftSide} {dynamoDbOperator} {rightSide}";
+        // Use StringBuilder to minimize allocations
+        var builder = new StringBuilder(leftSide.Length + rightSide.Length + dynamoDbOperator.Length + 2);
+        builder.Append(leftSide).Append(' ').Append(dynamoDbOperator).Append(' ').Append(rightSide);
+        return builder.ToString();
     }
 
     /// <summary>
@@ -141,8 +186,12 @@ public class ExpressionTranslator
                 propertyName = propertyMetadata.AttributeName;
             }
 
-            // Generate attribute name placeholder
-            var attributeNamePlaceholder = $"#attr{context.AttributeNames.AttributeNames.Count}";
+            // Generate attribute name placeholder - minimize allocations
+            var count = context.AttributeNames.AttributeNames.Count;
+            var attributeNamePlaceholder = count < 10 
+                ? string.Concat("#attr", count.ToString()) 
+                : $"#attr{count}";
+            
             context.AttributeNames.WithAttribute(attributeNamePlaceholder, propertyName);
             return attributeNamePlaceholder;
         }
@@ -169,7 +218,11 @@ public class ExpressionTranslator
         if (node.NodeType == ExpressionType.Not)
         {
             var operand = Visit(node.Operand, entityParameter, context);
-            return $"NOT ({operand})";
+            
+            // Use StringBuilder to minimize allocations
+            var sb = new StringBuilder(operand.Length + 6);
+            sb.Append("NOT (").Append(operand).Append(')');
+            return sb.ToString();
         }
 
         // Handle type conversions (like nullable to non-nullable)
@@ -234,7 +287,11 @@ public class ExpressionTranslator
             {
                 var attributeName = Visit(node.Object, entityParameter, context);
                 var value = Visit(node.Arguments[0], entityParameter, context);
-                dynamoDbFunction = $"begins_with({attributeName}, {value})";
+                
+                // Use StringBuilder to minimize allocations
+                var sb = new StringBuilder(attributeName.Length + value.Length + 16);
+                sb.Append("begins_with(").Append(attributeName).Append(", ").Append(value).Append(')');
+                dynamoDbFunction = sb.ToString();
                 return true;
             }
         }
@@ -250,7 +307,11 @@ public class ExpressionTranslator
             {
                 var attributeName = Visit(node.Object, entityParameter, context);
                 var value = Visit(node.Arguments[0], entityParameter, context);
-                dynamoDbFunction = $"contains({attributeName}, {value})";
+                
+                // Use StringBuilder to minimize allocations
+                var sb = new StringBuilder(attributeName.Length + value.Length + 13);
+                sb.Append("contains(").Append(attributeName).Append(", ").Append(value).Append(')');
+                dynamoDbFunction = sb.ToString();
                 return true;
             }
         }
@@ -267,7 +328,11 @@ public class ExpressionTranslator
                 var attributeName = Visit(node.Arguments[0], entityParameter, context);
                 var low = Visit(node.Arguments[1], entityParameter, context);
                 var high = Visit(node.Arguments[2], entityParameter, context);
-                dynamoDbFunction = $"{attributeName} BETWEEN {low} AND {high}";
+                
+                // Use StringBuilder to minimize allocations
+                var sb = new StringBuilder(attributeName.Length + low.Length + high.Length + 17);
+                sb.Append(attributeName).Append(" BETWEEN ").Append(low).Append(" AND ").Append(high);
+                dynamoDbFunction = sb.ToString();
                 return true;
             }
         }
@@ -281,7 +346,11 @@ public class ExpressionTranslator
             if (IsEntityPropertyAccess(node.Arguments[0], entityParameter))
             {
                 var attributeName = Visit(node.Arguments[0], entityParameter, context);
-                dynamoDbFunction = $"attribute_exists({attributeName})";
+                
+                // Use StringBuilder to minimize allocations
+                var sb = new StringBuilder(attributeName.Length + 19);
+                sb.Append("attribute_exists(").Append(attributeName).Append(')');
+                dynamoDbFunction = sb.ToString();
                 return true;
             }
         }
@@ -295,7 +364,11 @@ public class ExpressionTranslator
             if (IsEntityPropertyAccess(node.Arguments[0], entityParameter))
             {
                 var attributeName = Visit(node.Arguments[0], entityParameter, context);
-                dynamoDbFunction = $"attribute_not_exists({attributeName})";
+                
+                // Use StringBuilder to minimize allocations
+                var sb = new StringBuilder(attributeName.Length + 23);
+                sb.Append("attribute_not_exists(").Append(attributeName).Append(')');
+                dynamoDbFunction = sb.ToString();
                 return true;
             }
         }
@@ -309,7 +382,11 @@ public class ExpressionTranslator
             if (IsEntityPropertyAccess(node.Arguments[0], entityParameter))
             {
                 var attributeName = Visit(node.Arguments[0], entityParameter, context);
-                dynamoDbFunction = $"size({attributeName})";
+                
+                // Use StringBuilder to minimize allocations
+                var sb = new StringBuilder(attributeName.Length + 7);
+                sb.Append("size(").Append(attributeName).Append(')');
+                dynamoDbFunction = sb.ToString();
                 return true;
             }
         }

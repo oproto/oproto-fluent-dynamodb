@@ -377,9 +377,11 @@ public class WithFilterExpressionExtensionsTests
     private class TestBuilder : IWithFilterExpression<TestBuilder>
     {
         public AttributeValueInternal AttributeValueHelper { get; } = new();
+        public AttributeNameInternal AttributeNameHelper { get; } = new();
         public string? FilterExpression { get; private set; }
 
         public AttributeValueInternal GetAttributeValueHelper() => AttributeValueHelper;
+        public AttributeNameInternal GetAttributeNameHelper() => AttributeNameHelper;
 
         public TestBuilder SetFilterExpression(string expression)
         {

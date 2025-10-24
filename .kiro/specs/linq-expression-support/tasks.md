@@ -112,29 +112,29 @@
     - Support mixing expression-based and string-based calls
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-- [ ] 6. Implement performance optimizations
-  - [ ] 6.1 Create expression caching mechanism
+- [x] 6. Implement performance optimizations
+  - [x] 6.1 Create expression caching mechanism
     - Implement `ExpressionCache` class with ConcurrentDictionary
     - Create cache key from expression and validation mode
     - Cache translated expression strings (not parameter values)
     - Add thread-safety for concurrent access
     - _Requirements: 9.1, 9.2_
 
-  - [ ] 6.2 Optimize allocations during translation
+  - [x] 6.2 Optimize allocations during translation
     - Use StringBuilder for expression building
     - Reuse ParameterGenerator from context
     - Minimize string allocations in hot paths
     - _Requirements: 9.2, 9.3_
 
-- [ ] 7. Write comprehensive unit tests
-  - [ ] 7.1 Test operator translation
+- [x] 7. Write comprehensive unit tests
+  - [x] 7.1 Test operator translation
     - Test equality operators (==, !=)
     - Test comparison operators (<, >, <=, >=)
     - Test logical operators (&&, ||, !)
     - Test operator precedence and parentheses
     - _Requirements: 3.1, 3.2, 3.6, 3.7, 3.8_
 
-  - [ ] 7.2 Test DynamoDB function translation
+  - [x] 7.2 Test DynamoDB function translation
     - Test StartsWith → begins_with
     - Test Contains → contains
     - Test Between → BETWEEN
@@ -143,7 +143,7 @@
     - Test Size → size
     - _Requirements: 3.3, 3.4, 3.5, 3.9_
 
-  - [ ] 7.3 Test value capture
+  - [x] 7.3 Test value capture
     - Test constant values
     - Test local variables
     - Test closure captures
@@ -151,7 +151,7 @@
     - Test various types (string, int, DateTime, enum, etc.)
     - _Requirements: 5.1, 5.2, 5.3_
 
-  - [ ] 7.4 Test validation and error handling
+  - [x] 7.4 Test validation and error handling
     - Test unmapped property detection
     - Test non-key property in Query().Where()
     - Test entity parameter reference in method calls
@@ -161,14 +161,14 @@
     - Verify error message clarity
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 6.1, 6.2, 8.1, 8.2, 8.3, 8.4, 8.5_
 
-  - [ ] 7.5 Test expression combining
+  - [x] 7.5 Test expression combining
     - Test multiple Where() calls
     - Test multiple WithFilter() calls
     - Test mixing expression and string-based calls
     - Test parameter name uniqueness
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-  - [ ] 7.6 Test edge cases
+  - [x] 7.6 Test edge cases
     - Test null values
     - Test nullable properties
     - Test enum values
@@ -177,14 +177,14 @@
     - Test nested expressions
     - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 8. Create AOT compatibility test project
-  - [ ] 8.1 Set up Native AOT test project
+- [x] 8. Create AOT compatibility test project
+  - [x] 8.1 Set up Native AOT test project
     - Create new console project with Native AOT enabled
     - Add reference to FluentDynamoDb library
     - Configure PublishAot and trimming settings
     - _Requirements: 2.1, 2.2, 2.4_
 
-  - [ ] 8.2 Test closure captures in AOT
+  - [x] 8.2 Test closure captures in AOT
     - Test local variable capture
     - Test field capture from outer class
     - Test nested closure captures
@@ -192,7 +192,7 @@
     - Verify identical behavior to JIT
     - _Requirements: 2.5, 9.4_
 
-  - [ ] 8.3 Test expression translation in AOT
+  - [x] 8.3 Test expression translation in AOT
     - Test all operator types
     - Test all DynamoDB functions
     - Test value capture with various types
@@ -200,13 +200,13 @@
     - Verify no runtime code generation
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-  - [ ] 8.4 Test generic method expressions in AOT
+  - [x] 8.4 Test generic method expressions in AOT
     - Test expressions with generic entity types
     - Test expressions with generic property types
     - Test generic method calls in expressions
     - _Requirements: 2.5_
 
-  - [ ] 8.5 Verify trimming compatibility
+  - [x] 8.5 Verify trimming compatibility
     - Build with trimming enabled
     - Verify no trim warnings
     - Test that trimmed binary works correctly

@@ -556,10 +556,12 @@ public class WithConditionExpressionExtensionsTests
     private class TestBuilder : IWithConditionExpression<TestBuilder>
     {
         public AttributeValueInternal AttributeValueHelper { get; } = new();
+        public AttributeNameInternal AttributeNameHelper { get; } = new();
         public string ConditionExpression { get; private set; } = string.Empty;
         public TestBuilder Self => this;
 
         public AttributeValueInternal GetAttributeValueHelper() => AttributeValueHelper;
+        public AttributeNameInternal GetAttributeNameHelper() => AttributeNameHelper;
 
         public TestBuilder SetConditionExpression(string expression)
         {
