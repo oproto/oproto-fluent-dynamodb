@@ -34,8 +34,8 @@
     - Convert captured values to AttributeValue using AttributeValueInternal
     - _Requirements: 5.1, 5.2, 5.3, 5.6_
 
-- [ ] 3. Implement DynamoDB function support
-  - [ ] 3.1 Create DynamoDB expression extension methods
+- [x] 3. Implement DynamoDB function support
+  - [x] 3.1 Create DynamoDB expression extension methods
     - Create `DynamoDbExpressionExtensions` class
     - Implement `Between<T>(this T value, T low, T high)` extension method
     - Implement `AttributeExists<T>(this T value)` extension method
@@ -44,7 +44,7 @@
     - Add `[ExpressionOnly]` attribute to mark these as expression-only methods
     - _Requirements: 3.4, 3.9_
 
-  - [ ] 3.2 Implement method call translation
+  - [x] 3.2 Implement method call translation
     - Implement `VisitMethodCall` method for MethodCallExpression nodes
     - Detect and translate `string.StartsWith()` to `begins_with()`
     - Detect and translate `string.Contains()` to `contains()`
@@ -54,7 +54,7 @@
     - Detect and translate `Size()` to `size()`
     - _Requirements: 3.3, 3.4, 3.5, 3.9_
 
-  - [ ] 3.3 Implement entity parameter reference validation
+  - [x] 3.3 Implement entity parameter reference validation
     - Create `ReferencesEntityParameter` helper method
     - Walk expression trees to detect references to entity parameter
     - Reject method calls that reference entity parameter or properties

@@ -179,6 +179,12 @@ public class ExpressionTranslator
     /// </summary>
     private string VisitMethodCall(MethodCallExpression node, ParameterExpression entityParameter, ExpressionContext context)
     {
+        // Check if this is a DynamoDB function call (string.StartsWith, string.Contains, Between, etc.)
+        if (IsDynamoDbFunction(node, entityParameter, context, out var dynamoDbFunction))
+        {
+            return dynamoDbFunction!;
+        }
+
         // Reject method calls that reference the entity parameter
         if (ReferencesEntityParameter(node, entityParameter))
         {
@@ -194,6 +200,111 @@ public class ExpressionTranslator
         // Evaluate the method call and capture its result
         var value = EvaluateExpression(node);
         return CaptureValue(value, context);
+    }
+
+    /// <summary>
+    /// Checks if a method call is a DynamoDB function and translates it.
+    /// </summary>
+    /// <param name="node">The method call expression.</param>
+    /// <param name="entityParameter">The entity parameter.</param>
+    /// <param name="dynamoDbFunction">The translated DynamoDB function string.</param>
+    /// <returns>True if this is a DynamoDB function, false otherwise.</returns>
+    private bool IsDynamoDbFunction(MethodCallExpression node, ParameterExpression entityParameter, ExpressionContext context, out string? dynamoDbFunction)
+    {
+        dynamoDbFunction = null;
+
+        // string.StartsWith(value) -> begins_with(attr, value)
+        if (node.Method.Name == "StartsWith" && 
+            node.Method.DeclaringType == typeof(string) &&
+            node.Arguments.Count == 1)
+        {
+            // The object is the string property (x.Name)
+            // The argument is the value to check
+            if (node.Object != null && IsEntityPropertyAccess(node.Object, entityParameter))
+            {
+                var attributeName = Visit(node.Object, entityParameter, context);
+                var value = Visit(node.Arguments[0], entityParameter, context);
+                dynamoDbFunction = $"begins_with({attributeName}, {value})";
+                return true;
+            }
+        }
+
+        // string.Contains(value) -> contains(attr, value)
+        if (node.Method.Name == "Contains" && 
+            node.Method.DeclaringType == typeof(string) &&
+            node.Arguments.Count == 1)
+        {
+            // The object is the string property (x.Tags)
+            // The argument is the value to check
+            if (node.Object != null && IsEntityPropertyAccess(node.Object, entityParameter))
+            {
+                var attributeName = Visit(node.Object, entityParameter, context);
+                var value = Visit(node.Arguments[0], entityParameter, context);
+                dynamoDbFunction = $"contains({attributeName}, {value})";
+                return true;
+            }
+        }
+
+        // Between(low, high) -> attr BETWEEN low AND high
+        if (node.Method.Name == "Between" && 
+            node.Method.DeclaringType == typeof(DynamoDbExpressionExtensions) &&
+            node.Arguments.Count == 3)
+        {
+            // First argument is the value (x.Age)
+            // Second and third arguments are low and high bounds
+            if (IsEntityPropertyAccess(node.Arguments[0], entityParameter))
+            {
+                var attributeName = Visit(node.Arguments[0], entityParameter, context);
+                var low = Visit(node.Arguments[1], entityParameter, context);
+                var high = Visit(node.Arguments[2], entityParameter, context);
+                dynamoDbFunction = $"{attributeName} BETWEEN {low} AND {high}";
+                return true;
+            }
+        }
+
+        // AttributeExists() -> attribute_exists(attr)
+        if (node.Method.Name == "AttributeExists" && 
+            node.Method.DeclaringType == typeof(DynamoDbExpressionExtensions) &&
+            node.Arguments.Count == 1)
+        {
+            // The argument is the property (x.OptionalField)
+            if (IsEntityPropertyAccess(node.Arguments[0], entityParameter))
+            {
+                var attributeName = Visit(node.Arguments[0], entityParameter, context);
+                dynamoDbFunction = $"attribute_exists({attributeName})";
+                return true;
+            }
+        }
+
+        // AttributeNotExists() -> attribute_not_exists(attr)
+        if (node.Method.Name == "AttributeNotExists" && 
+            node.Method.DeclaringType == typeof(DynamoDbExpressionExtensions) &&
+            node.Arguments.Count == 1)
+        {
+            // The argument is the property (x.OptionalField)
+            if (IsEntityPropertyAccess(node.Arguments[0], entityParameter))
+            {
+                var attributeName = Visit(node.Arguments[0], entityParameter, context);
+                dynamoDbFunction = $"attribute_not_exists({attributeName})";
+                return true;
+            }
+        }
+
+        // Size() -> size(attr)
+        if (node.Method.Name == "Size" && 
+            node.Method.DeclaringType == typeof(DynamoDbExpressionExtensions) &&
+            node.Arguments.Count == 1)
+        {
+            // The argument is the collection property (x.Items)
+            if (IsEntityPropertyAccess(node.Arguments[0], entityParameter))
+            {
+                var attributeName = Visit(node.Arguments[0], entityParameter, context);
+                dynamoDbFunction = $"size({attributeName})";
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
