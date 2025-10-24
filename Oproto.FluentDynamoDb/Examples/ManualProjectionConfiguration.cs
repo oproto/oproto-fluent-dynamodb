@@ -100,10 +100,12 @@ public class ManualProjectionConfigurationExamples
         var table = new TransactionsTable(client);
 
         // Projection is automatically applied, results are type-safe
-        var summaries = await table.StatusIndexTyped.QueryAsync(q => 
-            q.Where("status = :status").WithValue(":status", "ACTIVE"));
+        var response = await table.StatusIndexTyped.Query<TransactionSummary>()
+            .Where("status = :status")
+            .WithValue(":status", "ACTIVE")
+            .ExecuteAsync();
 
-        // summaries is List<TransactionSummary> with only projected properties populated
+        // response.Items contains only projected properties populated
     }
 
     /// <summary>
@@ -133,10 +135,12 @@ public class ManualProjectionConfigurationExamples
         var table = new TransactionsTable(client);
 
         // Override the default type (TransactionSummary) with a different type
-        var fullTransactions = await table.StatusIndexTyped.QueryAsync<Transaction>(q => 
-            q.Where("status = :status").WithValue(":status", "ACTIVE"));
+        var response = await table.StatusIndexTyped.Query<Transaction>()
+            .Where("status = :status")
+            .WithValue(":status", "ACTIVE")
+            .ExecuteAsync();
 
-        // fullTransactions is List<Transaction>
+        // response.Items is List<Dictionary<string, AttributeValue>>
         // Note: If Transaction has a FromDynamoDb method, it will be used for hydration
     }
 

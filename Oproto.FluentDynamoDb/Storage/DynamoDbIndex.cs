@@ -132,7 +132,7 @@ public class DynamoDbIndex
 
 /// <summary>
 /// Generic DynamoDB index with a default projection type.
-/// Maintained for backward compatibility but simplified to use method-based queries with expression strings.
+/// Provides fluent query operations using the standard Query() method pattern.
 /// </summary>
 /// <typeparam name="TDefault">The default projection/entity type for this index.</typeparam>
 /// <example>
@@ -144,13 +144,14 @@ public class DynamoDbIndex
 ///         "StatusIndex", 
 ///         "id, amount, status, entity_type");
 /// 
-/// // Query using method-based API
-/// var results = await table.StatusIndex.Query()
+/// // Query using fluent API
+/// var results = await table.StatusIndex.Query&lt;TransactionSummary&gt;()
 ///     .Where("gsi1pk = {0}", "ACTIVE")
-///     .ExecuteAsync();
+///     .ToListAsync();
 /// 
-/// // Query with expression string
-/// var results = await table.StatusIndex.Query("gsi1pk = {0}", "ACTIVE").ExecuteAsync();
+/// // Query with expression string shorthand
+/// var results = await table.StatusIndex.Query&lt;TransactionSummary&gt;("gsi1pk = {0}", "ACTIVE")
+///     .ToListAsync();
 /// </code>
 /// </example>
 public class DynamoDbIndex<TDefault> where TDefault : class, new()
@@ -225,69 +226,4 @@ public class DynamoDbIndex<TDefault> where TDefault : class, new()
     public QueryRequestBuilder<TEntity> Query<TEntity>(string keyConditionExpression, params object[] values) 
         where TEntity : class => 
         _innerIndex.Query<TEntity>(keyConditionExpression, values);
-
-    /// <summary>
-    /// Executes query and returns results as TDefault (the index's default type).
-    /// </summary>
-    /// <param name="configure">Action to configure the query builder.</param>
-    /// <param name="cancellationToken">Cancellation token for the operation.</param>
-    /// <returns>A list of items of type TDefault.</returns>
-    /// <example>
-    /// <code>
-    /// // Query using default type
-    /// var summaries = await table.StatusIndex.QueryAsync(q => 
-    ///     q.Where("status = {0}", "ACTIVE"));
-    /// </code>
-    /// </example>
-    public async Task<List<TDefault>> QueryAsync(
-        Action<QueryRequestBuilder<TDefault>> configure,
-        CancellationToken cancellationToken = default)
-    {
-        var builder = Query<TDefault>();
-        configure(builder);
-        
-        // Note: This will be enhanced in future tasks to use ToListAsync<TDefault>()
-        // For now, we execute the query and return an empty list as a placeholder
-        var response = await builder.ExecuteAsync(cancellationToken);
-        
-        // TODO: Implement proper hydration in task 6
-        // This is a placeholder implementation
-        return new List<TDefault>();
-    }
-
-    /// <summary>
-    /// Executes query and returns results as TResult (overriding the default type).
-    /// Useful when the same GSI is used by multiple entity types.
-    /// </summary>
-    /// <typeparam name="TResult">The result type to return.</typeparam>
-    /// <param name="configure">Action to configure the query builder.</param>
-    /// <param name="cancellationToken">Cancellation token for the operation.</param>
-    /// <returns>A list of items of type TResult.</returns>
-    /// <example>
-    /// <code>
-    /// // Index default is TransactionSummary
-    /// var summaries = await table.StatusIndex.QueryAsync&lt;TransactionSummary&gt;(q => 
-    ///     q.Where("status = {0}", "ACTIVE"));
-    /// 
-    /// // Override to use different projection
-    /// var minimal = await table.StatusIndex.QueryAsync&lt;MinimalTransaction&gt;(q => 
-    ///     q.Where("status = {0}", "ACTIVE"));
-    /// </code>
-    /// </example>
-    public async Task<List<TResult>> QueryAsync<TResult>(
-        Action<QueryRequestBuilder<TResult>> configure,
-        CancellationToken cancellationToken = default)
-        where TResult : class, new()
-    {
-        var builder = Query<TResult>();
-        configure(builder);
-        
-        // Note: This will be enhanced in future tasks to use ToListAsync<TResult>()
-        // For now, we execute the query and return an empty list as a placeholder
-        var response = await builder.ExecuteAsync(cancellationToken);
-        
-        // TODO: Implement proper hydration in task 6
-        // This is a placeholder implementation
-        return new List<TResult>();
-    }
 }

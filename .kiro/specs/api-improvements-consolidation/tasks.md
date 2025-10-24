@@ -42,7 +42,7 @@
   - Update extension methods (EncryptionExtensions, WithClientExtensions) to support generic PutItemRequestBuilder
   - _Requirements: 1, 2, 3, 4, 7, 11, 24_
 
-- [ ] 5. Remove non-functional QueryAsync methods from DynamoDbIndex
+- [x] 5. Remove non-functional QueryAsync methods from DynamoDbIndex
   - Remove QueryAsync(Action<QueryRequestBuilder>) from DynamoDbIndex<TDefault>
   - Remove QueryAsync<TResult>(Action<QueryRequestBuilder>) from DynamoDbIndex<TDefault>
   - Update any documentation referencing these methods

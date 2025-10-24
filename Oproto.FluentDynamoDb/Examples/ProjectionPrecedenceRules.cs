@@ -159,8 +159,10 @@ public class ProjectionPrecedenceRulesExamples
         // Result: All fields are fetched (no projection configured)
 
         // Case 3: Generic index projection is also automatically applied
-        var summaries = await table.StatusIndexTyped.QueryAsync(q => 
-            q.Where("status = :status").WithValue(":status", "ACTIVE"));
+        var response3 = await table.StatusIndexTyped.Query<TransactionSummary>()
+            .Where("status = :status")
+            .WithValue(":status", "ACTIVE")
+            .ExecuteAsync();
         // Result: "id, amount, status, created_date" are fetched (from index projection)
     }
 
