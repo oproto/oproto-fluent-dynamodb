@@ -69,7 +69,7 @@ public class ManualTableImplementationTests
         
         var builder = table.Get("user-123")
             .WithProjection("id, name, email")
-            .WithConsistentRead();
+            .UsingConsistentRead();
         
         var request = builder.ToGetItemRequest();
         request.Key["id"].S.Should().Be("user-123");
@@ -84,8 +84,9 @@ public class ManualTableImplementationTests
         var table = new UsersTable(client);
         
         var builder = table.Update("user-123")
-            .Set("name", "John Doe")
-            .Set("email", "john@example.com");
+            .Set("SET #name = {0}, #email = {1}", "John Doe", "john@example.com")
+            .WithAttribute("#name", "name")
+            .WithAttribute("#email", "email");
         
         var request = builder.ToUpdateItemRequest();
         request.Key["id"].S.Should().Be("user-123");
@@ -99,7 +100,7 @@ public class ManualTableImplementationTests
         var table = new UsersTable(client);
         
         var builder = table.Delete("user-123")
-            .WithCondition("attribute_exists(id)");
+            .Where("attribute_exists(id)");
         
         var request = builder.ToDeleteItemRequest();
         request.Key["id"].S.Should().Be("user-123");
@@ -204,7 +205,7 @@ public class ManualTableImplementationTests
         
         var builder = table.Get("customer-123", "order-456")
             .WithProjection("customer_id, order_id, amount, status")
-            .WithConsistentRead();
+            .UsingConsistentRead();
         
         var request = builder.ToGetItemRequest();
         request.Key["customer_id"].S.Should().Be("customer-123");
@@ -220,14 +221,15 @@ public class ManualTableImplementationTests
         var table = new OrdersTable(client);
         
         var builder = table.Update("customer-123", "order-456")
-            .Set("status", "SHIPPED")
-            .WithCondition("status = {0}", "PENDING");
+            .Set("SET #status = {0}", "SHIPPED")
+            .WithAttribute("#status", "status")
+            .Where("status = {0}", "PENDING");
         
         var request = builder.ToUpdateItemRequest();
         request.Key["customer_id"].S.Should().Be("customer-123");
         request.Key["order_id"].S.Should().Be("order-456");
         request.UpdateExpression.Should().Contain("SET");
-        request.ConditionExpression.Should().Be("status = :p0");
+        request.ConditionExpression.Should().Be("status = :p1"); // :p0 is used by Set, so Where uses :p1
     }
 
     [Fact]
@@ -237,8 +239,8 @@ public class ManualTableImplementationTests
         var table = new OrdersTable(client);
         
         var builder = table.Delete("customer-123", "order-456")
-            .WithCondition("status = {0}", "CANCELLED")
-            .WithReturnValues(ReturnValue.ALL_OLD);
+            .Where("status = {0}", "CANCELLED")
+            .ReturnAllOldValues();
         
         var request = builder.ToDeleteItemRequest();
         request.Key["customer_id"].S.Should().Be("customer-123");

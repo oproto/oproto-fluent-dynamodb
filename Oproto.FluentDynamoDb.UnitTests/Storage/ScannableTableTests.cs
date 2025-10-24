@@ -200,6 +200,144 @@ public class ScannableTableTests
     
     #endregion
     
+    #region Test 8.2: Manual Implementation Support
+    
+    [Fact]
+    public void ManuallyImplementedScan_ParameterlessOverload_WorksCorrectly()
+    {
+        // Arrange
+        var client = Substitute.For<IAmazonDynamoDB>();
+        var table = new ManualScannableTable(client);
+        
+        // Act
+        var builder = table.Scan();
+        
+        // Assert
+        builder.Should().NotBeNull();
+        builder.Should().BeOfType<ScanRequestBuilder>();
+        
+        var request = builder.ToScanRequest();
+        request.TableName.Should().Be("ManualScannableTable");
+    }
+    
+    [Fact]
+    public void ManuallyImplementedScan_ExpressionBasedOverload_WorksCorrectly()
+    {
+        // Arrange
+        var client = Substitute.For<IAmazonDynamoDB>();
+        var table = new ManualScannableTable(client);
+        
+        // Act
+        var builder = table.Scan("category = {0}", "Electronics");
+        
+        // Assert
+        builder.Should().NotBeNull();
+        builder.Should().BeOfType<ScanRequestBuilder>();
+        
+        var request = builder.ToScanRequest();
+        request.TableName.Should().Be("ManualScannableTable");
+        request.FilterExpression.Should().Be("category = :p0");
+        request.ExpressionAttributeValues.Should().ContainKey(":p0");
+        request.ExpressionAttributeValues[":p0"].S.Should().Be("Electronics");
+    }
+    
+    [Fact]
+    public void ManuallyImplementedScan_WithMethodChaining_WorksCorrectly()
+    {
+        // Arrange
+        var client = Substitute.For<IAmazonDynamoDB>();
+        var table = new ManualScannableTable(client);
+        
+        // Act
+        var builder = table.Scan()
+            .WithProjection("id, name, price")
+            .Take(25)
+            .UsingConsistentRead();
+        
+        // Assert
+        var request = builder.ToScanRequest();
+        request.TableName.Should().Be("ManualScannableTable");
+        request.ProjectionExpression.Should().Be("id, name, price");
+        request.Limit.Should().Be(25);
+        request.ConsistentRead.Should().BeTrue();
+    }
+    
+    [Fact]
+    public void ManuallyImplementedScan_WithCustomLogic_WorksCorrectly()
+    {
+        // Arrange
+        var client = Substitute.For<IAmazonDynamoDB>();
+        var logger = Substitute.For<IDynamoDbLogger>();
+        var table = new ManualScannableTable(client, logger);
+        
+        // Act
+        var builder = table.Scan("price > {0}", 100m);
+        
+        // Assert
+        builder.Should().NotBeNull();
+        var request = builder.ToScanRequest();
+        request.TableName.Should().Be("ManualScannableTable");
+        request.FilterExpression.Should().Be("price > :p0");
+        request.ExpressionAttributeValues[":p0"].N.Should().Be("100");
+    }
+    
+    [Fact]
+    public void ManuallyImplementedScan_FollowsSamePatternAsGeneratedCode()
+    {
+        // Arrange
+        var client = Substitute.For<IAmazonDynamoDB>();
+        var generatedTable = new TestScannableTable(client);
+        var manualTable = new ManualScannableTable(client);
+        
+        // Act
+        var generatedBuilder = generatedTable.Scan("status = {0}", "ACTIVE");
+        var manualBuilder = manualTable.Scan("status = {0}", "ACTIVE");
+        
+        // Assert - Both should produce identical requests
+        var generatedRequest = generatedBuilder.ToScanRequest();
+        var manualRequest = manualBuilder.ToScanRequest();
+        
+        generatedRequest.FilterExpression.Should().Be(manualRequest.FilterExpression);
+        generatedRequest.ExpressionAttributeValues.Should().BeEquivalentTo(manualRequest.ExpressionAttributeValues);
+    }
+    
+    [Fact]
+    public void ManuallyImplementedScan_WithParallelScan_WorksCorrectly()
+    {
+        // Arrange
+        var client = Substitute.For<IAmazonDynamoDB>();
+        var table = new ManualScannableTable(client);
+        
+        // Act
+        var builder = table.Scan()
+            .WithSegment(2, 5);
+        
+        // Assert
+        var request = builder.ToScanRequest();
+        request.TableName.Should().Be("ManualScannableTable");
+        request.Segment.Should().Be(2);
+        request.TotalSegments.Should().Be(5);
+    }
+    
+    [Fact]
+    public void ManuallyImplementedScan_WithIndex_WorksCorrectly()
+    {
+        // Arrange
+        var client = Substitute.For<IAmazonDynamoDB>();
+        var table = new ManualScannableTable(client);
+        
+        // Act
+        var builder = table.Scan()
+            .UsingIndex("CategoryIndex");
+        
+        // Assert
+        var request = builder.ToScanRequest();
+        request.TableName.Should().Be("ManualScannableTable");
+        request.IndexName.Should().Be("CategoryIndex");
+    }
+    
+    #endregion
+    
     #region Helper Classes
     
     /// <summary>
@@ -227,6 +365,45 @@ public class ScannableTableTests
         /// <summary>
         /// Simulates the generated expression-based Scan() method.
         /// </summary>
+        public ScanRequestBuilder Scan(string filterExpression, params object[] values)
+        {
+            var builder = Scan();
+            return Oproto.FluentDynamoDb.Requests.Extensions.WithFilterExpressionExtensions.WithFilter(builder, filterExpression, values);
+        }
+    }
+    
+    /// <summary>
+    /// Test table with manually implemented Scan() methods.
+    /// This demonstrates how developers can manually implement scan operations
+    /// without using source generation or the [Scannable] attribute.
+    /// </summary>
+    private class ManualScannableTable : DynamoDbTableBase
+    {
+        public ManualScannableTable(IAmazonDynamoDB client) 
+            : base(client, "ManualScannableTable")
+        {
+        }
+        
+        public ManualScannableTable(IAmazonDynamoDB client, IDynamoDbLogger logger) 
+            : base(client, "ManualScannableTable", logger)
+        {
+        }
+        
+        /// <summary>
+        /// Manually implemented parameterless Scan() method.
+        /// Creates a new Scan operation builder for this table.
+        /// </summary>
+        /// <returns>A ScanRequestBuilder configured for this table.</returns>
+        public ScanRequestBuilder Scan() => 
+            new ScanRequestBuilder(DynamoDbClient, Logger).ForTable(Name);
+        
+        /// <summary>
+        /// Manually implemented expression-based Scan() method.
+        /// Creates a new Scan operation builder with a filter expression.
+        /// </summary>
+        /// <param name="filterExpression">The filter expression with format placeholders.</param>
+        /// <param name="values">The values to substitute into the expression.</param>
+        /// <returns>A ScanRequestBuilder configured with the filter.</returns>
         public ScanRequestBuilder Scan(string filterExpression, params object[] values)
         {
             var builder = Scan();

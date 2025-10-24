@@ -65,7 +65,7 @@
     - Test that correct table name is passed to builder
     - _Requirements: 2.3, 2.4_
   
-  - [ ] 8.2 Test manual implementation support
+  - [x] 8.2 Test manual implementation support
     - Create test table with manually implemented `Scan()` methods
     - Verify manual implementation works without conflicts
     - _Requirements: 4.1, 4.2, 4.3_

@@ -116,11 +116,11 @@ public class BackwardCompatibilityTests
         var table = new LegacyTestTable(mockClient, "TestTable");
         
         // Assert - All original functionality should work
-        table.Get.Should().NotBeNull();
-        table.Put.Should().NotBeNull();
-        table.Query.Should().NotBeNull();
-        table.Update.Should().NotBeNull();
-        table.Delete.Should().NotBeNull();
+        table.Get().Should().NotBeNull();
+        table.Put().Should().NotBeNull();
+        table.Query().Should().NotBeNull();
+        table.Update().Should().NotBeNull();
+        table.Delete().Should().NotBeNull();
     }
     
     #endregion
@@ -214,7 +214,7 @@ public class BackwardCompatibilityTests
         var table = new LegacyTestTable(mockClient, "TestTable");
         
         // Act - Use Get builder without any logger concerns
-        var builder = table.Get
+        var builder = table.Get()
             .WithKey("pk", "test-id")
             .WithProjection("name, email");
         
@@ -233,7 +233,7 @@ public class BackwardCompatibilityTests
         var table = new LegacyTestTable(mockClient, "TestTable");
         
         // Act - Use Query builder without any logger concerns
-        var builder = table.Query
+        var builder = table.Query()
             .Where("pk = :pk")
             .WithValue(":pk", "test-id")
             .Take(10);
@@ -258,7 +258,7 @@ public class BackwardCompatibilityTests
             { "pk", new AttributeValue { S = "test-id" } },
             { "name", new AttributeValue { S = "Test Name" } }
         };
-        var builder = table.Put.WithItem(item);
+        var builder = table.Put().WithItem(item);
         
         // Assert
         var request = builder.ToPutItemRequest();
@@ -275,7 +275,7 @@ public class BackwardCompatibilityTests
         var table = new LegacyTestTable(mockClient, "TestTable");
         
         // Act - Use Update builder without any logger concerns
-        var builder = table.Update
+        var builder = table.Update()
             .WithKey("pk", "test-id")
             .Set("name = :name")
             .WithValue(":name", "Updated Name");
@@ -295,7 +295,7 @@ public class BackwardCompatibilityTests
         var table = new LegacyTestTable(mockClient, "TestTable");
         
         // Act - Use Delete builder without any logger concerns
-        var builder = table.Delete.WithKey("pk", "test-id");
+        var builder = table.Delete().WithKey("pk", "test-id");
         
         // Assert
         var request = builder.ToDeleteItemRequest();
@@ -355,8 +355,8 @@ public class BackwardCompatibilityTests
         legacyTable.DynamoDbClient.Should().Be(modernTable.DynamoDbClient);
         
         // Both should produce the same requests
-        var legacyRequest = legacyTable.Get.WithKey("pk", "id1").ToGetItemRequest();
-        var modernRequest = modernTable.Get.WithKey("pk", "id1").ToGetItemRequest();
+        var legacyRequest = legacyTable.Get().WithKey("pk", "id1").ToGetItemRequest();
+        var modernRequest = modernTable.Get().WithKey("pk", "id1").ToGetItemRequest();
         
         legacyRequest.TableName.Should().Be(modernRequest.TableName);
         legacyRequest.Key.Should().BeEquivalentTo(modernRequest.Key);
@@ -378,8 +378,8 @@ public class BackwardCompatibilityTests
         modernTable.DynamoDbClient.Should().Be(tableWithoutLogger.DynamoDbClient);
         
         // Both should produce the same requests
-        var withLoggerRequest = modernTable.Query.Where("pk = :pk").ToQueryRequest();
-        var withoutLoggerRequest = tableWithoutLogger.Query.Where("pk = :pk").ToQueryRequest();
+        var withLoggerRequest = modernTable.Query().Where("pk = :pk").ToQueryRequest();
+        var withoutLoggerRequest = tableWithoutLogger.Query().Where("pk = :pk").ToQueryRequest();
         
         withLoggerRequest.TableName.Should().Be(withoutLoggerRequest.TableName);
         withLoggerRequest.KeyConditionExpression.Should().Be(withoutLoggerRequest.KeyConditionExpression);
@@ -397,11 +397,11 @@ public class BackwardCompatibilityTests
         // Act - All these patterns should still work
         var table = new LegacyTestTable(mockClient, "TestTable");
         
-        var getBuilder = table.Get;
-        var queryBuilder = table.Query;
-        var putBuilder = table.Put;
-        var updateBuilder = table.Update;
-        var deleteBuilder = table.Delete;
+        var getBuilder = table.Get();
+        var queryBuilder = table.Query();
+        var putBuilder = table.Put();
+        var updateBuilder = table.Update();
+        var deleteBuilder = table.Delete();
         
         // Assert - All builders should be functional
         getBuilder.Should().NotBeNull();
@@ -411,7 +411,7 @@ public class BackwardCompatibilityTests
         deleteBuilder.Should().NotBeNull();
         
         // Complex operations should work
-        var complexRequest = table.Query
+        var complexRequest = table.Query()
             .Where("pk = :pk AND begins_with(sk, :prefix)")
             .WithValue(":pk", "USER#123")
             .WithValue(":prefix", "ORDER#")
@@ -442,11 +442,11 @@ public class BackwardCompatibilityTests
         var modernTable = new ModernTestTable(mockClient, "ModernTable", mockLogger);
         
         // Assert - Both should work independently
-        legacyTable.Get.Should().NotBeNull();
-        modernTable.Get.Should().NotBeNull();
+        legacyTable.Get().Should().NotBeNull();
+        modernTable.Get().Should().NotBeNull();
         
-        var legacyRequest = legacyTable.Get.WithKey("pk", "id1").ToGetItemRequest();
-        var modernRequest = modernTable.Get.WithKey("pk", "id1").ToGetItemRequest();
+        var legacyRequest = legacyTable.Get().WithKey("pk", "id1").ToGetItemRequest();
+        var modernRequest = modernTable.Get().WithKey("pk", "id1").ToGetItemRequest();
         
         legacyRequest.Should().NotBeNull();
         modernRequest.Should().NotBeNull();
@@ -472,7 +472,7 @@ public class BackwardCompatibilityTests
         // Assert
         index.Should().NotBeNull();
         index.Name.Should().Be("StatusIndex");
-        index.Query.Should().NotBeNull();
+        index.Query().Should().NotBeNull();
     }
     
     [Fact]
@@ -488,7 +488,7 @@ public class BackwardCompatibilityTests
         // Assert
         index.Should().NotBeNull();
         index.Name.Should().Be("StatusIndex");
-        index.Query.Should().NotBeNull();
+        index.Query().Should().NotBeNull();
     }
     
     [Fact]
@@ -500,7 +500,7 @@ public class BackwardCompatibilityTests
         var index = new DynamoDbIndex(table, "StatusIndex");
         
         // Act - Get query builder from legacy index
-        var builder = index.Query;
+        var builder = index.Query();
         var request = builder.ToQueryRequest();
         
         // Assert - No projection should be applied automatically
@@ -518,7 +518,7 @@ public class BackwardCompatibilityTests
         var index = new DynamoDbIndex(table, "StatusIndex", "id, amount, status");
         
         // Act - Get query builder from index with projection
-        var builder = index.Query;
+        var builder = index.Query();
         var request = builder.ToQueryRequest();
         
         // Assert - Projection should be applied automatically
@@ -540,7 +540,7 @@ public class BackwardCompatibilityTests
         // Assert
         index.Should().NotBeNull();
         index.Name.Should().Be("StatusIndex");
-        index.Query.Should().NotBeNull();
+        index.Query().Should().NotBeNull();
     }
     
     [Fact]
@@ -556,7 +556,7 @@ public class BackwardCompatibilityTests
         // Assert
         index.Should().NotBeNull();
         index.Name.Should().Be("StatusIndex");
-        index.Query.Should().NotBeNull();
+        index.Query().Should().NotBeNull();
     }
     
     [Fact]
@@ -616,7 +616,7 @@ public class BackwardCompatibilityTests
         var index = new DynamoDbIndex(table, "StatusIndex", "id, amount, status");
         
         // Act - Manually override the auto-applied projection
-        var builder = index.Query
+        var builder = index.Query()
             .Where("pk = :pk")
             .WithValue(":pk", "test-id")
             .WithProjection("id, name"); // Manual override
@@ -662,11 +662,11 @@ public class BackwardCompatibilityTests
         var gsi1 = new DynamoDbIndex(table, "GSI1");
         
         // Existing query patterns
-        var query1 = statusIndex.Query
+        var query1 = statusIndex.Query()
             .Where("status = :status")
             .WithValue(":status", "ACTIVE");
         
-        var query2 = gsi1.Query
+        var query2 = gsi1.Query()
             .Where("gsi1pk = :pk")
             .WithValue(":pk", "USER#123")
             .WithProjection("id, name"); // Manual projection
@@ -696,11 +696,11 @@ public class BackwardCompatibilityTests
         
         // Old pattern - no projection
         var oldIndex = new DynamoDbIndex(table, "StatusIndex");
-        var oldRequest = oldIndex.Query.Where("pk = :pk").ToQueryRequest();
+        var oldRequest = oldIndex.Query().Where("pk = :pk").ToQueryRequest();
         
         // Act - Migrate to new pattern with projection
         var newIndex = new DynamoDbIndex(table, "StatusIndex", "id, amount, status");
-        var newRequest = newIndex.Query.Where("pk = :pk").ToQueryRequest();
+        var newRequest = newIndex.Query().Where("pk = :pk").ToQueryRequest();
         
         // Assert - Both should work, but new one has projection
         oldRequest.ProjectionExpression.Should().BeNullOrEmpty();
@@ -727,9 +727,9 @@ public class BackwardCompatibilityTests
         var genericIndex = new DynamoDbIndex<TestEntity>(table, "GenericIndex", "id, name");
         
         // Assert - All should work independently
-        legacyIndex.Query.ToQueryRequest().ProjectionExpression.Should().BeNullOrEmpty();
-        projectionIndex.Query.ToQueryRequest().ProjectionExpression.Should().Be("id, amount");
-        genericIndex.Query.ToQueryRequest().ProjectionExpression.Should().Be("id, name");
+        legacyIndex.Query().ToQueryRequest().ProjectionExpression.Should().BeNullOrEmpty();
+        projectionIndex.Query().ToQueryRequest().ProjectionExpression.Should().Be("id, amount");
+        genericIndex.Query().ToQueryRequest().ProjectionExpression.Should().Be("id, name");
         
         // All should have correct index names
         legacyIndex.Name.Should().Be("LegacyIndex");
@@ -749,11 +749,11 @@ public class BackwardCompatibilityTests
         // Act & Assert - Test all existing API patterns
         
         // 1. Table builders
-        table.Get.Should().NotBeNull();
-        table.Put.Should().NotBeNull();
-        table.Query.Should().NotBeNull();
-        table.Update.Should().NotBeNull();
-        table.Delete.Should().NotBeNull();
+        table.Get().Should().NotBeNull();
+        table.Put().Should().NotBeNull();
+        table.Query().Should().NotBeNull();
+        table.Update().Should().NotBeNull();
+        table.Delete().Should().NotBeNull();
         
         // 2. Request builders
         new GetItemRequestBuilder(mockClient).Should().NotBeNull();
@@ -766,10 +766,10 @@ public class BackwardCompatibilityTests
         var index = new DynamoDbIndex(table, "TestIndex");
         index.Should().NotBeNull();
         index.Name.Should().Be("TestIndex");
-        index.Query.Should().NotBeNull();
+        index.Query().Should().NotBeNull();
         
         // 4. Query building
-        var queryRequest = table.Query
+        var queryRequest = table.Query()
             .Where("pk = :pk")
             .WithValue(":pk", "test")
             .WithProjection("id, name")
@@ -782,7 +782,7 @@ public class BackwardCompatibilityTests
         queryRequest.Limit.Should().Be(10);
         
         // 5. Index query building
-        var indexQueryRequest = index.Query
+        var indexQueryRequest = index.Query()
             .Where("pk = :pk")
             .WithValue(":pk", "test")
             .ToQueryRequest();
