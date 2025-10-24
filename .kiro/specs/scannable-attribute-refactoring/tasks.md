@@ -1,12 +1,12 @@
 # Implementation Plan
 
-- [ ] 1. Create ScannableAttribute
+- [x] 1. Create ScannableAttribute
   - Create the `[Scannable]` attribute class in the Attributes project
   - Add XML documentation with warnings about scan operation costs
   - Include code examples in documentation
   - _Requirements: 1.3, 1.4, 1.5, 6.1, 6.2, 6.3_
 
-- [ ] 2. Enhance EntityModel to support scannable flag
+- [x] 2. Enhance EntityModel to support scannable flag
   - Add `IsScannable` boolean property to `EntityModel` class
   - Add XML documentation for the new property
   - _Requirements: 3.1_

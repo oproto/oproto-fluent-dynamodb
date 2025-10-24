@@ -55,6 +55,13 @@ public class EntityModel
     public bool IsMultiItemEntity { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether this table supports scan operations.
+    /// Set to true when the [Scannable] attribute is present on the table class.
+    /// When true, the source generator will generate Scan() methods for the table.
+    /// </summary>
+    public bool IsScannable { get; set; }
+
+    /// <summary>
     /// Gets or sets the original class declaration syntax node.
     /// </summary>
     public ClassDeclarationSyntax? ClassDeclaration { get; set; }
