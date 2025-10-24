@@ -6,6 +6,54 @@ namespace Oproto.FluentDynamoDb.Expressions;
 /// <summary>
 /// Context for expression translation, tracking parameters and validation state.
 /// </summary>
+/// <remarks>
+/// <para>
+/// The ExpressionContext maintains state during expression translation, including:
+/// </para>
+/// <list type="bullet">
+/// <item><description>Attribute value parameters (:p0, :p1, etc.)</description></item>
+/// <item><description>Attribute name placeholders (#attr0, #attr1, etc.)</description></item>
+/// <item><description>Entity metadata for property validation</description></item>
+/// <item><description>Validation mode (KeysOnly for Query().Where(), None for filters)</description></item>
+/// </list>
+/// 
+/// <para><strong>Validation Modes:</strong></para>
+/// <list type="table">
+/// <listheader><term>Mode</term><description>Usage</description><description>Restrictions</description></listheader>
+/// <item><term>KeysOnly</term><description>Query().Where()</description><description>Only partition key and sort key properties allowed</description></item>
+/// <item><term>None</term><description>WithFilter(), WithCondition()</description><description>Any property can be referenced</description></item>
+/// </list>
+/// 
+/// <para><strong>Thread Safety:</strong></para>
+/// <para>
+/// ExpressionContext instances are not thread-safe and should not be shared across concurrent
+/// expression translations. Each translation should use its own context instance.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// // Create context for Query().Where() with key-only validation
+/// var context = new ExpressionContext(
+///     attributeValues,
+///     attributeNames,
+///     entityMetadata,
+///     ExpressionValidationMode.KeysOnly);
+/// 
+/// // Create context for WithFilter() with no restrictions
+/// var filterContext = new ExpressionContext(
+///     attributeValues,
+///     attributeNames,
+///     entityMetadata,
+///     ExpressionValidationMode.None);
+/// 
+/// // Create context without metadata (validation skipped)
+/// var noValidationContext = new ExpressionContext(
+///     attributeValues,
+///     attributeNames,
+///     null,
+///     ExpressionValidationMode.None);
+/// </code>
+/// </example>
 public class ExpressionContext
 {
     /// <summary>

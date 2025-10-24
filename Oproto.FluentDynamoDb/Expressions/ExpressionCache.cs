@@ -7,6 +7,66 @@ namespace Oproto.FluentDynamoDb.Expressions;
 /// Cache for translated expressions to avoid repeated analysis.
 /// Thread-safe implementation using ConcurrentDictionary.
 /// </summary>
+/// <remarks>
+/// <para><strong>Caching Strategy:</strong></para>
+/// <para>
+/// The cache stores expression structure templates, not parameter values. This means that
+/// expressions with the same structure but different values benefit from caching:
+/// </para>
+/// <code>
+/// // First call - translates and caches
+/// translator.TranslateWithCache(x => x.Id == userId1, context);
+/// 
+/// // Second call - uses cached structure, only values differ
+/// translator.TranslateWithCache(x => x.Id == userId2, context);
+/// </code>
+/// 
+/// <para><strong>Cache Key:</strong></para>
+/// <para>
+/// The cache key combines the expression structure (using ToString()) and the validation mode.
+/// This ensures that the same expression used in different contexts (Query vs Filter) is
+/// cached separately.
+/// </para>
+/// 
+/// <para><strong>Thread Safety:</strong></para>
+/// <para>
+/// The cache is thread-safe and can be safely accessed from multiple threads concurrently.
+/// It uses <see cref="ConcurrentDictionary{TKey,TValue}"/> internally for lock-free reads
+/// and writes.
+/// </para>
+/// 
+/// <para><strong>Performance Benefits:</strong></para>
+/// <list type="bullet">
+/// <item><description>Avoids repeated expression tree traversal</description></item>
+/// <item><description>Reduces allocations for expression string building</description></item>
+/// <item><description>Improves performance for frequently-used query patterns</description></item>
+/// <item><description>Particularly beneficial in high-throughput scenarios</description></item>
+/// </list>
+/// 
+/// <para><strong>Memory Considerations:</strong></para>
+/// <para>
+/// The cache grows unbounded by default. In long-running applications with many unique
+/// expression patterns, consider periodically calling <see cref="Clear"/> to free memory.
+/// Each cached entry stores only the expression string template (typically &lt; 1KB).
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// // Access the global cache
+/// var cache = ExpressionTranslator.Cache;
+/// 
+/// // Check cache size
+/// Console.WriteLine($"Cached expressions: {cache.Count}");
+/// 
+/// // Clear cache if needed (e.g., after configuration changes)
+/// cache.Clear();
+/// 
+/// // Use caching in translation
+/// var translator = new ExpressionTranslator();
+/// var result = translator.TranslateWithCache(x => x.Id == userId, context);
+/// // Subsequent calls with same expression structure use cache
+/// </code>
+/// </example>
 public class ExpressionCache
 {
     private readonly ConcurrentDictionary<ExpressionCacheKey, string> _cache = new();

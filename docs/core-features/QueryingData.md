@@ -32,6 +32,77 @@ This guide covers querying and scanning data in DynamoDB using Oproto.FluentDyna
 
 **Rule of Thumb:** Always use Query when you know the partition key. Only use Scan when you truly need to examine every item.
 
+## Three Approaches to Writing Queries
+
+FluentDynamoDb supports three approaches for writing queries. Choose based on your needs:
+
+### 1. Expression-Based (Type-Safe, Recommended)
+
+Use C# lambda expressions for compile-time type safety and IntelliSense support:
+
+```csharp
+// Type-safe with lambda expressions
+await table.Query
+    .Where<User>(x => x.UserId == userId && x.SortKey.StartsWith("ORDER#"))
+    .WithFilter<User>(x => x.Status == "ACTIVE" && x.Age >= 18)
+    .ExecuteAsync();
+```
+
+**Advantages:**
+- ✓ Compile-time type checking
+- ✓ IntelliSense support
+- ✓ Refactoring safety
+- ✓ Automatic parameter generation
+
+**See:** [LINQ Expressions Guide](LinqExpressions.md) for complete documentation.
+
+### 2. Format Strings (Concise)
+
+Use String.Format-style syntax for concise queries:
+
+```csharp
+// Format string approach
+await table.Query
+    .Where($"{UserFields.UserId} = {{0}} AND begins_with({UserFields.SortKey}, {{1}})", 
+           UserKeys.Pk(userId), "ORDER#")
+    .WithFilter($"{UserFields.Status} = {{0}} AND {UserFields.Age} >= {{1}}", 
+                "ACTIVE", 18)
+    .ExecuteAsync();
+```
+
+**Advantages:**
+- ✓ Concise syntax
+- ✓ Automatic parameter generation
+- ✓ Supports all DynamoDB features
+
+**See:** [Expression Formatting Guide](ExpressionFormatting.md) for complete documentation.
+
+### 3. Manual Parameters (Maximum Control)
+
+Use explicit parameter binding for maximum control:
+
+```csharp
+// Manual parameter approach
+await table.Query
+    .Where($"{UserFields.UserId} = :pk AND begins_with({UserFields.SortKey}, :prefix)")
+    .WithValue(":pk", UserKeys.Pk(userId))
+    .WithValue(":prefix", "ORDER#")
+    .WithFilter($"{UserFields.Status} = :status AND {UserFields.Age} >= :age")
+    .WithValue(":status", "ACTIVE")
+    .WithValue(":age", 18)
+    .ExecuteAsync();
+```
+
+**Advantages:**
+- ✓ Maximum control
+- ✓ Explicit parameter management
+- ✓ Good for dynamic queries
+
+**When to Use Each Approach:**
+- **Expression-based:** New code, type safety important, known properties
+- **Format strings:** Balance of conciseness and flexibility
+- **Manual parameters:** Dynamic queries, complex scenarios, existing code
+
 ## Basic Query Operations
 
 ### Query by Partition Key
@@ -83,7 +154,12 @@ public partial class Order
     public string Status { get; set; } = string.Empty;
 }
 
-// Query orders for a customer with sort key condition
+// Expression-based (type-safe)
+var response = await table.Query
+    .Where<Order>(x => x.CustomerId == customerId && x.OrderId > "ORDER#2024-01-01")
+    .ExecuteAsync();
+
+// Format string approach
 var response = await table.Query
     .Where($"{OrderFields.CustomerId} = {{0}} AND {OrderFields.OrderId} > {{1}}", 
            OrderKeys.Pk("customer123"),
@@ -157,12 +233,18 @@ Sort keys support various comparison operators:
 #### Begins With
 
 ```csharp
-// Query all orders (assuming sort key format: "ORDER#...")
+// Expression-based (type-safe)
+.Where<Order>(x => x.CustomerId == customerId && x.OrderId.StartsWith("ORDER#"))
+
+// Format string approach
 .Where($"{OrderFields.CustomerId} = {{0}} AND begins_with({OrderFields.OrderId}, {{1}})", 
        OrderKeys.Pk("customer123"),
        "ORDER#")
 
-// Query orders from a specific month
+// Query orders from a specific month (expression-based)
+.Where<Order>(x => x.CustomerId == customerId && x.OrderId.StartsWith("ORDER#2024-03"))
+
+// Query orders from a specific month (format string)
 .Where($"{OrderFields.CustomerId} = {{0}} AND begins_with({OrderFields.OrderId}, {{1}})", 
        OrderKeys.Pk("customer123"),
        "ORDER#2024-03")
@@ -177,7 +259,13 @@ Filter expressions apply additional filtering after items are retrieved by the k
 ### Basic Filters
 
 ```csharp
-// Query orders with status filter
+// Expression-based (type-safe)
+var response = await table.Query
+    .Where<Order>(x => x.CustomerId == customerId)
+    .WithFilter<Order>(x => x.Status == "pending")
+    .ExecuteAsync();
+
+// Format string approach
 var response = await table.Query
     .Where($"{OrderFields.CustomerId} = {{0}}", OrderKeys.Pk("customer123"))
     .WithFilter($"{OrderFields.Status} = {{0}}", "pending")
@@ -187,7 +275,13 @@ var response = await table.Query
 ### Multiple Filter Conditions
 
 ```csharp
-// Combine multiple conditions with AND
+// Expression-based: Combine multiple conditions with AND
+var response = await table.Query
+    .Where<Order>(x => x.CustomerId == customerId)
+    .WithFilter<Order>(x => x.Status == "pending" && x.Total > 100.00m)
+    .ExecuteAsync();
+
+// Format string: Combine multiple conditions with AND
 var response = await table.Query
     .Where($"{OrderFields.CustomerId} = {{0}}", OrderKeys.Pk("customer123"))
     .WithFilter($"{OrderFields.Status} = {{0}} AND {OrderFields.Total} > {{1}}", 
@@ -195,7 +289,13 @@ var response = await table.Query
                 100.00m)
     .ExecuteAsync();
 
-// Combine conditions with OR
+// Expression-based: Combine conditions with OR
+var response = await table.Query
+    .Where<Order>(x => x.CustomerId == customerId)
+    .WithFilter<Order>(x => x.Status == "pending" || x.Status == "processing")
+    .ExecuteAsync();
+
+// Format string: Combine conditions with OR
 var response = await table.Query
     .Where($"{OrderFields.CustomerId} = {{0}}", OrderKeys.Pk("customer123"))
     .WithFilter($"{OrderFields.Status} = {{0}} OR {OrderFields.Status} = {{1}}", 
@@ -211,10 +311,16 @@ DynamoDB provides several functions for filter expressions:
 #### attribute_exists / attribute_not_exists
 
 ```csharp
-// Only return items with a discount attribute
+// Expression-based: Only return items with a discount attribute
+.WithFilter<Order>(x => x.Discount.AttributeExists())
+
+// Format string: Only return items with a discount attribute
 .WithFilter($"attribute_exists({OrderFields.Discount})")
 
-// Only return items without a cancellation reason
+// Expression-based: Only return items without a cancellation reason
+.WithFilter<Order>(x => x.CancellationReason.AttributeNotExists())
+
+// Format string: Only return items without a cancellation reason
 .WithFilter($"attribute_not_exists({OrderFields.CancellationReason})")
 ```
 
@@ -237,35 +343,51 @@ DynamoDB provides several functions for filter expressions:
 #### contains
 
 ```csharp
-// Filter items where tags contain a specific value
+// Expression-based: Filter items where tags contain a specific value
+.WithFilter<Order>(x => x.Tags.Contains("priority"))
+
+// Format string: Filter items where tags contain a specific value
 .WithFilter($"contains({OrderFields.Tags}, {{0}})", "priority")
 
-// Filter items where description contains text
+// Expression-based: Filter items where description contains text
+.WithFilter<Product>(x => x.Description.Contains("premium"))
+
+// Format string: Filter items where description contains text
 .WithFilter($"contains({ProductFields.Description}, {{0}})", "premium")
 ```
 
 #### size
 
 ```csharp
-// Filter items where list has specific size
+// Expression-based: Filter items where list has specific size
+.WithFilter<Order>(x => x.Items.Size() > 5)
+
+// Format string: Filter items where list has specific size
 .WithFilter($"size({OrderFields.Items}) > {{0}}", 5)
 
-// Filter items where string length is within range
+// Expression-based: Filter items where string length is within range
+.WithFilter<User>(x => x.Name.Size().Between(3, 50))
+
+// Format string: Filter items where string length is within range
 .WithFilter($"size({UserFields.Name}) BETWEEN {{0}} AND {{1}}", 3, 50)
 ```
 
 ### Filter Expression Best Practices
 
 ```csharp
-// ✅ Good - use key condition for primary filtering
+// ✅ Good - use key condition for primary filtering (expression-based)
+.Where<Order>(x => x.CustomerId == customerId && x.OrderId > "ORDER#2024-01-01")
+.WithFilter<Order>(x => x.Status == "pending")
+
+// ✅ Good - use key condition for primary filtering (format string)
 .Where($"{OrderFields.CustomerId} = {{0}} AND {OrderFields.OrderId} > {{1}}", 
        OrderKeys.Pk("customer123"),
        OrderKeys.Sk("ORDER#2024-01-01"))
 .WithFilter($"{OrderFields.Status} = {{0}}", "pending")
 
 // ❌ Avoid - using filter for what should be a key condition
-.Where($"{OrderFields.CustomerId} = {{0}}", OrderKeys.Pk("customer123"))
-.WithFilter($"{OrderFields.OrderId} > {{0}}", "ORDER#2024-01-01")  // Should be in key condition
+.Where<Order>(x => x.CustomerId == customerId)
+.WithFilter<Order>(x => x.OrderId > "ORDER#2024-01-01")  // Should be in key condition
 ```
 
 **Important:** Filter expressions are applied after items are read, so you still consume read capacity for filtered-out items. Design your key schema to minimize filtering.
@@ -865,6 +987,7 @@ See [Manual Patterns](../advanced-topics/ManualPatterns.md) for more details on 
 
 ## Next Steps
 
+- **[LINQ Expressions](LinqExpressions.md)** - Type-safe lambda expressions
 - **[Expression Formatting](ExpressionFormatting.md)** - Complete format specifier reference
 - **[Batch Operations](BatchOperations.md)** - Batch get operations
 - **[Global Secondary Indexes](../advanced-topics/GlobalSecondaryIndexes.md)** - Advanced GSI patterns

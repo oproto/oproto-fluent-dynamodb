@@ -10,6 +10,115 @@ namespace Oproto.FluentDynamoDb.Expressions;
 /// Translates C# lambda expressions to DynamoDB expression syntax.
 /// AOT-safe implementation that analyzes expression trees without dynamic code generation.
 /// </summary>
+/// <remarks>
+/// <para><strong>Overview:</strong></para>
+/// <para>
+/// The ExpressionTranslator converts C# lambda expressions into DynamoDB expression syntax,
+/// enabling type-safe query building with compile-time checking. It supports all DynamoDB
+/// operators and functions while maintaining AOT compatibility.
+/// </para>
+/// 
+/// <para><strong>Supported Operators:</strong></para>
+/// <list type="table">
+/// <listheader><term>C# Operator</term><description>DynamoDB Syntax</description><description>Example</description></listheader>
+/// <item><term>==</term><description>=</description><description>x => x.Id == "123"</description></item>
+/// <item><term>!=</term><description>&lt;&gt;</description><description>x => x.Status != "DELETED"</description></item>
+/// <item><term>&lt;</term><description>&lt;</description><description>x => x.Age &lt; 65</description></item>
+/// <item><term>&gt;</term><description>&gt;</description><description>x => x.Score &gt; 100</description></item>
+/// <item><term>&lt;=</term><description>&lt;=</description><description>x => x.Age &lt;= 18</description></item>
+/// <item><term>&gt;=</term><description>&gt;=</description><description>x => x.Score &gt;= 50</description></item>
+/// <item><term>&amp;&amp;</term><description>AND</description><description>x => x.Active &amp;&amp; x.Verified</description></item>
+/// <item><term>||</term><description>OR</description><description>x => x.Type == "A" || x.Type == "B"</description></item>
+/// <item><term>!</term><description>NOT</description><description>x => !x.Deleted</description></item>
+/// </list>
+/// 
+/// <para><strong>Supported DynamoDB Functions:</strong></para>
+/// <list type="table">
+/// <listheader><term>C# Method</term><description>DynamoDB Function</description><description>Example</description></listheader>
+/// <item><term>string.StartsWith()</term><description>begins_with()</description><description>x => x.Name.StartsWith("John")</description></item>
+/// <item><term>string.Contains()</term><description>contains()</description><description>x => x.Email.Contains("@example.com")</description></item>
+/// <item><term>Between()</term><description>BETWEEN</description><description>x => x.Age.Between(18, 65)</description></item>
+/// <item><term>AttributeExists()</term><description>attribute_exists()</description><description>x => x.OptionalField.AttributeExists()</description></item>
+/// <item><term>AttributeNotExists()</term><description>attribute_not_exists()</description><description>x => x.DeletedAt.AttributeNotExists()</description></item>
+/// <item><term>Size()</term><description>size()</description><description>x => x.Items.Size() &gt; 0</description></item>
+/// </list>
+/// 
+/// <para><strong>Valid Expression Patterns:</strong></para>
+/// <list type="bullet">
+/// <item><description>Property access: x => x.PropertyName</description></item>
+/// <item><description>Constant values: x => x.Id == "USER#123"</description></item>
+/// <item><description>Local variables: x => x.Id == userId</description></item>
+/// <item><description>Closure captures: x => x.Id == user.Id</description></item>
+/// <item><description>Method calls on captured values: x => x.Id == userId.ToString()</description></item>
+/// <item><description>Complex conditions: x => (x.Active &amp;&amp; x.Score &gt; 50) || x.Premium</description></item>
+/// </list>
+/// 
+/// <para><strong>Invalid Expression Patterns:</strong></para>
+/// <list type="bullet">
+/// <item><description>Assignment: x => x.Id = "123" (use == for comparison)</description></item>
+/// <item><description>Method calls on entity properties: x => x.Name.ToUpper() == "JOHN"</description></item>
+/// <item><description>Methods referencing entity parameter: x => x.Id == MyFunction(x)</description></item>
+/// <item><description>LINQ operations on entity properties: x => x.Items.Select(i => i.Name)</description></item>
+/// <item><description>Complex transformations: x => x.Items.Where(i => i.Active).Count() &gt; 0</description></item>
+/// </list>
+/// 
+/// <para><strong>Validation Rules:</strong></para>
+/// <list type="bullet">
+/// <item><description>Query().Where() expressions can only reference partition key and sort key properties</description></item>
+/// <item><description>WithFilter() expressions can reference any property</description></item>
+/// <item><description>Properties must be mapped to DynamoDB attributes (via metadata or attributes)</description></item>
+/// <item><description>Properties marked as non-queryable will be rejected</description></item>
+/// </list>
+/// 
+/// <para><strong>Error Handling:</strong></para>
+/// <list type="bullet">
+/// <item><description><see cref="UnmappedPropertyException"/>: Property doesn't map to a DynamoDB attribute</description></item>
+/// <item><description><see cref="InvalidKeyExpressionException"/>: Non-key property used in Query().Where()</description></item>
+/// <item><description><see cref="UnsupportedExpressionException"/>: Unsupported operator, method, or pattern</description></item>
+/// <item><description><see cref="ExpressionTranslationException"/>: General translation error</description></item>
+/// </list>
+/// 
+/// <para><strong>Performance:</strong></para>
+/// <para>
+/// Expression translation is cached using <see cref="ExpressionCache"/> to avoid repeated analysis
+/// of the same expression structure. The cache is thread-safe and stores expression templates
+/// (not parameter values), so expressions with different values but the same structure benefit
+/// from caching.
+/// </para>
+/// 
+/// <para><strong>AOT Compatibility:</strong></para>
+/// <para>
+/// This implementation is fully AOT-compatible. It analyzes expression trees using static code
+/// paths without any runtime code generation. Expression.Compile() is only used for evaluating
+/// captured values (constants, variables, closures), not for entity property access.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// // Simple equality comparison
+/// var translator = new ExpressionTranslator();
+/// var context = new ExpressionContext(attributeValues, attributeNames, metadata, ExpressionValidationMode.KeysOnly);
+/// var result = translator.Translate&lt;User&gt;(x => x.Id == "USER#123", context);
+/// // Result: "#attr0 = :p0"
+/// 
+/// // Complex condition with multiple operators
+/// result = translator.Translate&lt;User&gt;(
+///     x => x.PartitionKey == userId &amp;&amp; x.SortKey.StartsWith("ORDER#") &amp;&amp; x.Amount &gt; 100,
+///     context);
+/// // Result: "(#attr0 = :p0) AND (begins_with(#attr1, :p1)) AND (#attr2 > :p2)"
+/// 
+/// // Using DynamoDB functions
+/// result = translator.Translate&lt;User&gt;(
+///     x => x.Age.Between(18, 65) &amp;&amp; x.Email.Contains("@example.com"),
+///     context);
+/// // Result: "(#attr0 BETWEEN :p0 AND :p1) AND (contains(#attr1, :p2))"
+/// 
+/// // With caching for repeated expressions
+/// result = translator.TranslateWithCache&lt;User&gt;(x => x.Id == userId, context);
+/// // First call: translates and caches
+/// // Subsequent calls: returns cached result
+/// </code>
+/// </example>
 public class ExpressionTranslator
 {
     private static readonly ExpressionCache _cache = new();

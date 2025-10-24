@@ -367,6 +367,288 @@ Use correct placeholder syntax:
 - [Format Specifiers Reference](FormatSpecifiers.md)
 - [Expression Formatting Guide](../core-features/ExpressionFormatting.md)
 
+## LINQ Expression Errors
+
+### InvalidKeyExpressionException
+
+**Error Message:**
+```
+InvalidKeyExpressionException: Property 'Status' is not a key attribute and cannot be used in Query().Where(). 
+Use WithFilter() instead.
+```
+
+**Cause:**
+Attempting to use a non-key property in a Query().Where() expression. Key condition expressions can only reference partition key and sort key properties.
+
+**Solution:**
+
+Move non-key properties to WithFilter():
+
+```csharp
+// ❌ Wrong - Status is not a key attribute
+await table.Query
+    .Where<User>(x => x.PartitionKey == userId && x.Status == "active")
+    .ExecuteAsync();
+
+// ✅ Correct - Move Status to filter
+await table.Query
+    .Where<User>(x => x.PartitionKey == userId)
+    .WithFilter<User>(x => x.Status == "active")
+    .ExecuteAsync();
+```
+
+**Understanding the Difference:**
+- **Where()** - Key condition expression (partition key and sort key only)
+- **WithFilter()** - Filter expression (any property)
+
+**See Also:**
+- [LINQ Expressions Guide](../core-features/LinqExpressions.md#query-vs-filter-expressions)
+- [Querying Data](../core-features/QueryingData.md)
+
+### UnmappedPropertyException
+
+**Error Message:**
+```
+UnmappedPropertyException: Property 'Email' on type 'User' does not map to a DynamoDB attribute.
+```
+
+**Cause:**
+The property referenced in the expression doesn't have a `[DynamoDbAttribute]` mapping.
+
+**Solution:**
+
+Add the `[DynamoDbAttribute]` to the property:
+
+```csharp
+[DynamoDbTable("users")]
+public partial class User
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string UserId { get; set; } = string.Empty;
+    
+    // Add [DynamoDbAttribute] to make it queryable
+    [DynamoDbAttribute("email")]
+    public string Email { get; set; } = string.Empty;
+}
+
+// Now this works
+await table.Query
+    .Where<User>(x => x.UserId == userId)
+    .WithFilter<User>(x => x.Email.StartsWith("admin@"))
+    .ExecuteAsync();
+```
+
+**See Also:**
+- [Entity Definition](../core-features/EntityDefinition.md)
+- [Attribute Reference](AttributeReference.md)
+
+### UnsupportedExpressionException - Method Calls on Entity Properties
+
+**Error Message:**
+```
+UnsupportedExpressionException: Method 'ToUpper' cannot be used on entity properties in DynamoDB expressions. 
+DynamoDB expressions cannot execute C# methods on data.
+```
+
+**Cause:**
+Attempting to call a C# method on an entity property. DynamoDB can't execute C# code on stored data.
+
+**Solution:**
+
+Transform values before the query:
+
+```csharp
+// ❌ Wrong - Can't call ToUpper() on entity property
+await table.Query
+    .WithFilter<User>(x => x.Name.ToUpper() == "JOHN")
+    .ExecuteAsync();
+
+// ✅ Correct - Transform the comparison value
+var upperName = "JOHN";
+await table.Query
+    .WithFilter<User>(x => x.Name == upperName)
+    .ExecuteAsync();
+
+// ✅ Alternative - Store normalized data
+// Add a computed property for case-insensitive queries
+[DynamoDbAttribute("name_upper")]
+[Computed(nameof(Name))]
+public string NameUpper => Name.ToUpper();
+
+// Then query the normalized field
+await table.Query
+    .WithFilter<User>(x => x.NameUpper == "JOHN")
+    .ExecuteAsync();
+```
+
+**See Also:**
+- [LINQ Expressions Guide](../core-features/LinqExpressions.md#valid-vs-invalid-patterns)
+
+### UnsupportedExpressionException - Method References Entity Parameter
+
+**Error Message:**
+```
+UnsupportedExpressionException: Method 'myFunction' cannot reference the entity parameter or its properties. 
+DynamoDB expressions cannot execute C# methods with entity data.
+```
+
+**Cause:**
+Attempting to pass the entity parameter or its properties to a method call. DynamoDB can't execute your C# methods.
+
+**Solution:**
+
+Evaluate the method before the query:
+
+```csharp
+// ❌ Wrong - Method references entity parameter
+await table.Query
+    .Where<User>(x => x.Id == ComputeId(x))
+    .ExecuteAsync();
+
+// ❌ Wrong - Method references entity property
+await table.Query
+    .Where<User>(x => x.Id == ComputeId(x.UserId))
+    .ExecuteAsync();
+
+// ✅ Correct - Evaluate method with captured values
+var userId = GetCurrentUserId();
+var computedId = ComputeId(userId);
+await table.Query
+    .Where<User>(x => x.Id == computedId)
+    .ExecuteAsync();
+```
+
+**Valid Method Calls:**
+You CAN call methods on captured values (not entity properties):
+
+```csharp
+// ✅ Valid - Method call on captured value
+var userId = GetUserId();
+await table.Query
+    .Where<User>(x => x.Id == userId.ToString())
+    .ExecuteAsync();
+
+// ✅ Valid - Complex expression on captured value
+var date = DateTime.Now;
+await table.Query
+    .WithFilter<Order>(x => x.CreatedDate > date.AddDays(-30))
+    .ExecuteAsync();
+```
+
+**See Also:**
+- [LINQ Expressions Guide](../core-features/LinqExpressions.md#value-capture)
+
+### UnsupportedExpressionException - Assignment Expression
+
+**Error Message:**
+```
+UnsupportedExpressionException: Assignment expressions are not supported in DynamoDB queries. 
+Use comparison operators (==, <, >, etc.) instead of assignment (=).
+```
+
+**Cause:**
+Using assignment operator (=) instead of comparison operator (==).
+
+**Solution:**
+
+Use comparison operators:
+
+```csharp
+// ❌ Wrong - Assignment operator
+await table.Query
+    .Where<User>(x => x.Id = "user123")
+    .ExecuteAsync();
+
+// ✅ Correct - Comparison operator
+await table.Query
+    .Where<User>(x => x.Id == "user123")
+    .ExecuteAsync();
+```
+
+**See Also:**
+- [LINQ Expressions Guide](../core-features/LinqExpressions.md#supported-operators)
+
+### UnsupportedExpressionException - Unsupported Operator
+
+**Error Message:**
+```
+UnsupportedExpressionException: The operator 'Modulo' is not supported in DynamoDB expressions. 
+Supported operators: ==, !=, <, >, <=, >=, &&, ||, !
+```
+
+**Cause:**
+Using an operator that DynamoDB doesn't support (like modulo %, bitwise operators, etc.).
+
+**Solution:**
+
+Filter in application code after retrieval:
+
+```csharp
+// ❌ Wrong - Modulo not supported
+await table.Query
+    .WithFilter<User>(x => x.Age % 2 == 0)
+    .ExecuteAsync();
+
+// ✅ Correct - Filter in application code
+var response = await table.Query
+    .Where<User>(x => x.PartitionKey == pk)
+    .ExecuteAsync();
+
+var evenAgeUsers = response.Items
+    .Where(u => u.Age % 2 == 0)
+    .ToList();
+```
+
+**Supported Operators:**
+- Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
+- Logical: `&&`, `||`, `!`
+- DynamoDB functions: `StartsWith()`, `Contains()`, `Between()`, `AttributeExists()`, `AttributeNotExists()`, `Size()`
+
+**See Also:**
+- [LINQ Expressions Guide](../core-features/LinqExpressions.md#supported-operators)
+
+### ExpressionTranslationException - Complex Expression
+
+**Error Message:**
+```
+ExpressionTranslationException: Expression is too complex to translate. 
+Consider using string-based expressions with Where(string) or WithFilter(string) for complex scenarios.
+```
+
+**Cause:**
+The expression is too complex for the translator to handle.
+
+**Solution:**
+
+Use string-based expressions for complex scenarios:
+
+```csharp
+// ❌ Too complex for expression translator
+await table.Query
+    .WithFilter<User>(x => 
+        x.Items.Where(i => i.Active).Select(i => i.Price).Sum() > 100)
+    .ExecuteAsync();
+
+// ✅ Use string-based expression
+await table.Query
+    .WithFilter($"size({UserFields.Items}) > {{0}}", 0)
+    .ExecuteAsync();
+
+// Then filter in application code
+var response = await table.Query
+    .Where<User>(x => x.PartitionKey == pk)
+    .ExecuteAsync();
+
+var filtered = response.Items
+    .Where(u => u.Items.Where(i => i.Active).Sum(i => i.Price) > 100)
+    .ToList();
+```
+
+**See Also:**
+- [LINQ Expressions Guide](../core-features/LinqExpressions.md#when-to-use-string-based)
+- [Expression Formatting Guide](../core-features/ExpressionFormatting.md)
+
 ### Reserved Word Errors
 
 **Error Message:**

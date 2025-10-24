@@ -212,32 +212,32 @@
     - Test that trimmed binary works correctly
     - _Requirements: 2.1, 2.2_
 
-- [ ] 9. Write integration tests with DynamoDB
-  - [ ] 9.1 Test Query with expression-based Where()
+- [x] 9. Write integration tests with DynamoDB
+  - [x] 9.1 Test Query with expression-based Where()
     - Test simple partition key query
     - Test partition key + sort key query
     - Test with DynamoDB functions (begins_with, between)
     - Verify generated expressions work with DynamoDB Local
     - _Requirements: 1.1, 6.1_
 
-  - [ ] 9.2 Test Query with expression-based WithFilter()
+  - [x] 9.2 Test Query with expression-based WithFilter()
     - Test filter on non-key attributes
     - Test complex filter expressions
     - Test mixing Where() and WithFilter()
     - _Requirements: 1.2, 6.3_
 
-  - [ ] 9.3 Test Scan with expression-based WithFilter()
+  - [x] 9.3 Test Scan with expression-based WithFilter()
     - Test filter expressions on scan
     - Test various operators and functions
     - _Requirements: 1.3, 6.4_
 
-  - [ ] 9.4 Test mixing expression and string-based calls
+  - [x] 9.4 Test mixing expression and string-based calls
     - Test expression Where() + string WithFilter()
     - Test string Where() + expression WithFilter()
     - Test multiple calls of each type
     - _Requirements: 7.3, 7.4, 7.5_
 
-- [ ] 10. Add XML documentation and examples
+- [x] 10. Add XML documentation and examples
   - Add XML documentation to ExpressionTranslator
   - Add XML documentation to extension method overloads
   - Add XML documentation to DynamoDbExpressionExtensions
@@ -247,3 +247,45 @@
   - Add examples comparing expression vs string-based approaches
   - Document what expressions are valid vs invalid
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
+
+- [x] 11. Update main documentation to include LINQ expression support
+  - [x] 11.1 Update README.md to add LINQ expression support as a key feature
+    - Add LINQ expression support to the "Key Features" section
+    - Include a brief example showing expression-based queries
+    - Add link to detailed documentation
+    - _Requirements: 10.1, 10.2_
+  
+  - [x] 11.2 Create docs/core-features/LinqExpressions.md
+    - Create comprehensive guide for LINQ expression support
+    - Include overview and benefits section
+    - Document all supported operators and DynamoDB functions
+    - Show comparison with string-based and format string approaches
+    - Include migration guide from string-based to expression-based
+    - Reference EXPRESSION_EXAMPLES.md for detailed examples
+    - Add troubleshooting section for common issues
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
+  
+  - [x] 11.3 Update docs/core-features/QueryingData.md
+    - Add section on expression-based queries
+    - Show examples of Where() with expressions
+    - Show examples of WithFilter() with expressions
+    - Document the three approaches: manual parameters, format strings, expressions
+    - Include guidance on when to use each approach
+    - _Requirements: 10.2, 10.3_
+  
+  - [x] 11.4 Update docs/core-features/README.md
+    - Add "LINQ Expressions" to the list of core features
+    - Include brief description and link to LinqExpressions.md
+    - _Requirements: 10.1_
+  
+  - [x] 11.5 Update docs/QUICK_REFERENCE.md
+    - Add quick reference examples for expression-based queries
+    - Show side-by-side comparison of all three approaches
+    - Include examples for common patterns (Query, Scan, Filter)
+    - _Requirements: 10.2, 10.3_
+  
+  - [x] 11.6 Update docs/reference/Troubleshooting.md
+    - Add troubleshooting section for LINQ expression errors
+    - Document common exceptions and their solutions
+    - Include examples of invalid expressions and how to fix them
+    - _Requirements: 10.4, 10.5_

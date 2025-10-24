@@ -343,15 +343,55 @@ await table.Delete()
 
 ## Query Operations
 
+### Three Approaches
+
+FluentDynamoDb supports three approaches for writing queries:
+
+```csharp
+// 1. Expression-based (type-safe, recommended)
+var response = await table.Query()
+    .Where<Entity>(x => x.PartitionKey == pk && x.SortKey == sk)
+    .WithFilter<Entity>(x => x.Status == "active")
+    .ExecuteAsync();
+
+// 2. Format strings (concise)
+var response = await table.Query()
+    .Where($"{EntityFields.PartitionKey} = {{0}} AND {EntityFields.SortKey} = {{1}}", 
+           EntityKeys.Pk("pk123"), EntityKeys.Sk("sk456"))
+    .WithFilter($"{EntityFields.Status} = {{0}}", "active")
+    .ExecuteAsync<Entity>();
+
+// 3. Manual parameters (maximum control)
+var response = await table.Query()
+    .Where($"{EntityFields.PartitionKey} = :pk AND {EntityFields.SortKey} = :sk")
+    .WithValue(":pk", EntityKeys.Pk("pk123"))
+    .WithValue(":sk", EntityKeys.Sk("sk456"))
+    .WithFilter($"{EntityFields.Status} = :status")
+    .WithValue(":status", "active")
+    .ExecuteAsync<Entity>();
+```
+
+**Details:** [Querying Data](core-features/QueryingData.md#three-approaches-to-writing-queries)
+
 ### Basic Query
 
 ```csharp
-// Query by partition key
+// Expression-based: Query by partition key
+var response = await table.Query()
+    .Where<Entity>(x => x.PartitionKey == pk)
+    .ExecuteAsync();
+
+// Format string: Query by partition key
 var response = await table.Query()
     .Where($"{EntityFields.PartitionKey} = {{0}}", EntityKeys.Pk("pk123"))
     .ExecuteAsync<Entity>();
 
-// Query with sort key condition
+// Expression-based: Query with sort key condition
+var response = await table.Query()
+    .Where<Entity>(x => x.PartitionKey == pk && x.SortKey == sk)
+    .ExecuteAsync();
+
+// Format string: Query with sort key condition
 var response = await table.Query()
     .Where($"{EntityFields.PartitionKey} = {{0}} AND {EntityFields.SortKey} = {{1}}", 
            EntityKeys.Pk("pk123"), EntityKeys.Sk("sk456"))
@@ -363,9 +403,16 @@ var response = await table.Query()
 ### Query with Filter
 
 ```csharp
+// Expression-based
+var response = await table.Query()
+    .Where<Entity>(x => x.PartitionKey == pk)
+    .WithFilter<Entity>(x => x.Status == "active")
+    .ExecuteAsync();
+
+// Format string
 var response = await table.Query()
     .Where($"{EntityFields.PartitionKey} = {{0}}", EntityKeys.Pk("pk123"))
-    .Where($"{EntityFields.Status} = {{0}}", "active")
+    .WithFilter($"{EntityFields.Status} = {{0}}", "active")
     .ExecuteAsync<Entity>();
 ```
 
@@ -433,38 +480,56 @@ var response = await table.Scan()
 ### Common Expressions
 
 ```csharp
-// Equality
-.Where($"{EntityFields.Status} = {{0}}", "active")
+// Equality (expression-based)
+.WithFilter<Entity>(x => x.Status == "active")
+// Equality (format string)
+.WithFilter($"{EntityFields.Status} = {{0}}", "active")
 
-// Comparison
-.Where($"{EntityFields.Price} > {{0}}", 100)
-.Where($"{EntityFields.Price} < {{0}}", 1000)
+// Comparison (expression-based)
+.WithFilter<Entity>(x => x.Price > 100 && x.Price < 1000)
+// Comparison (format string)
+.WithFilter($"{EntityFields.Price} > {{0}}", 100)
+.WithFilter($"{EntityFields.Price} < {{0}}", 1000)
 
-// Between
+// Between (expression-based)
+.Where<Entity>(x => x.Price.Between(100, 1000))
+// Between (format string)
 .Where($"{EntityFields.Price} BETWEEN {{0}} AND {{1}}", 100, 1000)
 
-// Begins with
+// Begins with (expression-based)
+.Where<Entity>(x => x.Name.StartsWith("Product"))
+// Begins with (format string)
 .Where($"begins_with({EntityFields.Name}, {{0}})", "Product")
 
-// Contains
-.Where($"contains({EntityFields.Tags}, {{0}})", "featured")
+// Contains (expression-based)
+.WithFilter<Entity>(x => x.Tags.Contains("featured"))
+// Contains (format string)
+.WithFilter($"contains({EntityFields.Tags}, {{0}})", "featured")
 
-// Attribute exists
-.Where($"attribute_exists({EntityFields.OptionalField})")
+// Attribute exists (expression-based)
+.WithFilter<Entity>(x => x.OptionalField.AttributeExists())
+// Attribute exists (format string)
+.WithFilter($"attribute_exists({EntityFields.OptionalField})")
 
-// Attribute not exists
-.Where($"attribute_not_exists({EntityFields.DeletedAt})")
+// Attribute not exists (expression-based)
+.WithFilter<Entity>(x => x.DeletedAt.AttributeNotExists())
+// Attribute not exists (format string)
+.WithFilter($"attribute_not_exists({EntityFields.DeletedAt})")
 
-// Multiple conditions (AND)
-.Where($"{EntityFields.Status} = {{0}} AND {EntityFields.Price} > {{1}}", 
+// Multiple conditions AND (expression-based)
+.WithFilter<Entity>(x => x.Status == "active" && x.Price > 100)
+// Multiple conditions AND (format string)
+.WithFilter($"{EntityFields.Status} = {{0}} AND {EntityFields.Price} > {{1}}", 
        "active", 100)
 
-// Multiple conditions (OR)
-.Where($"{EntityFields.Status} = {{0}} OR {EntityFields.Status} = {{1}}", 
+// Multiple conditions OR (expression-based)
+.WithFilter<Entity>(x => x.Status == "active" || x.Status == "pending")
+// Multiple conditions OR (format string)
+.WithFilter($"{EntityFields.Status} = {{0}} OR {EntityFields.Status} = {{1}}", 
        "active", "pending")
 ```
 
-**Details:** [Expression Formatting](core-features/ExpressionFormatting.md)
+**Details:** [LINQ Expressions](core-features/LinqExpressions.md) | [Expression Formatting](core-features/ExpressionFormatting.md)
 
 ---
 
@@ -812,6 +877,7 @@ var response = await table.Get()
 - [Entity Definition](core-features/EntityDefinition.md)
 - [Basic Operations](core-features/BasicOperations.md)
 - [Querying Data](core-features/QueryingData.md)
+- [LINQ Expressions](core-features/LinqExpressions.md)
 - [Expression Formatting](core-features/ExpressionFormatting.md)
 
 ### Advanced Topics

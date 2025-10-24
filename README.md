@@ -38,7 +38,6 @@ public partial class User
     public string Status { get; set; } = "active";
     
     [DynamoDbAttribute("created")]
-    [Computed("USER#{UserId}")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 ```
@@ -110,6 +109,17 @@ Automatic generation of field constants, key builders, and mapping code at compi
 ### 📝 Expression Formatting for Concise Queries
 String.Format-style syntax eliminates manual parameter naming and `.WithValue()` calls. Supports DateTime formatting (`:o`), numeric formatting (`:F2`), and more.
 - **Learn more:** [Expression Formatting Guide](docs/core-features/ExpressionFormatting.md)
+
+### 🎯 LINQ Expression Support
+Write type-safe queries using C# lambda expressions with full IntelliSense support. Automatically translates expressions to DynamoDB syntax while validating property mappings at compile time.
+```csharp
+// Type-safe queries with lambda expressions
+await table.Query
+    .Where<User>(x => x.UserId == "user123" && x.Status == "active")
+    .WithFilter<User>(x => x.Email.StartsWith("john"))
+    .ExecuteAsync();
+```
+- **Learn more:** [LINQ Expressions Guide](docs/core-features/LinqExpressions.md)
 
 ### 🔗 Composite Entities for Complex Data Models
 Define multi-item entities and related data patterns with automatic population based on sort key patterns. Perfect for one-to-many relationships.
@@ -251,6 +261,7 @@ Master the essential operations and patterns.
 - [Basic Operations](docs/core-features/BasicOperations.md) - CRUD operations
 - [Querying Data](docs/core-features/QueryingData.md) - Query and scan operations
 - [Expression Formatting](docs/core-features/ExpressionFormatting.md) - Format string syntax
+- [LINQ Expressions](docs/core-features/LinqExpressions.md) - Type-safe lambda expressions
 - [Batch Operations](docs/core-features/BatchOperations.md) - Batch get and write
 - [Transactions](docs/core-features/Transactions.md) - Multi-item transactions
 - [Logging Configuration](docs/core-features/LoggingConfiguration.md) - Logging and diagnostics
