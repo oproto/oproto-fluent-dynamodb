@@ -85,7 +85,7 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
 
         // Act
         builder
@@ -104,7 +104,7 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
 
         // Act
         builder
@@ -124,13 +124,13 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
         builder
             .ForTable("TestTable")
-            .Where<QueryRequestBuilder, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
+            .Where<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
             .Where("SK > :minSk")
             .WithValue(":minSk", "ORDER#2024");
 
@@ -138,10 +138,11 @@ public class ExpressionCombiningTests
 
         // Assert
         request.KeyConditionExpression.Should().Contain("AND");
-        request.KeyConditionExpression.Should().Contain("PK");
         request.KeyConditionExpression.Should().Contain("SK > :minSk");
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
         request.ExpressionAttributeValues.Should().ContainKey(":minSk");
+        request.ExpressionAttributeNames.Should().ContainKey("#attr0");
+        request.ExpressionAttributeNames["#attr0"].Should().Be("PK");
     }
 
     [Fact]
@@ -149,7 +150,7 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
@@ -157,7 +158,7 @@ public class ExpressionCombiningTests
             .ForTable("TestTable")
             .Where("PK = :pk")
             .WithValue(":pk", "USER#123")
-            .Where<QueryRequestBuilder, TestEntity>(x => x.SortKey.StartsWith("ORDER#"), metadata);
+            .Where<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.SortKey.StartsWith("ORDER#"), metadata);
 
         var request = builder.ToQueryRequest();
 
@@ -172,20 +173,21 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
         builder
             .ForTable("TestTable")
-            .Where<QueryRequestBuilder, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
+            .Where<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
             .Where("SK > {0}", "ORDER#2024");
 
         var request = builder.ToQueryRequest();
 
         // Assert
         request.KeyConditionExpression.Should().Contain("AND");
-        request.KeyConditionExpression.Should().Contain("PK");
+        request.ExpressionAttributeNames.Should().ContainKey("#attr0");
+        request.ExpressionAttributeNames["#attr0"].Should().Be("PK");
         request.KeyConditionExpression.Should().Contain("SK");
     }
 
@@ -194,14 +196,14 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
         builder
             .ForTable("TestTable")
-            .Where<QueryRequestBuilder, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
-            .WithFilter<QueryRequestBuilder, TestEntity>(x => x.Name == "John", metadata)
+            .Where<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
+            .WithFilter<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.Name == "John", metadata)
             .WithFilter("#status = :status")
             .WithAttribute("#status", "Status")
             .WithValue(":status", "ACTIVE");
@@ -210,8 +212,9 @@ public class ExpressionCombiningTests
 
         // Assert
         request.FilterExpression.Should().Contain("AND");
-        request.FilterExpression.Should().Contain("Name");
         request.FilterExpression.Should().Contain("#status = :status");
+        request.ExpressionAttributeNames.Should().ContainKey("#attr1");
+        request.ExpressionAttributeNames["#attr1"].Should().Be("Name");
     }
 
     [Fact]
@@ -219,17 +222,17 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
         builder
             .ForTable("TestTable")
-            .Where<QueryRequestBuilder, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
+            .Where<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
             .Where("SK = :sk")
             .WithValue(":sk", "ORDER#456")
-            .WithFilter<QueryRequestBuilder, TestEntity>(x => x.Name == "John", metadata)
-            .WithFilter<QueryRequestBuilder, TestEntity>(x => x.Age > 18, metadata);
+            .WithFilter<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.Name == "John", metadata)
+            .WithFilter<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.Age > 18, metadata);
 
         var request = builder.ToQueryRequest();
 
@@ -245,17 +248,17 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
         builder
             .ForTable("TestTable")
-            .Where<QueryRequestBuilder, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
+            .Where<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
             .Where("SK > :sk")
             .WithValue(":sk", "A")
-            .WithFilter<QueryRequestBuilder, TestEntity>(x => x.Name == "John", metadata)
-            .WithFilter<QueryRequestBuilder, TestEntity>(x => x.Age > 18, metadata);
+            .WithFilter<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.Name == "John", metadata)
+            .WithFilter<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.Age > 18, metadata);
 
         var request = builder.ToQueryRequest();
 
@@ -271,13 +274,13 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
         builder
             .ForTable("TestTable")
-            .Where<QueryRequestBuilder, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
+            .Where<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
             .Where("SK > :minSk")
             .WithValue(":minSk", "A")
             .Where("SK < :maxSk")
@@ -297,15 +300,15 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new ScanRequestBuilder(client);
+        var builder = new ScanRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
         builder
             .ForTable("TestTable")
-            .WithFilter<ScanRequestBuilder, TestEntity>(x => x.Name == "John", metadata)
-            .WithFilter<ScanRequestBuilder, TestEntity>(x => x.Age > 18, metadata)
-            .WithFilter<ScanRequestBuilder, TestEntity>(x => x.Status == "ACTIVE", metadata);
+            .WithFilter<ScanRequestBuilder<TestEntity>, TestEntity>(x => x.Name == "John", metadata)
+            .WithFilter<ScanRequestBuilder<TestEntity>, TestEntity>(x => x.Age > 18, metadata)
+            .WithFilter<ScanRequestBuilder<TestEntity>, TestEntity>(x => x.Status == "ACTIVE", metadata);
 
         var request = builder.ToScanRequest();
 
@@ -320,13 +323,13 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
         builder
             .ForTable("TestTable")
-            .Where<QueryRequestBuilder, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
+            .Where<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
             .Where("SK BETWEEN :low AND :high")
             .WithValue(":low", "A")
             .WithValue(":high", "Z")
@@ -352,15 +355,15 @@ public class ExpressionCombiningTests
     {
         // Arrange
         var client = Substitute.For<IAmazonDynamoDB>();
-        var builder = new QueryRequestBuilder(client);
+        var builder = new QueryRequestBuilder<TestEntity>(client);
         var metadata = CreateTestEntityMetadata();
 
         // Act
         builder
             .ForTable("TestTable")
-            .Where<QueryRequestBuilder, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
-            .WithFilter<QueryRequestBuilder, TestEntity>(x => x.Age > 18, metadata)
-            .WithFilter<QueryRequestBuilder, TestEntity>(x => x.Name == "John", metadata);
+            .Where<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.PartitionKey == "USER#123", metadata)
+            .WithFilter<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.Age > 18, metadata)
+            .WithFilter<QueryRequestBuilder<TestEntity>, TestEntity>(x => x.Name == "John", metadata);
 
         var request = builder.ToQueryRequest();
 

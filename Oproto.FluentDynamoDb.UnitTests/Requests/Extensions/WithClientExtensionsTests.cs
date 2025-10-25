@@ -9,6 +9,7 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests.Extensions;
 
 public class WithClientExtensionsTests
 {
+    private class TestEntity { }
     private readonly IAmazonDynamoDB _originalClient = Substitute.For<IAmazonDynamoDB>();
     private readonly IAmazonDynamoDB _scopedClient = Substitute.For<IAmazonDynamoDB>();
 
@@ -16,7 +17,7 @@ public class WithClientExtensionsTests
     public void GetItemRequestBuilder_WithClient_ShouldPreserveConfiguration()
     {
         // Arrange
-        var originalBuilder = new GetItemRequestBuilder(_originalClient)
+        var originalBuilder = new GetItemRequestBuilder<TestEntity>(_originalClient)
             .ForTable("TestTable")
             .WithKey("pk", "test-key")
             .WithProjection("#name, #email")
@@ -45,7 +46,7 @@ public class WithClientExtensionsTests
     public void QueryRequestBuilder_WithClient_ShouldPreserveConfiguration()
     {
         // Arrange
-        var originalBuilder = new QueryRequestBuilder(_originalClient)
+        var originalBuilder = new QueryRequestBuilder<TestEntity>(_originalClient)
             .ForTable("TestTable")
             .Where("pk = :pk AND begins_with(sk, :prefix)")
             .WithFilter("#status = :status")
@@ -88,7 +89,7 @@ public class WithClientExtensionsTests
             ["name"] = new AttributeValue("Test Name")
         };
 
-        var originalBuilder = new PutItemRequestBuilder(_originalClient)
+        var originalBuilder = new PutItemRequestBuilder<TestEntity>(_originalClient)
             .ForTable("TestTable")
             .WithItem(testItem)
             .Where("attribute_not_exists(pk)")
@@ -113,7 +114,7 @@ public class WithClientExtensionsTests
     public void UpdateItemRequestBuilder_WithClient_ShouldPreserveConfiguration()
     {
         // Arrange
-        var originalBuilder = new UpdateItemRequestBuilder(_originalClient)
+        var originalBuilder = new UpdateItemRequestBuilder<TestEntity>(_originalClient)
             .ForTable("TestTable")
             .WithKey("pk", "test-key")
             .Set("SET #name = :name, #count = #count + :inc")
@@ -149,7 +150,7 @@ public class WithClientExtensionsTests
     public void DeleteItemRequestBuilder_WithClient_ShouldPreserveConfiguration()
     {
         // Arrange
-        var originalBuilder = new DeleteItemRequestBuilder(_originalClient)
+        var originalBuilder = new DeleteItemRequestBuilder<TestEntity>(_originalClient)
             .ForTable("TestTable")
             .WithKey("pk", "test-key", "sk", "sort-key")
             .Where("attribute_exists(#status)")
@@ -177,7 +178,7 @@ public class WithClientExtensionsTests
     public void ScanRequestBuilder_WithClient_ShouldPreserveConfiguration()
     {
         // Arrange
-        var originalBuilder = new ScanRequestBuilder(_originalClient)
+        var originalBuilder = new ScanRequestBuilder<TestEntity>(_originalClient)
             .ForTable("TestTable")
             .WithFilter("#status = :status AND #count > :minCount")
             .WithAttribute("#status", "status")
@@ -318,7 +319,7 @@ public class WithClientExtensionsTests
     public void WithClient_EmptyBuilder_ShouldCreateNewBuilderWithClient()
     {
         // Arrange
-        var originalBuilder = new GetItemRequestBuilder(_originalClient);
+        var originalBuilder = new GetItemRequestBuilder<TestEntity>(_originalClient);
 
         // Act
         var newBuilder = originalBuilder.WithClient(_scopedClient);
@@ -347,7 +348,7 @@ public class WithClientExtensionsTests
         _scopedClient.GetItemAsync(Arg.Any<GetItemRequest>(), Arg.Any<CancellationToken>())
             .Returns(expectedResponse);
 
-        var builder = new GetItemRequestBuilder(_originalClient)
+        var builder = new GetItemRequestBuilder<TestEntity>(_originalClient)
             .ForTable("TestTable")
             .WithKey("pk", "test-key")
             .WithClient(_scopedClient);

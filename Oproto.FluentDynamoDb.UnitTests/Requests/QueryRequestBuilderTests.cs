@@ -10,10 +10,12 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 [Trait("Category", "Unit")]
 public class QueryRequestBuilderTests
 {
+    private class TestEntity { }
+
     [Fact]
     public void ForTableSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ForTable("TestTable");
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -23,7 +25,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void UsingIndexSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.UsingIndex("gsi1");
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -35,7 +37,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes(new Dictionary<string, string>() { { "#pk", "pk" } });
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -47,7 +49,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes((attributes) => attributes.Add("#pk", "pk"));
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -59,7 +61,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeNameSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttribute("#pk", "pk");
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -71,7 +73,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeValuesSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValues(new Dictionary<string, AttributeValue>() { { ":pk", new AttributeValue { S = "1" } } });
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -84,7 +86,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeValuesLambdaSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValues((attributes) => attributes.Add(":pk", new AttributeValue { S = "1" }));
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -97,7 +99,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeStringValueSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":pk", "1");
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -109,7 +111,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeBooleanValueSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":pk", true);
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -123,7 +125,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void WhereSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.Where("#pk = :pk");
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -133,7 +135,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void WithFilterSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithFilter("#v >= :num");
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -143,7 +145,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void ProjectionExpressionSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithProjection("description, price");
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -156,7 +158,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void ReturnConsumedCapacitySuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -166,7 +168,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void ReturnTotalConsumedCapacitySuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnTotalConsumedCapacity();
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -176,7 +178,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void ReturnIndexConsumedCapacitySuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnIndexConsumedCapacity();
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -188,7 +190,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void UsingConsistentReadSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.UsingConsistentRead();
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -198,7 +200,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void StartAtSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.StartAt(new Dictionary<string, AttributeValue>() { { "pk", new AttributeValue { S = "1" } } });
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();
@@ -210,7 +212,7 @@ public class QueryRequestBuilderTests
     [Fact]
     public void TakeSuccess()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.Take(10);
         var req = builder.ToQueryRequest();
         req.Should().NotBeNull();

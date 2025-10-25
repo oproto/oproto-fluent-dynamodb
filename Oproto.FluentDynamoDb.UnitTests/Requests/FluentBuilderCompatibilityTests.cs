@@ -18,6 +18,7 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 /// </summary>
 public class FluentBuilderCompatibilityTests
 {
+    private class TestEntity { }
     private readonly IAmazonDynamoDB _mockClient = Substitute.For<IAmazonDynamoDB>();
 
     #region Test all request builders work correctly with extension methods
@@ -26,7 +27,7 @@ public class FluentBuilderCompatibilityTests
     public void QueryRequestBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .Where("pk = :pk")
@@ -57,7 +58,7 @@ public class FluentBuilderCompatibilityTests
     public void GetItemRequestBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new GetItemRequestBuilder(_mockClient);
+        var builder = new GetItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithKey("pk", "USER#123", "sk", "profile")
@@ -95,7 +96,7 @@ public class FluentBuilderCompatibilityTests
         };
 
         // Act
-        var builder = new PutItemRequestBuilder(_mockClient);
+        var builder = new PutItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithItem(item)
@@ -121,7 +122,7 @@ public class FluentBuilderCompatibilityTests
     public void UpdateItemRequestBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new UpdateItemRequestBuilder(_mockClient);
+        var builder = new UpdateItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithKey("pk", "USER#123", "sk", "profile")
@@ -159,7 +160,7 @@ public class FluentBuilderCompatibilityTests
     public void DeleteItemRequestBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new DeleteItemRequestBuilder(_mockClient);
+        var builder = new DeleteItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithKey("pk", "USER#123", "sk", "profile")
@@ -188,7 +189,7 @@ public class FluentBuilderCompatibilityTests
     public void ScanRequestBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new ScanRequestBuilder(_mockClient);
+        var builder = new ScanRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithFilter("#status = :status AND amount > :minAmount")
@@ -221,7 +222,7 @@ public class FluentBuilderCompatibilityTests
     public void QueryRequestBuilder_WithMixedParameterStyles_ShouldWorkCorrectly()
     {
         // Arrange & Act - Mix format strings with traditional parameter style
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .Where("pk = {0} AND sk BETWEEN :minDate AND :maxDate", "USER#123")
@@ -265,7 +266,7 @@ public class FluentBuilderCompatibilityTests
         };
 
         // Act - Mix format strings with traditional parameters
-        var builder = new PutItemRequestBuilder(_mockClient);
+        var builder = new PutItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithItem(item)
@@ -294,7 +295,7 @@ public class FluentBuilderCompatibilityTests
     public void UpdateItemRequestBuilder_WithMixedParameterStyles_ShouldWorkCorrectly()
     {
         // Act - Mix format strings with traditional parameters
-        var builder = new UpdateItemRequestBuilder(_mockClient);
+        var builder = new UpdateItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithKey("id", "123")
@@ -323,7 +324,7 @@ public class FluentBuilderCompatibilityTests
     public void DeleteItemRequestBuilder_WithMixedParameterStyles_ShouldWorkCorrectly()
     {
         // Act - Mix format strings with traditional parameters
-        var builder = new DeleteItemRequestBuilder(_mockClient);
+        var builder = new DeleteItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithKey("id", "123")
@@ -360,7 +361,7 @@ public class FluentBuilderCompatibilityTests
         var testDecimal = 99.99m;
 
         // Act - Complex expression with multiple format specifiers
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .Where("pk = {0} AND sk BETWEEN {1:o} AND {2:o}", "USER#123", testDate.AddDays(-30), testDate)
@@ -407,7 +408,7 @@ public class FluentBuilderCompatibilityTests
         var validStatuses = new[] { "DRAFT", "PENDING" };
 
         // Act - Complex condition with multiple format types
-        var builder = new PutItemRequestBuilder(_mockClient);
+        var builder = new PutItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithItem(item)
@@ -443,7 +444,7 @@ public class FluentBuilderCompatibilityTests
         var maxAmount = 5000.75m;
 
         // Act - Complex nested conditions with multiple formats
-        var builder = new ScanRequestBuilder(_mockClient);
+        var builder = new ScanRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithFilter("(createdAt BETWEEN :startDate AND :endDate) AND (amount BETWEEN :minAmount AND :maxAmount) AND (#status = :status1 OR #status = :status2)")
@@ -490,7 +491,7 @@ public class FluentBuilderCompatibilityTests
         // exactly as they did before the refactoring
 
         // Query builder - existing usage pattern
-        var queryBuilder = new QueryRequestBuilder(_mockClient);
+        var queryBuilder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var queryRequest = queryBuilder
             .ForTable("Users")
             .Where("pk = :pk AND begins_with(sk, :prefix)")
@@ -523,7 +524,7 @@ public class FluentBuilderCompatibilityTests
         queryRequest.ReturnConsumedCapacity.Should().Be(Amazon.DynamoDBv2.ReturnConsumedCapacity.TOTAL);
 
         // Get builder - existing usage pattern
-        var getBuilder = new GetItemRequestBuilder(_mockClient);
+        var getBuilder = new GetItemRequestBuilder<TestEntity>(_mockClient);
         var getRequest = getBuilder
             .ForTable("Users")
             .WithKey("pk", "USER#123", "sk", "profile")
@@ -544,7 +545,7 @@ public class FluentBuilderCompatibilityTests
         getRequest.ReturnConsumedCapacity.Should().Be(Amazon.DynamoDBv2.ReturnConsumedCapacity.TOTAL);
 
         // Put builder - existing usage pattern
-        var putBuilder = new PutItemRequestBuilder(_mockClient);
+        var putBuilder = new PutItemRequestBuilder<TestEntity>(_mockClient);
         var putRequest = putBuilder
             .ForTable("Users")
             .WithItem(new Dictionary<string, AttributeValue>
@@ -575,7 +576,7 @@ public class FluentBuilderCompatibilityTests
         // This ensures the Self property implementation is working correctly
 
         // Test QueryRequestBuilder chaining
-        var queryBuilder = new QueryRequestBuilder(_mockClient);
+        var queryBuilder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var chainedQuery = queryBuilder
             .ForTable("TestTable")
             .Where("pk = :pk")
@@ -584,22 +585,22 @@ public class FluentBuilderCompatibilityTests
             .Take(10)
             .UsingConsistentRead();
 
-        chainedQuery.Should().BeOfType<QueryRequestBuilder>();
+        chainedQuery.Should().BeOfType<QueryRequestBuilder<TestEntity>>();
         chainedQuery.Should().BeSameAs(queryBuilder);
 
         // Test GetItemRequestBuilder chaining
-        var getBuilder = new GetItemRequestBuilder(_mockClient);
+        var getBuilder = new GetItemRequestBuilder<TestEntity>(_mockClient);
         var chainedGet = getBuilder
             .ForTable("TestTable")
             .WithKey("id", "123")
             .WithAttribute("#name", "name")
             .UsingConsistentRead();
 
-        chainedGet.Should().BeOfType<GetItemRequestBuilder>();
+        chainedGet.Should().BeOfType<GetItemRequestBuilder<TestEntity>>();
         chainedGet.Should().BeSameAs(getBuilder);
 
         // Test PutItemRequestBuilder chaining
-        var putBuilder = new PutItemRequestBuilder(_mockClient);
+        var putBuilder = new PutItemRequestBuilder<TestEntity>(_mockClient);
         var chainedPut = putBuilder
             .ForTable("TestTable")
             .WithItem(new Dictionary<string, AttributeValue>())
@@ -607,11 +608,11 @@ public class FluentBuilderCompatibilityTests
             .WithValue(":val", "test")
             .ReturnAllOldValues();
 
-        chainedPut.Should().BeOfType<PutItemRequestBuilder>();
+        chainedPut.Should().BeOfType<PutItemRequestBuilder<TestEntity>>();
         chainedPut.Should().BeSameAs(putBuilder);
 
         // Test UpdateItemRequestBuilder chaining
-        var updateBuilder = new UpdateItemRequestBuilder(_mockClient);
+        var updateBuilder = new UpdateItemRequestBuilder<TestEntity>(_mockClient);
         var chainedUpdate = updateBuilder
             .ForTable("TestTable")
             .WithKey("id", "123")
@@ -619,11 +620,11 @@ public class FluentBuilderCompatibilityTests
             .WithValue(":val", "test")
             .ReturnUpdatedNewValues();
 
-        chainedUpdate.Should().BeOfType<UpdateItemRequestBuilder>();
+        chainedUpdate.Should().BeOfType<UpdateItemRequestBuilder<TestEntity>>();
         chainedUpdate.Should().BeSameAs(updateBuilder);
 
         // Test DeleteItemRequestBuilder chaining
-        var deleteBuilder = new DeleteItemRequestBuilder(_mockClient);
+        var deleteBuilder = new DeleteItemRequestBuilder<TestEntity>(_mockClient);
         var chainedDelete = deleteBuilder
             .ForTable("TestTable")
             .WithKey("id", "123")
@@ -631,11 +632,11 @@ public class FluentBuilderCompatibilityTests
             .WithValue(":val", "test")
             .ReturnAllOldValues();
 
-        chainedDelete.Should().BeOfType<DeleteItemRequestBuilder>();
+        chainedDelete.Should().BeOfType<DeleteItemRequestBuilder<TestEntity>>();
         chainedDelete.Should().BeSameAs(deleteBuilder);
 
         // Test ScanRequestBuilder chaining
-        var scanBuilder = new ScanRequestBuilder(_mockClient);
+        var scanBuilder = new ScanRequestBuilder<TestEntity>(_mockClient);
         var chainedScan = scanBuilder
             .ForTable("TestTable")
             .WithFilter("condition")
@@ -643,7 +644,7 @@ public class FluentBuilderCompatibilityTests
             .WithAttribute("#attr", "attribute")
             .Take(10);
 
-        chainedScan.Should().BeOfType<ScanRequestBuilder>();
+        chainedScan.Should().BeOfType<ScanRequestBuilder<TestEntity>>();
         chainedScan.Should().BeSameAs(scanBuilder);
     }
 
@@ -657,24 +658,24 @@ public class FluentBuilderCompatibilityTests
         // Test various error conditions across different builders
 
         // Empty format string
-        var queryBuilder = new QueryRequestBuilder(_mockClient);
+        var queryBuilder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var act1 = () => queryBuilder.Where("", "value");
         act1.Should().Throw<ArgumentException>()
             .WithMessage("Format string cannot be null or empty.*");
 
         // Mismatched parameter count
-        var putBuilder = new PutItemRequestBuilder(_mockClient);
+        var putBuilder = new PutItemRequestBuilder<TestEntity>(_mockClient);
         var act2 = () => putBuilder.Where("pk = {0} AND sk = {1}", "onlyOneValue");
         act2.Should().Throw<ArgumentException>()
             .WithMessage("*parameter index 1 but only 1 arguments were provided*");
 
         // Null arguments
-        var deleteBuilder = new DeleteItemRequestBuilder(_mockClient);
+        var deleteBuilder = new DeleteItemRequestBuilder<TestEntity>(_mockClient);
         var act4 = () => deleteBuilder.Where("pk = {0}", (object[])null!);
         act4.Should().Throw<ArgumentNullException>();
 
         // Out of range parameter index
-        var updateBuilder = new UpdateItemRequestBuilder(_mockClient);
+        var updateBuilder = new UpdateItemRequestBuilder<TestEntity>(_mockClient);
         var act5 = () => updateBuilder.Where("pk = {5}", "value");
         act5.Should().Throw<ArgumentException>()
             .WithMessage("*parameter index 5 but only 1 arguments were provided*");
@@ -684,7 +685,7 @@ public class FluentBuilderCompatibilityTests
     public void Builders_WithNullValues_ShouldHandleGracefully()
     {
         // Test how builders handle null values in format strings
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .Where("pk = {0} AND sk = {1}", "USER#123", (string?)null)
@@ -703,7 +704,7 @@ public class FluentBuilderCompatibilityTests
         var testGuid = Guid.Parse("12345678-1234-1234-1234-123456789012");
         var testEnum = ReturnValue.ALL_OLD;
 
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .Where("pk = {0} AND created = {1:o} AND requestId = {2:D} AND status = {3} AND amount = {4:F2}",

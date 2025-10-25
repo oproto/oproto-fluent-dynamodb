@@ -44,31 +44,36 @@ public class ExpressionTranslatorSensitiveDataTests
                 {
                     PropertyName = "Id",
                     AttributeName = "id",
-                    PropertyType = typeof(string)
+                    PropertyType = typeof(string),
+                    SupportedOperations = null
                 },
                 new PropertyMetadata
                 {
                     PropertyName = "Email",
                     AttributeName = "email",
-                    PropertyType = typeof(string)
+                    PropertyType = typeof(string),
+                    SupportedOperations = null
                 },
                 new PropertyMetadata
                 {
                     PropertyName = "Name",
                     AttributeName = "name",
-                    PropertyType = typeof(string)
+                    PropertyType = typeof(string),
+                    SupportedOperations = null
                 },
                 new PropertyMetadata
                 {
                     PropertyName = "Ssn",
                     AttributeName = "ssn",
-                    PropertyType = typeof(string)
+                    PropertyType = typeof(string),
+                    SupportedOperations = null
                 },
                 new PropertyMetadata
                 {
                     PropertyName = "Age",
                     AttributeName = "age",
-                    PropertyType = typeof(int)
+                    PropertyType = typeof(int),
+                    SupportedOperations = null
                 }
             }
         };

@@ -9,10 +9,11 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 
 public class DeleteItemRequestBuilderTests
 {
+    private class TestEntity { }
     [Fact]
     public void ForTableSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ForTable("TestTable");
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -24,7 +25,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithKeySingleKeyAttributeValueSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var keyValue = new AttributeValue { S = "test-key" };
         builder.WithKey("pk", keyValue);
         var req = builder.ToDeleteItemRequest();
@@ -37,7 +38,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithKeyCompositeKeyAttributeValueSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var pkValue = new AttributeValue { S = "test-pk" };
         var skValue = new AttributeValue { S = "test-sk" };
         builder.WithKey("pk", pkValue, "sk", skValue);
@@ -52,7 +53,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithKeyCompositeKeyAttributeValueWithNullSortKeySuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var pkValue = new AttributeValue { S = "test-pk" };
         builder.WithKey("pk", pkValue, null, null);
         var req = builder.ToDeleteItemRequest();
@@ -65,7 +66,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithKeySingleKeyStringSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithKey("pk", "test-key");
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -77,7 +78,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithKeyCompositeKeyStringSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithKey("pk", "test-pk", "sk", "test-sk");
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -90,7 +91,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithKeyMultipleCallsSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithKey("pk", "test-pk");
         builder.WithKey("sk", "test-sk");
         var req = builder.ToDeleteItemRequest();
@@ -108,7 +109,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WhereSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.Where("attribute_exists(#attr)");
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -118,7 +119,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WhereWithComplexConditionSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.Where("#status = :status AND #version = :version");
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -132,7 +133,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithAttributesSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes(new Dictionary<string, string> { { "#pk", "pk" }, { "#status", "status" } });
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -145,7 +146,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithAttributesUsingLambdaSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes(attributes =>
         {
             attributes.Add("#pk", "pk");
@@ -162,7 +163,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithAttributeSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttribute("#pk", "pk");
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -178,7 +179,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValuesSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValues(new Dictionary<string, AttributeValue>
         {
             { ":pk", new AttributeValue { S = "1" } },
@@ -195,7 +196,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValuesLambdaSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValues(attributes =>
         {
             attributes.Add(":pk", new AttributeValue { S = "1" });
@@ -212,7 +213,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueStringSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":pk", "test-value");
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -224,7 +225,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueStringNullSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":pk", (string?)null);
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -235,7 +236,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueBooleanSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":active", true);
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -247,7 +248,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueBooleanNullSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":active", (bool?)null);
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -260,7 +261,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueDecimalSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":price", 99.99m);
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -272,7 +273,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueDecimalNullSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":price", (decimal?)null);
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -284,7 +285,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueStringDictionarySuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var mapValue = new Dictionary<string, string> { { "key1", "value1" }, { "key2", "value2" } };
         builder.WithValue(":map", mapValue);
         var req = builder.ToDeleteItemRequest();
@@ -299,7 +300,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueAttributeValueDictionarySuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var mapValue = new Dictionary<string, AttributeValue>
         {
             { "key1", new AttributeValue { S = "value1" } },
@@ -318,7 +319,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueConditionalUseFalseSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":pk", "test-value", conditionalUse: false);
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -329,7 +330,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void WithValueConditionalUseTrueSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":pk", "test-value", conditionalUse: true);
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -345,7 +346,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void ReturnAllOldValuesSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnAllOldValues();
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -355,7 +356,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void ReturnNoneSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnNone();
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -365,7 +366,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void DefaultReturnValuesSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
         req.ReturnValues.Should().BeNull();
@@ -378,7 +379,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void ReturnTotalConsumedCapacitySuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnTotalConsumedCapacity();
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -388,7 +389,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void ReturnConsumedCapacitySuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnConsumedCapacity(ReturnConsumedCapacity.INDEXES);
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -398,7 +399,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void ReturnConsumedCapacityNoneSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnConsumedCapacity(ReturnConsumedCapacity.NONE);
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -408,7 +409,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void DefaultConsumedCapacitySuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().BeNull();
@@ -421,7 +422,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void ReturnItemCollectionMetricsSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnItemCollectionMetrics();
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -431,7 +432,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void DefaultItemCollectionMetricsSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
         req.ReturnItemCollectionMetrics.Should().BeNull();
@@ -444,7 +445,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void ReturnOldValuesOnConditionCheckFailureSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnOldValuesOnConditionCheckFailure();
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
@@ -454,7 +455,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void DefaultReturnValuesOnConditionCheckFailureSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var req = builder.ToDeleteItemRequest();
         req.Should().NotBeNull();
         req.ReturnValuesOnConditionCheckFailure.Should().BeNull();
@@ -467,7 +468,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void ToDeleteItemRequestSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ForTable("TestTable")
                .WithKey("pk", "test-key")
                .Where("#status = :status")
@@ -503,7 +504,7 @@ public class DeleteItemRequestBuilderTests
         mockClient.DeleteItemAsync(Arg.Any<DeleteItemRequest>(), Arg.Any<CancellationToken>())
                   .Returns(Task.FromResult(expectedResponse));
 
-        var builder = new DeleteItemRequestBuilder(mockClient);
+        var builder = new DeleteItemRequestBuilder<TestEntity>(mockClient);
         builder.ForTable("TestTable").WithKey("pk", "test-key");
 
         var response = await builder.ExecuteAsync();
@@ -522,7 +523,7 @@ public class DeleteItemRequestBuilderTests
         mockClient.DeleteItemAsync(Arg.Any<DeleteItemRequest>(), cancellationToken)
                   .Returns(Task.FromResult(expectedResponse));
 
-        var builder = new DeleteItemRequestBuilder(mockClient);
+        var builder = new DeleteItemRequestBuilder<TestEntity>(mockClient);
         builder.ForTable("TestTable").WithKey("pk", "test-key");
 
         var response = await builder.ExecuteAsync(cancellationToken);
@@ -538,7 +539,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void FluentInterfaceChainSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
 
         var result = builder
             .ForTable("TestTable")
@@ -561,7 +562,7 @@ public class DeleteItemRequestBuilderTests
     [Fact]
     public void MultipleAttributeAndValueCallsSuccess()
     {
-        var builder = new DeleteItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new DeleteItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
 
         builder.WithAttribute("#pk", "pk")
                .WithAttribute("#status", "status")

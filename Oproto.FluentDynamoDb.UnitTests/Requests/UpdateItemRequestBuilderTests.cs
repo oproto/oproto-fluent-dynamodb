@@ -9,10 +9,11 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 
 public class UpdateItemRequestBuilderTests
 {
+    private class TestEntity { }
     [Fact]
     public void ForTableSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ForTable("TestTable");
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -24,7 +25,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void WithKeyPkStringValueSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithKey("pk", "1");
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -37,7 +38,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void WithKeyPkSkStringValueSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithKey("pk", "1", "sk", "abcd");
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -52,7 +53,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void WithKeyPkSkAttributeValueSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithKey("pk", new AttributeValue() { S = "1" }, "sk", new AttributeValue() { S = "abcd" });
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -71,7 +72,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes(new Dictionary<string, string>() { { "#pk", "pk" } });
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -83,7 +84,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes((attributes) => attributes.Add("#pk", "pk"));
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -95,7 +96,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeNameSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttribute("#pk", "pk");
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -106,7 +107,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeValuesSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValues(new Dictionary<string, AttributeValue>() { { ":pk", new AttributeValue { S = "1" } } });
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -119,7 +120,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeValuesLambdaSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValues((attributes) => attributes.Add(":pk", new AttributeValue { S = "1" }));
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -132,7 +133,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeStringValueSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":pk", "1");
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -144,7 +145,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeBooleanValueSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":pk", true);
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -158,7 +159,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void WhereSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.Where("#pk = :pk");
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -168,7 +169,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void SetSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.Set("SET #pk = :pk");
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -180,7 +181,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnConsumedCapacitySuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -190,7 +191,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnTotalConsumedCapacitySuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnTotalConsumedCapacity();
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -200,7 +201,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnItemCollectionMetricsSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnItemCollectionMetrics();
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -214,7 +215,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnValuesNoneSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnNone();
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -224,7 +225,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnAllNewValuesSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnAllNewValues();
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -234,7 +235,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnAllOldValuesSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnAllOldValues();
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -244,7 +245,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnUpdatedNewValuesSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnUpdatedNewValues();
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -254,7 +255,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnUpdatedOldValuesSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnUpdatedOldValues();
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -264,7 +265,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnOldValuesOnConditionCheckFailureSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnOldValuesOnConditionCheckFailure();
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
@@ -274,7 +275,7 @@ public class UpdateItemRequestBuilderTests
     [Fact]
     public void ReturnNoValuesOnConditionCheckFailureSuccess()
     {
-        var builder = new UpdateItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new UpdateItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var req = builder.ToUpdateItemRequest();
         req.Should().NotBeNull();
         req.ReturnValuesOnConditionCheckFailure.Should().BeNull();

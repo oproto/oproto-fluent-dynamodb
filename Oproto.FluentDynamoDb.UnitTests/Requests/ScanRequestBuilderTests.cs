@@ -9,10 +9,11 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 
 public class ScanRequestBuilderTests
 {
+    private class TestEntity { }
     [Fact]
     public void ForTableSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ForTable("TestTable");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -24,7 +25,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithFilterSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithFilter("#status = :status");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -34,7 +35,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithFilterComplexExpressionSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithFilter("#status = :status AND #price > :minPrice");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -48,7 +49,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithProjectionSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithProjection("#pk, #sk, #status");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -59,7 +60,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithProjectionSingleAttributeSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithProjection("#pk");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -74,7 +75,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void UsingIndexSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.UsingIndex("gsi1");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -84,7 +85,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void UsingIndexWithFilterSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.UsingIndex("gsi1").WithFilter("#status = :status");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -99,7 +100,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void TakeSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.Take(10);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -109,7 +110,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void StartAtSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var startKey = new Dictionary<string, AttributeValue>
         {
             { "pk", new AttributeValue { S = "test-pk" } },
@@ -128,7 +129,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithSegmentSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithSegment(0, 4);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -139,7 +140,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithSegmentMultipleSegmentsSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithSegment(2, 8);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -150,7 +151,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithSegmentAndFilterSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithSegment(1, 4).WithFilter("#status = :status");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -166,7 +167,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void UsingConsistentReadSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.UsingConsistentRead();
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -176,7 +177,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void DefaultConsistentReadSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
         req.ConsistentRead.Should().BeFalse();
@@ -189,7 +190,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void CountSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.Count();
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -199,7 +200,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void CountOverridesProjectionSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithProjection("#pk, #sk").Count();
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -214,7 +215,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void ReturnTotalConsumedCapacitySuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnTotalConsumedCapacity();
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -224,7 +225,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void ReturnIndexConsumedCapacitySuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnIndexConsumedCapacity();
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -234,7 +235,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void ReturnConsumedCapacitySuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnConsumedCapacity(ReturnConsumedCapacity.NONE);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -244,7 +245,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void DefaultConsumedCapacitySuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
         req.ReturnConsumedCapacity.Should().BeNull();
@@ -257,7 +258,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithAttributesSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes(new Dictionary<string, string> { { "#pk", "pk" }, { "#status", "status" } });
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -270,7 +271,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithAttributesUsingLambdaSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes(attributes =>
         {
             attributes.Add("#pk", "pk");
@@ -287,7 +288,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithAttributeSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttribute("#pk", "pk");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -303,7 +304,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValuesSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValues(new Dictionary<string, AttributeValue>
         {
             { ":pk", new AttributeValue { S = "1" } },
@@ -320,7 +321,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValuesLambdaSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValues(attributes =>
         {
             attributes.Add(":pk", new AttributeValue { S = "1" });
@@ -337,7 +338,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueStringSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":status", "active");
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -349,7 +350,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueStringNullSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":status", (string?)null);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -360,7 +361,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueBooleanSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":active", true);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -372,7 +373,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueBooleanNullSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":active", (bool?)null);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -385,7 +386,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueDecimalSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":price", 99.99m);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -397,7 +398,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueDecimalNullSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":price", (decimal?)null);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -409,7 +410,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueStringDictionarySuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var mapValue = new Dictionary<string, string> { { "key1", "value1" }, { "key2", "value2" } };
         builder.WithValue(":map", mapValue);
         var req = builder.ToScanRequest();
@@ -424,7 +425,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueAttributeValueDictionarySuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         var mapValue = new Dictionary<string, AttributeValue>
         {
             { "key1", new AttributeValue { S = "value1" } },
@@ -443,7 +444,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueConditionalUseFalseSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":status", "active", conditionalUse: false);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -454,7 +455,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void WithValueConditionalUseTrueSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithValue(":status", "active", conditionalUse: true);
         var req = builder.ToScanRequest();
         req.Should().NotBeNull();
@@ -470,7 +471,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void ToScanRequestSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ForTable("TestTable")
                .WithFilter("#status = :status")
                .WithProjection("#pk, #sk, #status")
@@ -509,7 +510,7 @@ public class ScanRequestBuilderTests
         mockClient.ScanAsync(Arg.Any<ScanRequest>(), Arg.Any<CancellationToken>())
                   .Returns(Task.FromResult(expectedResponse));
 
-        var builder = new ScanRequestBuilder(mockClient);
+        var builder = new ScanRequestBuilder<TestEntity>(mockClient);
         builder.ForTable("TestTable");
 
         var response = await builder.ExecuteAsync();
@@ -528,7 +529,7 @@ public class ScanRequestBuilderTests
         mockClient.ScanAsync(Arg.Any<ScanRequest>(), cancellationToken)
                   .Returns(Task.FromResult(expectedResponse));
 
-        var builder = new ScanRequestBuilder(mockClient);
+        var builder = new ScanRequestBuilder<TestEntity>(mockClient);
         builder.ForTable("TestTable");
 
         var response = await builder.ExecuteAsync(cancellationToken);
@@ -544,7 +545,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void FluentInterfaceChainSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
 
         var result = builder
             .ForTable("TestTable")
@@ -568,7 +569,7 @@ public class ScanRequestBuilderTests
     [Fact]
     public void MultipleAttributeAndValueCallsSuccess()
     {
-        var builder = new ScanRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new ScanRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
 
         builder.WithAttribute("#pk", "pk")
                .WithAttribute("#status", "status")

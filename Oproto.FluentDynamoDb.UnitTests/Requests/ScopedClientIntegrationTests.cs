@@ -15,6 +15,7 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 /// </summary>
 public class ScopedClientIntegrationTests
 {
+    private class TestEntity { }
     private readonly IAmazonDynamoDB _defaultClient = Substitute.For<IAmazonDynamoDB>();
     private readonly IAmazonDynamoDB _tenantScopedClient = Substitute.For<IAmazonDynamoDB>();
 
@@ -277,7 +278,7 @@ public class ScopedClientIntegrationTests
         var transactionId = "txn456";
 
         // Act - Build a complex query with scoped client
-        var queryBuilder = new QueryRequestBuilder(_defaultClient)
+        var queryBuilder = new QueryRequestBuilder<TestEntity>(_defaultClient)
             .ForTable("transactions")
             .Where("pk = :pk")
             .WithValue(":pk", $"{tenantId}#txn#{transactionId}")
@@ -308,7 +309,7 @@ public class ScopedClientIntegrationTests
     private async Task<GetItemResponse> SimulateServiceLayerGetTransaction(string tenantId, string transactionId)
     {
         // This simulates how a service layer would use a scoped client
-        return await new GetItemRequestBuilder(_defaultClient)
+        return await new GetItemRequestBuilder<TestEntity>(_defaultClient)
             .ForTable("transactions")
             .WithKey("pk", $"{tenantId}#txn#{transactionId}")
             .WithKey("sk", "metadata")
@@ -318,7 +319,7 @@ public class ScopedClientIntegrationTests
 
     private async Task<QueryResponse> SimulateServiceLayerQueryTransactions(string tenantId)
     {
-        return await new QueryRequestBuilder(_defaultClient)
+        return await new QueryRequestBuilder<TestEntity>(_defaultClient)
             .ForTable("transactions")
             .Where("pk = :pk")
             .WithValue(":pk", $"{tenantId}#txn#")
@@ -329,7 +330,7 @@ public class ScopedClientIntegrationTests
     private async Task<PutItemResponse> SimulateServiceLayerCreateTransaction(
         string tenantId, string transactionId, Dictionary<string, AttributeValue> item)
     {
-        return await new PutItemRequestBuilder(_defaultClient)
+        return await new PutItemRequestBuilder<TestEntity>(_defaultClient)
             .ForTable("transactions")
             .WithItem(item)
             .Where("attribute_not_exists(pk)")
@@ -340,7 +341,7 @@ public class ScopedClientIntegrationTests
     private async Task<UpdateItemResponse> SimulateServiceLayerUpdateTransactionStatus(
         string tenantId, string transactionId, string newStatus)
     {
-        return await new UpdateItemRequestBuilder(_defaultClient)
+        return await new UpdateItemRequestBuilder<TestEntity>(_defaultClient)
             .ForTable("transactions")
             .WithKey("pk", $"{tenantId}#txn#{transactionId}")
             .WithKey("sk", "metadata")
@@ -356,7 +357,7 @@ public class ScopedClientIntegrationTests
 
     private async Task<DeleteItemResponse> SimulateServiceLayerDeleteTransaction(string tenantId, string transactionId)
     {
-        return await new DeleteItemRequestBuilder(_defaultClient)
+        return await new DeleteItemRequestBuilder<TestEntity>(_defaultClient)
             .ForTable("transactions")
             .WithKey("pk", $"{tenantId}#txn#{transactionId}")
             .WithKey("sk", "metadata")
@@ -368,7 +369,7 @@ public class ScopedClientIntegrationTests
 
     private async Task<ScanResponse> SimulateServiceLayerScanTransactions(string tenantId)
     {
-        return await new ScanRequestBuilder(_defaultClient)
+        return await new ScanRequestBuilder<TestEntity>(_defaultClient)
             .ForTable("transactions")
             .WithFilter("begins_with(pk, :tenantPrefix) AND sk = :sk")
             .WithValue(":tenantPrefix", $"{tenantId}#txn#")

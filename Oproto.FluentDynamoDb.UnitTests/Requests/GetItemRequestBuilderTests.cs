@@ -9,10 +9,12 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 
 public class GetItemRequestBuilderTests
 {
+    private class TestEntity { }
+
     [Fact]
     public void ForTableSuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ForTable("TestTable");
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -22,7 +24,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void WithKeyPkStringValueSuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithKey("pk", "1");
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -35,7 +37,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void WithKeyPkSkStringValueSuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithKey("pk", "1", "sk", "abcd");
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -50,7 +52,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void WithKeyPkSkAttributeValueSuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithKey("pk", new AttributeValue() { S = "1" }, "sk", new AttributeValue() { S = "abcd" });
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -65,7 +67,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeNamesSuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes(new Dictionary<string, string>() { { "#pk", "pk" } });
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -77,7 +79,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeNamesUsingLambdaSuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttributes((attributes) => attributes.Add("#pk", "pk"));
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -89,7 +91,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void UsingExpressionAttributeNameSuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithAttribute("#pk", "pk");
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -101,7 +103,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void ProjectionExpressionSuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.WithProjection("description, price");
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -111,7 +113,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void ReturnConsumedCapacitySuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -121,7 +123,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void ReturnTotalConsumedCapacitySuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.ReturnTotalConsumedCapacity();
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();
@@ -131,7 +133,7 @@ public class GetItemRequestBuilderTests
     [Fact]
     public void UsingConsistentReadSuccess()
     {
-        var builder = new GetItemRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new GetItemRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.UsingConsistentRead();
         var req = builder.ToGetItemRequest();
         req.Should().NotBeNull();

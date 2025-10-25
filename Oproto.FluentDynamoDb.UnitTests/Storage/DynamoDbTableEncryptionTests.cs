@@ -3,6 +3,7 @@ using FluentAssertions;
 using NSubstitute;
 using Oproto.FluentDynamoDb.Expressions;
 using Oproto.FluentDynamoDb.Requests;
+using Oproto.FluentDynamoDb.Requests.Extensions;
 using Oproto.FluentDynamoDb.Storage;
 using System.Text;
 
@@ -234,7 +235,8 @@ public class DynamoDbTableEncryptionTests
                 {
                     PropertyName = "Ssn",
                     AttributeName = "ssn",
-                    PropertyType = typeof(string)
+                    PropertyType = typeof(string),
+                    SupportedOperations = null
                 }
             }
         };
@@ -286,13 +288,15 @@ public class DynamoDbTableEncryptionTests
                 {
                     PropertyName = "Ssn",
                     AttributeName = "ssn",
-                    PropertyType = typeof(string)
+                    PropertyType = typeof(string),
+                    SupportedOperations = null
                 },
                 new PropertyMetadata
                 {
                     PropertyName = "Email",
                     AttributeName = "email",
-                    PropertyType = typeof(string)
+                    PropertyType = typeof(string),
+                    SupportedOperations = null
                 }
             }
         };
@@ -377,7 +381,8 @@ public class DynamoDbTableEncryptionTests
                 {
                     PropertyName = "Ssn",
                     AttributeName = "ssn",
-                    PropertyType = typeof(string)
+                    PropertyType = typeof(string),
+                    SupportedOperations = null
                 }
             }
         };
@@ -492,16 +497,14 @@ public class DynamoDbTableEncryptionTests
 
         // Act - Use in format string expression (simulated via QueryRequestBuilder)
         var queryBuilder = new QueryRequestBuilder<TestEntity>(
-            Substitute.For<IAmazonDynamoDB>(),
-            "TestTable",
-            null,
-            null);
+            Substitute.For<IAmazonDynamoDB>());
         
         queryBuilder
+            .ForTable("TestTable")
             .Where("ssn = :val")
             .WithValue(":val", encryptedSsn);
         
-        var request = queryBuilder.ToRequest();
+        var request = queryBuilder.ToQueryRequest();
 
         // Assert
         request.ExpressionAttributeValues.Should().ContainKey(":val");
@@ -525,12 +528,11 @@ public class DynamoDbTableEncryptionTests
 
         // Act - Use in format string with placeholder
         var queryBuilder = new QueryRequestBuilder<TestEntity>(
-            Substitute.For<IAmazonDynamoDB>(),
-            "TestTable",
-            null,
-            null);
+            Substitute.For<IAmazonDynamoDB>());
         
-        queryBuilder.Where($"email = {encryptedEmail}");
+        queryBuilder
+            .ForTable("TestTable")
+            .Where($"email = {encryptedEmail}");
         
         // Assert
         encryptedEmail.Should().NotBeNullOrEmpty();

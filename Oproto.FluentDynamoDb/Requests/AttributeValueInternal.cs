@@ -12,7 +12,12 @@ namespace Oproto.FluentDynamoDb.Requests;
 public class AttributeValueInternal
 {
     public Dictionary<string, AttributeValue> AttributeValues { get; init; } = new Dictionary<string, AttributeValue>();
-    private readonly ParameterGenerator _parameterGenerator = new();
+    
+    /// <summary>
+    /// Gets the parameter generator used to create unique parameter names.
+    /// This generator is shared across all parameter generation methods to ensure uniqueness.
+    /// </summary>
+    public ParameterGenerator ParameterGenerator { get; } = new();
 
     public void WithValues(
         Dictionary<string, AttributeValue> attributeValues)
@@ -230,7 +235,7 @@ public class AttributeValueInternal
     /// <exception cref="ArgumentException">Thrown when an empty collection is provided (DynamoDB does not support empty collections).</exception>
     public string AddFormattedValue(object? value, string? format = null)
     {
-        var paramName = _parameterGenerator.GenerateParameterName();
+        var paramName = ParameterGenerator.GenerateParameterName();
         
         try
         {
@@ -413,5 +418,5 @@ public class AttributeValueInternal
     /// Gets the parameter generator instance for this AttributeValueInternal.
     /// Used by extension methods to generate consistent parameter names.
     /// </summary>
-    public ParameterGenerator GetParameterGenerator() => _parameterGenerator;
+    public ParameterGenerator GetParameterGenerator() => ParameterGenerator;
 }

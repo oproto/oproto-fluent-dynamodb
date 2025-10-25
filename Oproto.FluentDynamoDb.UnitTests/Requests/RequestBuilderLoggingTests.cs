@@ -15,6 +15,7 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 [Trait("Category", "Integration")]
 public class RequestBuilderLoggingTests
 {
+    private class TestEntity { }
     private class TestLogger : IDynamoDbLogger
     {
         private readonly List<LogEntry> _logEntries = new();
@@ -126,7 +127,7 @@ public class RequestBuilderLoggingTests
         mockClient.QueryAsync(Arg.Any<QueryRequest>(), Arg.Any<CancellationToken>())
             .Returns(new QueryResponse { Count = 5, ConsumedCapacity = new ConsumedCapacity { CapacityUnits = 2.5 } });
 
-        var builder = new QueryRequestBuilder(mockClient, logger);
+        var builder = new QueryRequestBuilder<TestEntity>(mockClient, logger);
 
         // Act
         await builder
@@ -152,7 +153,7 @@ public class RequestBuilderLoggingTests
         mockClient.QueryAsync(Arg.Any<QueryRequest>(), Arg.Any<CancellationToken>())
             .Returns(new QueryResponse { Count = 5, ConsumedCapacity = new ConsumedCapacity { CapacityUnits = 2.5 } });
 
-        var builder = new QueryRequestBuilder(mockClient, logger);
+        var builder = new QueryRequestBuilder<TestEntity>(mockClient, logger);
 
         // Act
         await builder
@@ -178,7 +179,7 @@ public class RequestBuilderLoggingTests
         mockClient.QueryAsync(Arg.Any<QueryRequest>(), Arg.Any<CancellationToken>())
             .Returns(new QueryResponse { Count = 5, ConsumedCapacity = new ConsumedCapacity { CapacityUnits = 2.5 } });
 
-        var builder = new QueryRequestBuilder(mockClient, logger);
+        var builder = new QueryRequestBuilder<TestEntity>(mockClient, logger);
 
         // Act
         await builder
@@ -203,7 +204,7 @@ public class RequestBuilderLoggingTests
         mockClient.QueryAsync(Arg.Any<QueryRequest>(), Arg.Any<CancellationToken>())
             .Returns(new QueryResponse { Count = 5, ConsumedCapacity = new ConsumedCapacity { CapacityUnits = 2.5 } });
 
-        var builder = new QueryRequestBuilder(mockClient, logger);
+        var builder = new QueryRequestBuilder<TestEntity>(mockClient, logger);
 
         // Act
         await builder
@@ -228,7 +229,7 @@ public class RequestBuilderLoggingTests
         mockClient.QueryAsync(Arg.Any<QueryRequest>(), Arg.Any<CancellationToken>())
             .Returns<QueryResponse>(_ => throw expectedException);
 
-        var builder = new QueryRequestBuilder(mockClient, logger);
+        var builder = new QueryRequestBuilder<TestEntity>(mockClient, logger);
 
         // Act & Assert
         await Assert.ThrowsAsync<ResourceNotFoundException>(async () => await builder
@@ -262,7 +263,7 @@ public class RequestBuilderLoggingTests
                 ConsumedCapacity = new ConsumedCapacity { CapacityUnits = 1.0 }
             });
 
-        var builder = new GetItemRequestBuilder(mockClient, logger);
+        var builder = new GetItemRequestBuilder<TestEntity>(mockClient, logger);
 
         // Act
         await builder
@@ -285,7 +286,7 @@ public class RequestBuilderLoggingTests
         mockClient.GetItemAsync(Arg.Any<GetItemRequest>(), Arg.Any<CancellationToken>())
             .Returns<GetItemResponse>(_ => throw expectedException);
 
-        var builder = new GetItemRequestBuilder(mockClient, logger);
+        var builder = new GetItemRequestBuilder<TestEntity>(mockClient, logger);
 
         // Act & Assert
         await Assert.ThrowsAsync<ResourceNotFoundException>(async () => await builder
@@ -310,7 +311,7 @@ public class RequestBuilderLoggingTests
         mockClient.PutItemAsync(Arg.Any<PutItemRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PutItemResponse { ConsumedCapacity = new ConsumedCapacity { CapacityUnits = 1.0 } });
 
-        var builder = new PutItemRequestBuilder(mockClient, logger);
+        var builder = new PutItemRequestBuilder<TestEntity>(mockClient, logger);
         var item = new Dictionary<string, AttributeValue>
         {
             ["id"] = new AttributeValue { S = "test-id" },
@@ -338,7 +339,7 @@ public class RequestBuilderLoggingTests
         mockClient.PutItemAsync(Arg.Any<PutItemRequest>(), Arg.Any<CancellationToken>())
             .Returns<PutItemResponse>(_ => throw expectedException);
 
-        var builder = new PutItemRequestBuilder(mockClient, logger);
+        var builder = new PutItemRequestBuilder<TestEntity>(mockClient, logger);
         var item = new Dictionary<string, AttributeValue>
         {
             ["id"] = new AttributeValue { S = "test-id" }
@@ -367,7 +368,7 @@ public class RequestBuilderLoggingTests
         mockClient.UpdateItemAsync(Arg.Any<UpdateItemRequest>(), Arg.Any<CancellationToken>())
             .Returns(new UpdateItemResponse { ConsumedCapacity = new ConsumedCapacity { CapacityUnits = 1.0 } });
 
-        var builder = new UpdateItemRequestBuilder(mockClient, logger);
+        var builder = new UpdateItemRequestBuilder<TestEntity>(mockClient, logger);
 
         // Act
         await builder
@@ -393,7 +394,7 @@ public class RequestBuilderLoggingTests
         mockClient.UpdateItemAsync(Arg.Any<UpdateItemRequest>(), Arg.Any<CancellationToken>())
             .Returns<UpdateItemResponse>(_ => throw expectedException);
 
-        var builder = new UpdateItemRequestBuilder(mockClient, logger);
+        var builder = new UpdateItemRequestBuilder<TestEntity>(mockClient, logger);
 
         // Act & Assert
         await Assert.ThrowsAsync<ResourceNotFoundException>(async () => await builder

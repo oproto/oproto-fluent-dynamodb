@@ -19,7 +19,7 @@ public class ManualTableImplementationTests
         var builder = table.Get("user-123");
         
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<GetItemRequestBuilder>();
+        builder.Should().BeOfType<GetItemRequestBuilder<PlaceholderEntity>>();
         
         var request = builder.ToGetItemRequest();
         request.TableName.Should().Be("Users");
@@ -36,7 +36,7 @@ public class ManualTableImplementationTests
         var builder = table.Update("user-123");
         
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<UpdateItemRequestBuilder>();
+        builder.Should().BeOfType<UpdateItemRequestBuilder<PlaceholderEntity>>();
         
         var request = builder.ToUpdateItemRequest();
         request.TableName.Should().Be("Users");
@@ -53,7 +53,7 @@ public class ManualTableImplementationTests
         var builder = table.Delete("user-123");
         
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<DeleteItemRequestBuilder>();
+        builder.Should().BeOfType<DeleteItemRequestBuilder<PlaceholderEntity>>();
         
         var request = builder.ToDeleteItemRequest();
         request.TableName.Should().Be("Users");
@@ -113,7 +113,7 @@ public class ManualTableImplementationTests
         var client = Substitute.For<IAmazonDynamoDB>();
         var table = new UsersTable(client);
         
-        var builder = table.EmailIndex.Query("email = {0}", "user@example.com");
+        var builder = table.EmailIndex.Query<PlaceholderEntity>("email = {0}", "user@example.com");
         
         var request = builder.ToQueryRequest();
         request.TableName.Should().Be("Users");
@@ -129,7 +129,7 @@ public class ManualTableImplementationTests
         var client = Substitute.For<IAmazonDynamoDB>();
         var table = new UsersTable(client);
         
-        var builder = table.StatusIndex.Query("status = {0} AND created_at > {1}", "ACTIVE", "2024-01-01");
+        var builder = table.StatusIndex.Query<PlaceholderEntity>("status = {0} AND created_at > {1}", "ACTIVE", "2024-01-01");
         
         var request = builder.ToQueryRequest();
         request.TableName.Should().Be("Users");
@@ -149,7 +149,7 @@ public class ManualTableImplementationTests
         var builder = table.Get("customer-123", "order-456");
         
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<GetItemRequestBuilder>();
+        builder.Should().BeOfType<GetItemRequestBuilder<PlaceholderEntity>>();
         
         var request = builder.ToGetItemRequest();
         request.TableName.Should().Be("Orders");
@@ -168,7 +168,7 @@ public class ManualTableImplementationTests
         var builder = table.Update("customer-123", "order-456");
         
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<UpdateItemRequestBuilder>();
+        builder.Should().BeOfType<UpdateItemRequestBuilder<PlaceholderEntity>>();
         
         var request = builder.ToUpdateItemRequest();
         request.TableName.Should().Be("Orders");
@@ -187,7 +187,7 @@ public class ManualTableImplementationTests
         var builder = table.Delete("customer-123", "order-456");
         
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<DeleteItemRequestBuilder>();
+        builder.Should().BeOfType<DeleteItemRequestBuilder<PlaceholderEntity>>();
         
         var request = builder.ToDeleteItemRequest();
         request.TableName.Should().Be("Orders");
@@ -255,7 +255,7 @@ public class ManualTableImplementationTests
         var client = Substitute.For<IAmazonDynamoDB>();
         var table = new OrdersTable(client);
         
-        var builder = table.StatusIndex.Query("status = {0}", "PENDING");
+        var builder = table.StatusIndex.Query<PlaceholderEntity>("status = {0}", "PENDING");
         
         var request = builder.ToQueryRequest();
         request.TableName.Should().Be("Orders");
@@ -271,7 +271,7 @@ public class ManualTableImplementationTests
         var client = Substitute.For<IAmazonDynamoDB>();
         var table = new OrdersTable(client);
         
-        var builder = table.StatusIndex.Query("status = {0} AND created_at > {1}", "PENDING", "2024-01-01");
+        var builder = table.StatusIndex.Query<PlaceholderEntity>("status = {0} AND created_at > {1}", "PENDING", "2024-01-01");
         
         var request = builder.ToQueryRequest();
         request.TableName.Should().Be("Orders");
@@ -287,7 +287,7 @@ public class ManualTableImplementationTests
         var client = Substitute.For<IAmazonDynamoDB>();
         var table = new OrdersTable(client);
         
-        var builder = table.ProductIndex.Query("product_id = {0}", "product-789");
+        var builder = table.ProductIndex.Query<PlaceholderEntity>("product_id = {0}", "product-789");
         
         var request = builder.ToQueryRequest();
         request.TableName.Should().Be("Orders");
@@ -303,7 +303,7 @@ public class ManualTableImplementationTests
         var client = Substitute.For<IAmazonDynamoDB>();
         var table = new OrdersTable(client);
         
-        var builder = table.ProductIndex.Query("product_id = {0} AND order_id > {1}", "product-789", "2024-01-01#");
+        var builder = table.ProductIndex.Query<PlaceholderEntity>("product_id = {0} AND order_id > {1}", "product-789", "2024-01-01#");
         
         var request = builder.ToQueryRequest();
         request.TableName.Should().Be("Orders");

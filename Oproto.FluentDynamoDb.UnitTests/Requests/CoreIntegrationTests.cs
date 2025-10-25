@@ -13,13 +13,14 @@ namespace Oproto.FluentDynamoDb.UnitTests.Requests;
 /// </summary>
 public class CoreIntegrationTests
 {
+    private class TestEntity { }
     private readonly IAmazonDynamoDB _mockClient = Substitute.For<IAmazonDynamoDB>();
 
     [Fact]
     public void QueryBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .Where("pk = :pk")
@@ -41,7 +42,7 @@ public class CoreIntegrationTests
     public void QueryBuilder_WithFormatStringParameters_ShouldGenerateCorrectRequest()
     {
         // Arrange & Act
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .Where("pk = {0} AND begins_with(sk, {1})", "USER#123", "ORDER#")
@@ -61,7 +62,7 @@ public class CoreIntegrationTests
     public void QueryBuilder_WithMixedParameterStyles_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .Where("pk = {0} AND sk > :minDate", "USER#123")
@@ -81,7 +82,7 @@ public class CoreIntegrationTests
     public void GetItemBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new GetItemRequestBuilder(_mockClient);
+        var builder = new GetItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithKey("pk", "USER#123", "sk", "profile")
@@ -110,7 +111,7 @@ public class CoreIntegrationTests
         };
 
         // Act
-        var builder = new PutItemRequestBuilder(_mockClient);
+        var builder = new PutItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithItem(item)
@@ -138,7 +139,7 @@ public class CoreIntegrationTests
         };
 
         // Act
-        var builder = new PutItemRequestBuilder(_mockClient);
+        var builder = new PutItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithItem(item)
@@ -156,7 +157,7 @@ public class CoreIntegrationTests
     public void UpdateItemBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new UpdateItemRequestBuilder(_mockClient);
+        var builder = new UpdateItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithKey("id", "123")
@@ -179,7 +180,7 @@ public class CoreIntegrationTests
     public void DeleteItemBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new DeleteItemRequestBuilder(_mockClient);
+        var builder = new DeleteItemRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithKey("id", "123")
@@ -201,7 +202,7 @@ public class CoreIntegrationTests
     public void ScanBuilder_WithExtensionMethods_ShouldWorkCorrectly()
     {
         // Arrange & Act
-        var builder = new ScanRequestBuilder(_mockClient);
+        var builder = new ScanRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .WithFilter("#status = :status")
@@ -225,7 +226,7 @@ public class CoreIntegrationTests
         // Test that existing method signatures still work exactly as before
 
         // Query builder - existing usage pattern
-        var queryBuilder = new QueryRequestBuilder(_mockClient);
+        var queryBuilder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var queryRequest = queryBuilder
             .ForTable("TestTable")
             .Where("pk = :pk")
@@ -240,7 +241,7 @@ public class CoreIntegrationTests
         queryRequest.ExpressionAttributeValues[":pk"].S.Should().Be("USER#123");
 
         // Get builder - existing usage pattern
-        var getBuilder = new GetItemRequestBuilder(_mockClient);
+        var getBuilder = new GetItemRequestBuilder<TestEntity>(_mockClient);
         var getRequest = getBuilder
             .ForTable("TestTable")
             .WithKey("pk", "USER#123", "sk", "profile")
@@ -261,7 +262,7 @@ public class CoreIntegrationTests
         var testDecimal = 99.99m;
 
         // Act
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
         var request = builder
             .ForTable("TestTable")
             .Where("pk = {0} AND created > {1:o} AND amount <= {2:F2}", "USER#123", testDate, testDecimal)
@@ -281,7 +282,7 @@ public class CoreIntegrationTests
     [Fact]
     public void Builders_ErrorHandling_ShouldThrowAppropriateExceptions()
     {
-        var builder = new QueryRequestBuilder(_mockClient);
+        var builder = new QueryRequestBuilder<TestEntity>(_mockClient);
 
         // Test empty format string
         var act1 = () => builder.Where("", "value");

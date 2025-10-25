@@ -9,10 +9,11 @@ namespace Oproto.FluentDynamoDb.UnitTests.Pagination;
 
 public class PaginationExtensionsTests
 {
+    private class TestEntity { }
     [Fact]
     public void Paginate_WithPageSizeAndNoToken_Success()
     {
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         PaginationExtensions.Paginate(builder, new PaginationRequest(10, ""));
         var request = builder.ToQueryRequest();
 
@@ -31,7 +32,7 @@ public class PaginationExtensionsTests
         var queryResponse = new QueryResponse { LastEvaluatedKey = lastKey };
         var token = queryResponse.GetEncodedPaginationToken();
 
-        var builder = new QueryRequestBuilder(Substitute.For<IAmazonDynamoDB>());
+        var builder = new QueryRequestBuilder<TestEntity>(Substitute.For<IAmazonDynamoDB>());
         builder.Paginate(new PaginationRequest(10, token));
         var request = builder.ToQueryRequest();
 

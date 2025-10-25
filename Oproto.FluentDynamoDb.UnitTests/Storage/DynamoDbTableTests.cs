@@ -14,9 +14,15 @@ public class DynamoDbTableTests
         public DynamoDbIndex Gsi1 => new DynamoDbIndex(this, "gsi1");
         
         // Override to test virtual method behavior
-        public override GetItemRequestBuilder Get() => base.Get();
-        public override UpdateItemRequestBuilder Update() => base.Update();
-        public override DeleteItemRequestBuilder Delete() => base.Delete();
+        public override GetItemRequestBuilder<TEntity> Get<TEntity>() where TEntity : class => base.Get<TEntity>();
+        public override UpdateItemRequestBuilder<TEntity> Update<TEntity>() where TEntity : class => base.Update<TEntity>();
+        public override DeleteItemRequestBuilder<TEntity> Delete<TEntity>() where TEntity : class => base.Delete<TEntity>();
+    }
+    
+    public class TestEntity
+    {
+        public string? Id { get; set; }
+        public string? Name { get; set; }
     }
 
     [Fact]
@@ -31,10 +37,10 @@ public class DynamoDbTableTests
     public void QueryMethodReturnsCorrectBuilderType()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var query = table.Query();
+        var query = table.Query<TestEntity>();
         
         query.Should().NotBeNull();
-        query.Should().BeOfType<QueryRequestBuilder>();
+        query.Should().BeOfType<QueryRequestBuilder<TestEntity>>();
         query.ToQueryRequest().TableName.Should().Be("TestTable");
     }
 
@@ -42,8 +48,8 @@ public class DynamoDbTableTests
     public void QueryMethodReturnsNewInstanceEachTime()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var query1 = table.Query();
-        var query2 = table.Query();
+        var query1 = table.Query<TestEntity>();
+        var query2 = table.Query<TestEntity>();
         
         query1.Should().NotBeSameAs(query2);
     }
@@ -52,7 +58,7 @@ public class DynamoDbTableTests
     public void QueryWithExpressionConfiguresKeyConditionCorrectly()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var query = table.Query("pk = {0}", "USER#123");
+        var query = table.Query<TestEntity>("pk = {0}", "USER#123");
         
         query.Should().NotBeNull();
         var request = query.ToQueryRequest();
@@ -66,7 +72,7 @@ public class DynamoDbTableTests
     public void QueryWithCompositeKeyExpressionConfiguresCorrectly()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var query = table.Query("pk = {0} AND sk > {1}", "USER#123", "2024-01-01");
+        var query = table.Query<TestEntity>("pk = {0} AND sk > {1}", "USER#123", "2024-01-01");
         
         var request = query.ToQueryRequest();
         request.KeyConditionExpression.Should().Be("pk = :p0 AND sk > :p1");
@@ -80,10 +86,10 @@ public class DynamoDbTableTests
     public void GetMethodReturnsCorrectBuilderType()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var get = table.Get();
+        var get = table.Get<TestEntity>();
         
         get.Should().NotBeNull();
-        get.Should().BeOfType<GetItemRequestBuilder>();
+        get.Should().BeOfType<GetItemRequestBuilder<TestEntity>>();
         get.ToGetItemRequest().TableName.Should().Be("TestTable");
     }
 
@@ -91,8 +97,8 @@ public class DynamoDbTableTests
     public void GetMethodReturnsNewInstanceEachTime()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var get1 = table.Get();
-        var get2 = table.Get();
+        var get1 = table.Get<TestEntity>();
+        var get2 = table.Get<TestEntity>();
         
         get1.Should().NotBeSameAs(get2);
     }
@@ -101,10 +107,10 @@ public class DynamoDbTableTests
     public void UpdateMethodReturnsCorrectBuilderType()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var update = table.Update();
+        var update = table.Update<TestEntity>();
         
         update.Should().NotBeNull();
-        update.Should().BeOfType<UpdateItemRequestBuilder>();
+        update.Should().BeOfType<UpdateItemRequestBuilder<TestEntity>>();
         update.ToUpdateItemRequest().TableName.Should().Be("TestTable");
     }
 
@@ -112,8 +118,8 @@ public class DynamoDbTableTests
     public void UpdateMethodReturnsNewInstanceEachTime()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var update1 = table.Update();
-        var update2 = table.Update();
+        var update1 = table.Update<TestEntity>();
+        var update2 = table.Update<TestEntity>();
         
         update1.Should().NotBeSameAs(update2);
     }
@@ -122,10 +128,10 @@ public class DynamoDbTableTests
     public void DeleteMethodReturnsCorrectBuilderType()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var delete = table.Delete();
+        var delete = table.Delete<TestEntity>();
         
         delete.Should().NotBeNull();
-        delete.Should().BeOfType<DeleteItemRequestBuilder>();
+        delete.Should().BeOfType<DeleteItemRequestBuilder<TestEntity>>();
         delete.ToDeleteItemRequest().TableName.Should().Be("TestTable");
     }
 
@@ -133,8 +139,8 @@ public class DynamoDbTableTests
     public void DeleteMethodReturnsNewInstanceEachTime()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var delete1 = table.Delete();
-        var delete2 = table.Delete();
+        var delete1 = table.Delete<TestEntity>();
+        var delete2 = table.Delete<TestEntity>();
         
         delete1.Should().NotBeSameAs(delete2);
     }
@@ -143,10 +149,10 @@ public class DynamoDbTableTests
     public void PutMethodReturnsCorrectBuilderType()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var put = table.Put();
+        var put = table.Put<TestEntity>();
         
         put.Should().NotBeNull();
-        put.Should().BeOfType<PutItemRequestBuilder>();
+        put.Should().BeOfType<PutItemRequestBuilder<TestEntity>>();
         put.ToPutItemRequest().TableName.Should().Be("TestTable");
     }
 
@@ -154,8 +160,8 @@ public class DynamoDbTableTests
     public void PutMethodReturnsNewInstanceEachTime()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var put1 = table.Put();
-        var put2 = table.Put();
+        var put1 = table.Put<TestEntity>();
+        var put2 = table.Put<TestEntity>();
         
         put1.Should().NotBeSameAs(put2);
     }
@@ -164,40 +170,40 @@ public class DynamoDbTableTests
     public void VirtualGetMethodCanBeOverridden()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var get = table.Get();
+        var get = table.Get<TestEntity>();
         
         // Verify the method can be called and returns correct type
         get.Should().NotBeNull();
-        get.Should().BeOfType<GetItemRequestBuilder>();
+        get.Should().BeOfType<GetItemRequestBuilder<TestEntity>>();
     }
 
     [Fact]
     public void VirtualUpdateMethodCanBeOverridden()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var update = table.Update();
+        var update = table.Update<TestEntity>();
         
         // Verify the method can be called and returns correct type
         update.Should().NotBeNull();
-        update.Should().BeOfType<UpdateItemRequestBuilder>();
+        update.Should().BeOfType<UpdateItemRequestBuilder<TestEntity>>();
     }
 
     [Fact]
     public void VirtualDeleteMethodCanBeOverridden()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var delete = table.Delete();
+        var delete = table.Delete<TestEntity>();
         
         // Verify the method can be called and returns correct type
         delete.Should().NotBeNull();
-        delete.Should().BeOfType<DeleteItemRequestBuilder>();
+        delete.Should().BeOfType<DeleteItemRequestBuilder<TestEntity>>();
     }
 
     [Fact]
     public void QueryOnIndexReturnsBuilder()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var query = table.Gsi1.Query();
+        var query = table.Gsi1.Query<TestEntity>();
         
         query.Should().NotBeNull();
         query.ToQueryRequest().TableName.Should().Be("TestTable");
@@ -208,8 +214,8 @@ public class DynamoDbTableTests
     public void QueryOnIndexReturnsNewInstanceEachTime()
     {
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
-        var query1 = table.Gsi1.Query();
-        var query2 = table.Gsi1.Query();
+        var query1 = table.Gsi1.Query<TestEntity>();
+        var query2 = table.Gsi1.Query<TestEntity>();
         
         query1.Should().NotBeSameAs(query2);
     }

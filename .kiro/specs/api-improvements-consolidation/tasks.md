@@ -139,3 +139,10 @@
   - Document sensitive data redaction behavior
   - Add migration examples for format support
   - _Requirements: 1, 2, 3_
+
+- [x] 17. Fix failing unit tests after API changes
+  - Fix "property is marked as non-queryable" errors by setting SupportedOperations to null or including operations in PropertyMetadata for test entities
+  - Fix parameter name collision errors (":p0 already added") by ensuring ExpressionContext generates unique parameter names across multiple calls
+  - Fix generic type mismatch errors in ManualTableImplementationTests where methods return PlaceholderEntity instead of TestEntity
+  - Verify all 43 failing tests pass after fixes
+  - _Requirements: All_

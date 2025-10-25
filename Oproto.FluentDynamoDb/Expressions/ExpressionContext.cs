@@ -78,8 +78,9 @@ public class ExpressionContext
     
     /// <summary>
     /// Parameter generator for unique parameter names.
+    /// Shared with AttributeValues to ensure uniqueness across all parameter generation methods.
     /// </summary>
-    public ParameterGenerator ParameterGenerator { get; }
+    public ParameterGenerator ParameterGenerator => AttributeValues.ParameterGenerator;
     
     /// <summary>
     /// Initializes a new instance of the <see cref="ExpressionContext"/> class.
@@ -98,6 +99,5 @@ public class ExpressionContext
         AttributeNames = attributeNames ?? throw new ArgumentNullException(nameof(attributeNames));
         EntityMetadata = entityMetadata;
         ValidationMode = validationMode;
-        ParameterGenerator = new ParameterGenerator();
     }
 }

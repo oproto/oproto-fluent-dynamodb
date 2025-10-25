@@ -8,6 +8,7 @@ namespace Oproto.FluentDynamoDb.UnitTests.Storage;
 
 public class DynamoDbIndexTests
 {
+    private class TestEntity { }
     private class TestTable : DynamoDbTableBase
     {
         public TestTable(IAmazonDynamoDB client) : base(client, "TestTable") { }
@@ -19,10 +20,10 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex");
         
-        var query = index.Query();
+        var query = index.Query<TestEntity>();
         
         query.Should().NotBeNull();
-        query.Should().BeOfType<QueryRequestBuilder>();
+        query.Should().BeOfType<QueryRequestBuilder<TestEntity>>();
         
         var request = query.ToQueryRequest();
         request.TableName.Should().Be("TestTable");
@@ -35,8 +36,8 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex");
         
-        var query1 = index.Query();
-        var query2 = index.Query();
+        var query1 = index.Query<TestEntity>();
+        var query2 = index.Query<TestEntity>();
         
         query1.Should().NotBeSameAs(query2);
     }
@@ -47,7 +48,7 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex");
         
-        var query = index.Query("gsi1pk = {0}", "STATUS#ACTIVE");
+        var query = index.Query<TestEntity>("gsi1pk = {0}", "STATUS#ACTIVE");
         
         query.Should().NotBeNull();
         var request = query.ToQueryRequest();
@@ -64,7 +65,7 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex");
         
-        var query = index.Query("gsi1pk = {0} AND gsi1sk > {1}", "STATUS#ACTIVE", "2024-01-01");
+        var query = index.Query<TestEntity>("gsi1pk = {0} AND gsi1sk > {1}", "STATUS#ACTIVE", "2024-01-01");
         
         var request = query.ToQueryRequest();
         request.KeyConditionExpression.Should().Be("gsi1pk = :p0 AND gsi1sk > :p1");
@@ -80,7 +81,7 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex");
         
-        var query = index.Query("gsi1pk = {0} AND begins_with(gsi1sk, {1})", "STATUS#ACTIVE", "USER#");
+        var query = index.Query<TestEntity>("gsi1pk = {0} AND begins_with(gsi1sk, {1})", "STATUS#ACTIVE", "USER#");
         
         var request = query.ToQueryRequest();
         request.KeyConditionExpression.Should().Be("gsi1pk = :p0 AND begins_with(gsi1sk, :p1)");
@@ -94,7 +95,7 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex");
         
-        var query = index.Query("gsi1pk = {0} AND gsi1sk BETWEEN {1} AND {2}", 
+        var query = index.Query<TestEntity>("gsi1pk = {0} AND gsi1sk BETWEEN {1} AND {2}", 
             "STATUS#ACTIVE", "2024-01-01", "2024-12-31");
         
         var request = query.ToQueryRequest();
@@ -110,7 +111,7 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex");
         
-        var query = index.Query("gsi1pk = {0} AND gsi1sk < {1}", "STATUS#ACTIVE", "2024-12-31");
+        var query = index.Query<TestEntity>("gsi1pk = {0} AND gsi1sk < {1}", "STATUS#ACTIVE", "2024-12-31");
         
         var request = query.ToQueryRequest();
         request.KeyConditionExpression.Should().Be("gsi1pk = :p0 AND gsi1sk < :p1");
@@ -124,7 +125,7 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex");
         
-        var query = index.Query("gsi1pk = {0} AND gsi1sk >= {1}", "STATUS#ACTIVE", "2024-01-01");
+        var query = index.Query<TestEntity>("gsi1pk = {0} AND gsi1sk >= {1}", "STATUS#ACTIVE", "2024-01-01");
         
         var request = query.ToQueryRequest();
         request.KeyConditionExpression.Should().Be("gsi1pk = :p0 AND gsi1sk >= :p1");
@@ -138,7 +139,7 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex", "id, name, status");
         
-        var query = index.Query();
+        var query = index.Query<TestEntity>();
         
         var request = query.ToQueryRequest();
         request.ProjectionExpression.Should().Be("id, name, status");
@@ -150,7 +151,7 @@ public class DynamoDbIndexTests
         var table = new TestTable(Substitute.For<IAmazonDynamoDB>());
         var index = new DynamoDbIndex(table, "TestIndex", "id, name, status");
         
-        var query = index.Query("gsi1pk = {0}", "STATUS#ACTIVE");
+        var query = index.Query<TestEntity>("gsi1pk = {0}", "STATUS#ACTIVE");
         
         var request = query.ToQueryRequest();
         request.ProjectionExpression.Should().Be("id, name, status");

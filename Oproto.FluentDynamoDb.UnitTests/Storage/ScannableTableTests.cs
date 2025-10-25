@@ -24,14 +24,22 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan();
+        var builder = table.Scan<TestEntity>();
         
         // Assert
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<ScanRequestBuilder>();
+        builder.Should().BeOfType<ScanRequestBuilder<TestEntity>>();
         
         var request = builder.ToScanRequest();
         request.TableName.Should().Be("TestScannableTable");
+    }
+    
+    public class TestEntity
+    {
+        public string? Id { get; set; }
+        public string? Name { get; set; }
+        public string? Status { get; set; }
+        public decimal Price { get; set; }
     }
     
     [Fact]
@@ -42,11 +50,11 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan("status = {0}", "ACTIVE");
+        var builder = table.Scan<TestEntity>("status = {0}", "ACTIVE");
         
         // Assert
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<ScanRequestBuilder>();
+        builder.Should().BeOfType<ScanRequestBuilder<TestEntity>>();
         
         var request = builder.ToScanRequest();
         request.TableName.Should().Be("TestScannableTable");
@@ -63,7 +71,7 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan("status = {0} AND price > {1}", "ACTIVE", 100m);
+        var builder = table.Scan<TestEntity>("status = {0} AND price > {1}", "ACTIVE", 100m);
         
         // Assert
         var request = builder.ToScanRequest();
@@ -82,7 +90,7 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan()
+        var builder = table.Scan<TestEntity>()
             .WithProjection("id, name, status")
             .Take(10);
         
@@ -101,7 +109,7 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan("status = {0}", "ACTIVE")
+        var builder = table.Scan<TestEntity>("status = {0}", "ACTIVE")
             .WithProjection("id, name, status")
             .Take(10)
             .UsingConsistentRead();
@@ -123,7 +131,7 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan();
+        var builder = table.Scan<TestEntity>();
         var request = builder.ToScanRequest();
         
         // Assert
@@ -138,7 +146,7 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan("status = {0}", "ACTIVE");
+        var builder = table.Scan<TestEntity>("status = {0}", "ACTIVE");
         var request = builder.ToScanRequest();
         
         // Assert
@@ -153,7 +161,7 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan()
+        var builder = table.Scan<TestEntity>()
             .UsingIndex("StatusIndex");
         
         // Assert
@@ -170,7 +178,7 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan("status = {0}", "ACTIVE")
+        var builder = table.Scan<TestEntity>("status = {0}", "ACTIVE")
             .Take(10);
         
         // Assert
@@ -188,7 +196,7 @@ public class ScannableTableTests
         var table = new TestScannableTable(client);
         
         // Act
-        var builder = table.Scan()
+        var builder = table.Scan<TestEntity>()
             .WithSegment(0, 4);
         
         // Assert
@@ -210,11 +218,11 @@ public class ScannableTableTests
         var table = new ManualScannableTable(client);
         
         // Act
-        var builder = table.Scan();
+        var builder = table.Scan<TestEntity>();
         
         // Assert
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<ScanRequestBuilder>();
+        builder.Should().BeOfType<ScanRequestBuilder<TestEntity>>();
         
         var request = builder.ToScanRequest();
         request.TableName.Should().Be("ManualScannableTable");
@@ -228,11 +236,11 @@ public class ScannableTableTests
         var table = new ManualScannableTable(client);
         
         // Act
-        var builder = table.Scan("category = {0}", "Electronics");
+        var builder = table.Scan<TestEntity>("category = {0}", "Electronics");
         
         // Assert
         builder.Should().NotBeNull();
-        builder.Should().BeOfType<ScanRequestBuilder>();
+        builder.Should().BeOfType<ScanRequestBuilder<TestEntity>>();
         
         var request = builder.ToScanRequest();
         request.TableName.Should().Be("ManualScannableTable");
@@ -249,7 +257,7 @@ public class ScannableTableTests
         var table = new ManualScannableTable(client);
         
         // Act
-        var builder = table.Scan()
+        var builder = table.Scan<TestEntity>()
             .WithProjection("id, name, price")
             .Take(25)
             .UsingConsistentRead();
@@ -271,7 +279,7 @@ public class ScannableTableTests
         var table = new ManualScannableTable(client, logger);
         
         // Act
-        var builder = table.Scan("price > {0}", 100m);
+        var builder = table.Scan<TestEntity>("price > {0}", 100m);
         
         // Assert
         builder.Should().NotBeNull();
@@ -290,8 +298,8 @@ public class ScannableTableTests
         var manualTable = new ManualScannableTable(client);
         
         // Act
-        var generatedBuilder = generatedTable.Scan("status = {0}", "ACTIVE");
-        var manualBuilder = manualTable.Scan("status = {0}", "ACTIVE");
+        var generatedBuilder = generatedTable.Scan<TestEntity>("status = {0}", "ACTIVE");
+        var manualBuilder = manualTable.Scan<TestEntity>("status = {0}", "ACTIVE");
         
         // Assert - Both should produce identical requests
         var generatedRequest = generatedBuilder.ToScanRequest();
@@ -309,7 +317,7 @@ public class ScannableTableTests
         var table = new ManualScannableTable(client);
         
         // Act
-        var builder = table.Scan()
+        var builder = table.Scan<TestEntity>()
             .WithSegment(2, 5);
         
         // Assert
@@ -327,7 +335,7 @@ public class ScannableTableTests
         var table = new ManualScannableTable(client);
         
         // Act
-        var builder = table.Scan()
+        var builder = table.Scan<TestEntity>()
             .UsingIndex("CategoryIndex");
         
         // Assert
@@ -359,15 +367,15 @@ public class ScannableTableTests
         /// <summary>
         /// Simulates the generated parameterless Scan() method.
         /// </summary>
-        public ScanRequestBuilder Scan() => 
-            new ScanRequestBuilder(DynamoDbClient, Logger).ForTable(Name);
+        public ScanRequestBuilder<TEntity> Scan<TEntity>() where TEntity : class => 
+            new ScanRequestBuilder<TEntity>(DynamoDbClient, Logger).ForTable(Name);
         
         /// <summary>
         /// Simulates the generated expression-based Scan() method.
         /// </summary>
-        public ScanRequestBuilder Scan(string filterExpression, params object[] values)
+        public ScanRequestBuilder<TEntity> Scan<TEntity>(string filterExpression, params object[] values) where TEntity : class
         {
-            var builder = Scan();
+            var builder = Scan<TEntity>();
             return Oproto.FluentDynamoDb.Requests.Extensions.WithFilterExpressionExtensions.WithFilter(builder, filterExpression, values);
         }
     }
@@ -394,8 +402,8 @@ public class ScannableTableTests
         /// Creates a new Scan operation builder for this table.
         /// </summary>
         /// <returns>A ScanRequestBuilder configured for this table.</returns>
-        public ScanRequestBuilder Scan() => 
-            new ScanRequestBuilder(DynamoDbClient, Logger).ForTable(Name);
+        public ScanRequestBuilder<TEntity> Scan<TEntity>() where TEntity : class => 
+            new ScanRequestBuilder<TEntity>(DynamoDbClient, Logger).ForTable(Name);
         
         /// <summary>
         /// Manually implemented expression-based Scan() method.
@@ -404,9 +412,9 @@ public class ScannableTableTests
         /// <param name="filterExpression">The filter expression with format placeholders.</param>
         /// <param name="values">The values to substitute into the expression.</param>
         /// <returns>A ScanRequestBuilder configured with the filter.</returns>
-        public ScanRequestBuilder Scan(string filterExpression, params object[] values)
+        public ScanRequestBuilder<TEntity> Scan<TEntity>(string filterExpression, params object[] values) where TEntity : class
         {
-            var builder = Scan();
+            var builder = Scan<TEntity>();
             return Oproto.FluentDynamoDb.Requests.Extensions.WithFilterExpressionExtensions.WithFilter(builder, filterExpression, values);
         }
     }
