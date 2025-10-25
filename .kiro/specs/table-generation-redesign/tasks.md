@@ -25,7 +25,7 @@
   - Add List<AccessorConfig> property to EntityModel
   - _Requirements: 2, 4, 5_
 
-- [ ] 4. Update EntityAnalyzer to extract new attribute data
+- [x] 4. Update EntityAnalyzer to extract new attribute data
   - Extract IsDefault from [DynamoDbTable] attribute
   - Extract [GenerateEntityProperty] configuration (Name, Generate, Modifier)
   - Extract all [GenerateAccessors] configurations (Operations, Generate, Modifier)
@@ -34,26 +34,26 @@
   - Emit FDDB004 diagnostic for empty entity property names
   - _Requirements: 2, 4, 5, 10_
 
-- [ ] 5. Implement entity grouping by table name
+- [x] 5. Implement entity grouping by table name
   - Group analyzed entities by TableName in source generator
   - Create Dictionary<string, List<EntityModel>> structure
   - Pass grouped entities to table generation logic
   - _Requirements: 1_
 
-- [ ] 6. Implement default entity validation
+- [x] 6. Implement default entity validation
   - Count entities marked with IsDefault = true per table
   - Emit FDDB001 diagnostic when multiple entities exist but no default specified
   - Emit FDDB002 diagnostic when multiple entities are marked as default
   - Allow single-entity tables to work without explicit IsDefault
   - _Requirements: 2, 10_
 
-- [ ] 7. Update table class name generation
+- [x] 7. Update table class name generation
   - Use table name (not entity name) as basis for table class name
   - Generate {TableName}Table as class name
   - Handle multiple entities sharing same table name
   - _Requirements: 1_
 
-- [ ] 8. Generate entity accessor properties
+- [x] 8. Generate entity accessor properties
   - For each entity with Generate = true in EntityPropertyConfig, generate accessor property
   - Use custom Name if specified, otherwise pluralize entity class name (simple "add s" rule)
   - Apply visibility modifier from EntityPropertyConfig (public, internal, protected, private)
@@ -61,14 +61,14 @@
   - Initialize accessor in table constructor
   - _Requirements: 3, 4_
 
-- [ ] 9. Generate nested entity accessor classes
+- [x] 9. Generate nested entity accessor classes
   - Generate nested {EntityName}Accessor class for each entity
   - Add private readonly field for parent table reference
   - Add internal constructor accepting parent table
   - Generate operation methods based on AccessorConfig list
   - _Requirements: 3, 5_
 
-- [ ] 10. Generate operation methods in entity accessor classes
+- [x] 10. Generate operation methods in entity accessor classes
   - Parse AccessorConfig list to determine which operations to generate
   - Default to all operations public if no [GenerateAccessors] specified
   - Apply Generate = false to skip operation generation
@@ -77,14 +77,14 @@
   - Each method returns appropriate RequestBuilder<TEntity> type
   - _Requirements: 5_
 
-- [ ] 11. Generate table-level operations for default entity
+- [x] 11. Generate table-level operations for default entity
   - If default entity exists, generate table-level Get(), Query(), Scan(), Put(), Delete(), Update() methods
   - Table-level methods delegate to default entity's accessor methods
   - Use default entity type for generic type parameters
   - If no default entity (and multiple entities), don't generate table-level operations
   - _Requirements: 6_
 
-- [ ] 12. Generate transaction and batch operations at table level
+- [x] 12. Generate transaction and batch operations at table level
   - Generate TransactWrite() method at table level only
   - Generate TransactGet() method at table level only
   - Generate BatchWrite() method at table level only
