@@ -192,17 +192,23 @@ public partial class LegacyUser
 
 ## [DynamoDbAttribute]
 
-Maps a property to a DynamoDB attribute with a specific name.
+Maps a property to a DynamoDB attribute with a specific name and optional formatting.
 
 ### Purpose
 
-This attribute defines the mapping between a C# property and a DynamoDB attribute name. It's required for every property you want to persist in DynamoDB.
+This attribute defines the mapping between a C# property and a DynamoDB attribute name. It's required for every property you want to persist in DynamoDB. Optionally, you can specify a format string to control how values are serialized when used in LINQ expressions.
 
 ### Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `attributeName` | `string` | Yes | The DynamoDB attribute name |
+
+### Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `Format` | `string?` | `null` | Format string applied when property is used in LINQ expressions |
 
 ### Example
 
@@ -217,7 +223,8 @@ public partial class User
     [DynamoDbAttribute("email")]
     public string Email { get; set; } = string.Empty;
     
-    [DynamoDbAttribute("created_at")]
+    // Format applied in LINQ expressions
+    [DynamoDbAttribute("created_at", Format = "o")]
     public DateTime CreatedAt { get; set; }
     
     // Property name matches attribute name
@@ -226,11 +233,85 @@ public partial class User
 }
 ```
 
+### Format Property
+
+The `Format` property specifies how values should be formatted when the property is used in LINQ expressions. This ensures consistent formatting across all queries without repeating format specifiers.
+
+#### Supported Format Types
+
+**DateTime Formats:**
+```csharp
+[DynamoDbAttribute("created_at", Format = "o")]  // ISO 8601 round-trip
+public DateTime CreatedAt { get; set; }
+
+[DynamoDbAttribute("date_key", Format = "yyyy-MM-dd")]  // Date only
+public DateTime DateKey { get; set; }
+
+[DynamoDbAttribute("month_key", Format = "yyyy-MM")]  // Year-month
+public DateTime MonthKey { get; set; }
+```
+
+**Numeric Formats:**
+```csharp
+[DynamoDbAttribute("price", Format = "F2")]  // Two decimal places
+public decimal Price { get; set; }
+
+[DynamoDbAttribute("sequence", Format = "D10")]  // Zero-padded to 10 digits
+public int Sequence { get; set; }
+
+[DynamoDbAttribute("weight", Format = "F4")]  // Four decimal places
+public double Weight { get; set; }
+```
+
+#### Usage in LINQ Expressions
+
+When you use a property with a Format in a LINQ expression, the format is automatically applied:
+
+```csharp
+// Format "o" is automatically applied to CreatedAt
+var users = await table.Query<User>()
+    .Where(x => x.PartitionKey == userId && x.CreatedAt > DateTime.UtcNow.AddDays(-30))
+    .ToListAsync();
+// Generates: created_at > "2024-01-15T10:30:00.0000000Z"
+
+// Format "F2" is automatically applied to Price
+var products = await table.Query<Product>()
+    .Where(x => x.Category == "Electronics" && x.Price > 99.99m)
+    .ToListAsync();
+// Generates: price > "99.99"
+```
+
+#### When Format is Applied
+
+The Format property is applied:
+- ✅ In LINQ expressions (`Where<T>()`, `WithFilter<T>()`)
+- ✅ In condition expressions (`WithCondition<T>()`)
+- ❌ NOT in string-based expressions (use format specifiers instead)
+- ❌ NOT during serialization/deserialization (only in query expressions)
+
+#### Format vs Format Specifiers
+
+```csharp
+// Using Format property (recommended for consistency)
+[DynamoDbAttribute("created_at", Format = "o")]
+public DateTime CreatedAt { get; set; }
+
+// LINQ expression - format applied automatically
+table.Query<User>().Where(x => x.CreatedAt > date)
+
+// String expression - use format specifier
+table.Query().Where($"{UserFields.CreatedAt} > {{0:o}}", date)
+```
+
 ### Best Practices
 
 - Use consistent naming conventions (snake_case or camelCase)
 - Keep attribute names short to reduce storage costs
 - Use abbreviated names for frequently accessed attributes (e.g., "pk" for partition key)
+- Use Format property for consistent formatting in LINQ expressions
+- Use ISO 8601 formats (`"o"` or `"s"`) for sortable DateTime values
+- Use fixed decimal places (`"F2"`) for monetary values
+- Use zero-padding (`"D10"`) for sortable numeric keys
 
 
 ## [PartitionKey]
@@ -818,6 +899,85 @@ var order = await response.ToCompositeEntityAsync<Order>();
 - [Composite Entities Guide](../advanced-topics/CompositeEntities.md)
 - [Entity Definition](../core-features/EntityDefinition.md)
 
+
+## [Sensitive]
+
+Marks a property as containing sensitive data that should be redacted from logs.
+
+### Purpose
+
+Indicates that a property contains sensitive information (PII, credentials, etc.) that should not appear in log output. When logging is enabled, values of sensitive properties are replaced with `[REDACTED]` in all log messages.
+
+### Parameters
+
+None (constructor has no parameters)
+
+### Example
+
+```csharp
+[DynamoDbTable("users")]
+public partial class User
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string UserId { get; set; } = string.Empty;
+    
+    [DynamoDbAttribute("name")]
+    public string Name { get; set; } = string.Empty;
+    
+    // Redacted from logs
+    [DynamoDbAttribute("email")]
+    [Sensitive]
+    public string Email { get; set; } = string.Empty;
+    
+    // Redacted from logs
+    [DynamoDbAttribute("ssn")]
+    [Sensitive]
+    public string SocialSecurityNumber { get; set; } = string.Empty;
+    
+    // Redacted from logs
+    [DynamoDbAttribute("phone")]
+    [Sensitive]
+    public string PhoneNumber { get; set; } = string.Empty;
+}
+```
+
+### Behavior
+
+When logging is enabled, sensitive property values are redacted:
+
+```csharp
+// Log output:
+// Query: pk = :p0 AND email = [REDACTED]
+// Parameters: { :p0 = "USER#123" }
+// Note: email value is redacted, but parameter name is preserved
+```
+
+### What Gets Redacted
+
+The `[Sensitive]` attribute affects:
+- LINQ expression logging (query and filter expressions)
+- String-based expression logging
+- Query parameter logging
+- Put/Update operation logging
+- Error messages containing entity data
+- All diagnostic output from `IDynamoDbLogger`
+
+### Important Notes
+
+- Property names are preserved in logs for debugging
+- Only values are redacted
+- Redaction applies to all log levels when logging is enabled
+- No performance impact when logging is disabled
+- Commonly combined with `[Encrypted]` for maximum protection
+
+### See Also
+
+- [Field-Level Security Guide](../advanced-topics/FieldLevelSecurity.md)
+- [Logging Configuration](../core-features/LoggingConfiguration.md)
+- [LINQ Expressions](../core-features/LinqExpressions.md)
+
+---
 
 ## [Queryable]
 

@@ -18,3 +18,4 @@ This section provides detailed reference documentation for Oproto.FluentDynamoDb
 4. [Troubleshooting](Troubleshooting.md) - Common issues and solutions
 5. [Logging Troubleshooting](LoggingTroubleshooting.md) - Logging issues and debugging with logs
 6. [Advanced Types Migration](AdvancedTypesMigration.md) - Guide for migrating to advanced types
+7. [API Improvements Migration](ApiImprovementsMigration.md) - Guide for Format property, sensitive redaction, and manual encryption

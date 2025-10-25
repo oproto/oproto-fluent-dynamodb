@@ -74,7 +74,7 @@
   - Test mixed sensitive/non-sensitive properties
   - _Requirements: 1_
 
-- [ ] 7. Add unit tests for table.Encrypt() method
+- [x] 7. Add unit tests for table.Encrypt() method
   - Test Encrypt() encrypts value correctly using ambient EncryptionContext.Current
   - Test Encrypt() in LINQ expression is detected by ExpressionTranslator
   - Test Encrypt() in format string expressions works correctly
@@ -84,7 +84,7 @@
   - Test encryption errors are handled with clear messages
   - _Requirements: 3_
 
-- [ ] 8. Add unit tests for EncryptValue helper
+- [x] 8. Add unit tests for EncryptValue helper
   - Test EncryptValue encrypts value correctly (same as Encrypt)
   - Test EncryptValue can be used in LINQ expressions
   - Test EncryptValue can be used in format string expressions
@@ -106,7 +106,7 @@
   - Verify actual query values are not affected (only logs)
   - _Requirements: 1_
 
-- [ ] 9. Add integration tests for table.Encrypt() in LINQ expressions
+- [x] 9. Add integration tests for table.Encrypt() in LINQ expressions
   - Test Query with table.Encrypt() in LINQ expression end-to-end
   - Test Scan with table.Encrypt() in LINQ expression end-to-end
   - Verify encrypted values are sent to DynamoDB
@@ -114,7 +114,7 @@
   - Test error handling when encryptor not configured
   - _Requirements: 3_
 
-- [ ] 10. Add integration tests for table.Encrypt() in format strings
+- [x] 10. Add integration tests for table.Encrypt() in format strings
   - Test Query with table.Encrypt() in format string expression end-to-end
   - Test Query with table.Encrypt() and WithValue end-to-end
   - Test Scan with table.Encrypt() in format string expression end-to-end
@@ -122,7 +122,7 @@
   - Verify results can be decrypted correctly
   - _Requirements: 3_
 
-- [ ] 11. Add integration tests for EncryptValue helper
+- [x] 11. Add integration tests for EncryptValue helper
   - Test Query with pre-encrypted value in LINQ expression end-to-end
   - Test Query with pre-encrypted value in format string end-to-end
   - Test Scan with pre-encrypted value end-to-end
@@ -130,7 +130,7 @@
   - Verify results can be decrypted correctly
   - _Requirements: 3_
 
-- [ ] 12. Update documentation for new features
+- [x] 12. Update documentation for new features
   - Add Format property examples to DynamoDbAttribute documentation
   - Document when to use manual encryption (equality only, not range queries)
   - Add examples of table.Encrypt() in LINQ expressions, format strings, and WithValue

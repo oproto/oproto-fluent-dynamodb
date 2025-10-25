@@ -694,6 +694,213 @@ var users = await table.Scan
 - **[Expression Formatting Guide](ExpressionFormatting.md)** - Format string approach
 - **[Troubleshooting Guide](../reference/Troubleshooting.md)** - Common issues and solutions
 
+## Sensitive Data Redaction
+
+### Overview
+
+Properties marked with `[Sensitive]` are automatically redacted from log output when used in LINQ expressions. This prevents sensitive data from appearing in logs while preserving property names for debugging.
+
+### Basic Usage
+
+```csharp
+[DynamoDbTable("users")]
+public partial class User
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string UserId { get; set; } = string.Empty;
+    
+    [DynamoDbAttribute("name")]
+    public string Name { get; set; } = string.Empty;
+    
+    [DynamoDbAttribute("email")]
+    [Sensitive]  // Redacted from logs
+    public string Email { get; set; } = string.Empty;
+    
+    [DynamoDbAttribute("ssn")]
+    [Sensitive]  // Redacted from logs
+    public string SocialSecurityNumber { get; set; } = string.Empty;
+}
+```
+
+### Logging Behavior
+
+When logging is enabled, sensitive values are replaced with `[REDACTED]`:
+
+```csharp
+var email = "user@example.com";
+var ssn = "123-45-6789";
+
+await table.Query<User>()
+    .Where(x => x.PartitionKey == userId)
+    .WithFilter<User>(x => x.Email == email && x.SocialSecurityNumber == ssn)
+    .ToListAsync();
+
+// Log output:
+// Filter expression: email = :p0 AND ssn = :p1
+// Parameters: { :p0 = [REDACTED], :p1 = [REDACTED] }
+// Note: Property names preserved, values redacted
+```
+
+### Mixed Sensitive and Non-Sensitive Properties
+
+```csharp
+await table.Query<User>()
+    .Where(x => x.PartitionKey == userId)
+    .WithFilter<User>(x => 
+        x.Name == "John Doe" &&           // Not sensitive - logged normally
+        x.Email == "user@example.com" &&  // Sensitive - redacted
+        x.Age >= 18)                      // Not sensitive - logged normally
+    .ToListAsync();
+
+// Log output:
+// Filter expression: name = :p0 AND email = :p1 AND age >= :p2
+// Parameters: { :p0 = "John Doe", :p1 = [REDACTED], :p2 = 18 }
+```
+
+### Important Notes
+
+- Redaction only affects logging, not actual query values sent to DynamoDB
+- Property names are preserved for debugging
+- No performance impact when logging is disabled
+- Works with all LINQ expression types (Where, WithFilter, WithCondition)
+
+## Manual Encryption in Queries
+
+### Overview
+
+For properties marked with `[Encrypted]`, you can manually encrypt query parameters using the `table.Encrypt()` method or `table.EncryptValue()` helper. This is necessary because automatic encryption would break non-equality operations like range queries and `begins_with`.
+
+### When to Use Manual Encryption
+
+**Use manual encryption for:**
+- ✅ Equality comparisons (`==`)
+- ✅ IN queries
+
+**Do NOT use manual encryption for:**
+- ❌ Range queries (`>`, `<`, `>=`, `<=`, `BETWEEN`)
+- ❌ String operations (`begins_with`, `contains`)
+- ❌ Numeric operations
+
+**Why?** Encrypted values are opaque ciphertext - they don't preserve ordering or string relationships.
+
+### Encrypt Method (LINQ Expressions)
+
+Use `table.Encrypt()` directly in LINQ expressions:
+
+```csharp
+[DynamoDbTable("users")]
+public partial class User
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string UserId { get; set; } = string.Empty;
+    
+    [DynamoDbAttribute("ssn")]
+    [Encrypted]
+    [Sensitive]
+    public string SocialSecurityNumber { get; set; } = string.Empty;
+}
+
+// Set ambient encryption context (same pattern as Put/Get operations)
+EncryptionContext.Current = "tenant-123";
+
+// Encrypt value in LINQ expression
+var ssn = "123-45-6789";
+var users = await table.Query<User>()
+    .Where(x => x.UserId == userId)
+    .WithFilter<User>(x => x.SocialSecurityNumber == table.Encrypt(ssn, "SocialSecurityNumber"))
+    .ToListAsync();
+```
+
+### EncryptValue Helper (Pre-Encryption)
+
+Use `table.EncryptValue()` to encrypt values before the query:
+
+```csharp
+// Set ambient encryption context
+EncryptionContext.Current = "tenant-123";
+
+// Pre-encrypt the value
+var ssn = "123-45-6789";
+var encryptedSsn = table.EncryptValue(ssn, "SocialSecurityNumber");
+
+// Use encrypted value in query
+var users = await table.Query<User>()
+    .Where(x => x.UserId == userId)
+    .WithFilter<User>(x => x.SocialSecurityNumber == encryptedSsn)
+    .ToListAsync();
+```
+
+### Encryption Context
+
+Manual encryption uses the same ambient `EncryptionContext.Current` pattern as Put/Get operations:
+
+```csharp
+// Set context before encryption
+EncryptionContext.Current = "tenant-123";
+
+// All encryption operations in this async flow use the context
+var encryptedValue = table.Encrypt(value, fieldName);
+await table.PutItem(entity).ExecuteAsync();
+await table.Query<User>()
+    .WithFilter<User>(x => x.EncryptedField == table.Encrypt(value, "EncryptedField"))
+    .ToListAsync();
+
+// Context automatically cleared when async flow completes
+```
+
+### String-Based Expressions
+
+Manual encryption also works with string-based expressions:
+
+```csharp
+// With format strings
+EncryptionContext.Current = "tenant-123";
+await table.Query()
+    .Where("pk = {0}", userId)
+    .WithFilter("ssn = {0}", table.Encrypt(ssn, "SocialSecurityNumber"))
+    .ExecuteAsync();
+
+// With named parameters
+EncryptionContext.Current = "tenant-123";
+await table.Query()
+    .Where("pk = :pk")
+    .WithValue(":pk", userId)
+    .WithFilter("ssn = :ssn")
+    .WithValue(":ssn", table.Encrypt(ssn, "SocialSecurityNumber"))
+    .ExecuteAsync();
+```
+
+### Error Handling
+
+If encryption is not configured, a clear error is thrown:
+
+```csharp
+try
+{
+    var encrypted = table.Encrypt(value, "FieldName");
+}
+catch (InvalidOperationException ex)
+{
+    // "Cannot encrypt value: IFieldEncryptor not configured. 
+    //  Pass an IFieldEncryptor instance to the table constructor."
+}
+```
+
+### Important Notes
+
+- Manual encryption is explicit - you control when encryption happens
+- Use ambient `EncryptionContext.Current` for context (same as Put/Get)
+- Only use for equality comparisons
+- Encrypted values cannot be used in range queries or string operations
+- Combine with `[Sensitive]` to redact encrypted values from logs
+
+### See Also
+
+- [Field-Level Security Guide](../advanced-topics/FieldLevelSecurity.md) - Complete encryption documentation
+- [Encryption.Kms Package](../../Oproto.FluentDynamoDb.Encryption.Kms/README.md) - Setup and configuration
+
 ## Summary
 
 LINQ expression support provides a type-safe, intuitive way to write DynamoDB queries:
@@ -708,3 +915,6 @@ LINQ expression support provides a type-safe, intuitive way to write DynamoDB qu
 - Clear error messages guide you to correct usage
 - String-based expressions remain available for complex scenarios
 - You can mix expression-based and string-based in the same query
+- Properties marked `[Sensitive]` are automatically redacted from logs
+- Use `table.Encrypt()` or `table.EncryptValue()` for manual encryption in queries
+- Format property on `[DynamoDbAttribute]` ensures consistent value formatting

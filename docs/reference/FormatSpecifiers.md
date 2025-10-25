@@ -459,9 +459,112 @@ await table.Query
     .ExecuteAsync<User>();
 ```
 
+## Format Property on DynamoDbAttribute
+
+### Overview
+
+You can specify a default format for a property using the `Format` property on `[DynamoDbAttribute]`. This format is automatically applied when the property is used in LINQ expressions, ensuring consistent formatting without repeating format specifiers.
+
+### Basic Usage
+
+```csharp
+[DynamoDbTable("transactions")]
+public partial class Transaction
+{
+    [PartitionKey]
+    [DynamoDbAttribute("pk")]
+    public string TransactionId { get; set; } = string.Empty;
+    
+    // Format applied automatically in LINQ expressions
+    [DynamoDbAttribute("created_at", Format = "o")]
+    public DateTime CreatedAt { get; set; }
+    
+    [DynamoDbAttribute("amount", Format = "F2")]
+    public decimal Amount { get; set; }
+    
+    [DynamoDbAttribute("sequence", Format = "D10")]
+    public int Sequence { get; set; }
+}
+```
+
+### Automatic Format Application
+
+When you use a property with a Format in a LINQ expression, the format is automatically applied:
+
+```csharp
+// Format "o" is automatically applied to CreatedAt
+var transactions = await table.Query<Transaction>()
+    .Where(x => x.TransactionId == txId && x.CreatedAt > DateTime.UtcNow.AddDays(-30))
+    .ToListAsync();
+// Generates: created_at > "2024-01-15T10:30:00.0000000Z"
+
+// Format "F2" is automatically applied to Amount
+var highValue = await table.Query<Transaction>()
+    .Where(x => x.TransactionId == txId)
+    .WithFilter<Transaction>(x => x.Amount > 1000.00m)
+    .ToListAsync();
+// Generates: amount > "1000.00"
+```
+
+### When Format is Applied
+
+The Format property is applied:
+- ✅ In LINQ expressions (`Where<T>()`, `WithFilter<T>()`, `WithCondition<T>()`)
+- ❌ NOT in string-based expressions (use format specifiers instead)
+- ❌ NOT during serialization/deserialization (only in query expressions)
+
+### Format vs Format Specifiers
+
+```csharp
+// Using Format property (recommended for consistency)
+[DynamoDbAttribute("created_at", Format = "o")]
+public DateTime CreatedAt { get; set; }
+
+// LINQ expression - format applied automatically
+table.Query<User>().Where(x => x.CreatedAt > date)
+
+// String expression - use format specifier
+table.Query().Where($"{UserFields.CreatedAt} > {{0:o}}", date)
+```
+
+### Benefits
+
+1. **Consistency**: Format is defined once and applied everywhere
+2. **Less Repetition**: No need to specify format in every query
+3. **Type Safety**: Format is validated at compile time
+4. **Maintainability**: Change format in one place
+
+### Migration Example
+
+```csharp
+// Before - format specifier in every query
+await table.Query()
+    .Where($"{TransactionFields.CreatedAt} > {{0:o}}", date)
+    .ExecuteAsync();
+
+await table.Query()
+    .Where($"{TransactionFields.CreatedAt} BETWEEN {{0:o}} AND {{1:o}}", start, end)
+    .ExecuteAsync();
+
+// After - format defined once on attribute
+[DynamoDbAttribute("created_at", Format = "o")]
+public DateTime CreatedAt { get; set; }
+
+// Format applied automatically in LINQ expressions
+await table.Query<Transaction>()
+    .Where(x => x.CreatedAt > date)
+    .ToListAsync();
+
+await table.Query<Transaction>()
+    .Where(x => x.CreatedAt.Between(start, end))
+    .ToListAsync();
+```
+
 ## See Also
 
 - [Expression Formatting Guide](../core-features/ExpressionFormatting.md)
+- [LINQ Expressions](../core-features/LinqExpressions.md)
+- [Attribute Reference](AttributeReference.md)
 - [Basic Operations](../core-features/BasicOperations.md)
 - [Querying Data](../core-features/QueryingData.md)
 - [Manual Patterns](../advanced-topics/ManualPatterns.md)
