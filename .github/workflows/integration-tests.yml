@@ -75,14 +75,17 @@ jobs:
         run: dotnet restore
       
       - name: Build solution
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build --configuration Release
+      
+      - name: Build integration test project explicitly
+        run: dotnet build Oproto.FluentDynamoDb.IntegrationTests/Oproto.FluentDynamoDb.IntegrationTests.csproj --configuration Release
       
       - name: Run Unit Tests with Coverage
         run: dotnet test --no-build --configuration Release --filter "Category=Unit" --logger "trx;LogFileName=unit-test-results.trx" --results-directory ./TestResults/Unit --collect:"XPlat Code Coverage" --settings coverlet.runsettings
         continue-on-error: false
       
       - name: Run Integration Tests with Coverage
-        run: dotnet test Oproto.FluentDynamoDb.IntegrationTests --no-build --configuration Release --logger "trx;LogFileName=integration-test-results.trx" --results-directory ./TestResults/Integration --verbosity normal --collect:"XPlat Code Coverage" --settings coverlet.runsettings
+        run: dotnet test Oproto.FluentDynamoDb.IntegrationTests/Oproto.FluentDynamoDb.IntegrationTests.csproj --configuration Release --logger "trx;LogFileName=integration-test-results.trx" --results-directory ./TestResults/Integration --verbosity normal --collect:"XPlat Code Coverage" --settings coverlet.runsettings
         env:
           DYNAMODB_LOCAL_PATH: ${{ github.workspace }}/dynamodb-local
           TEST_METRICS_EXPORT_PATH: ./TestResults/test-metrics-${{ matrix.os }}.json
