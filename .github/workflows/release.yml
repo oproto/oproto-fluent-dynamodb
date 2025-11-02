@@ -104,7 +104,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Setup .NET 8.0
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
       
@@ -276,7 +276,7 @@ jobs:
           cat ./packages/package-manifest.json
       
       - name: Upload packages
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: nuget-packages
           path: ./packages/
@@ -290,7 +290,7 @@ jobs:
     
     steps:
       - name: Download package artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v4
         with:
           name: nuget-packages
           path: ./packages
