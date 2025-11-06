@@ -675,6 +675,18 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true,
         description: "The [Encrypted] attribute requires the Oproto.FluentDynamoDb.Encryption.Kms package to provide encryption functionality.");
 
+    /// <summary>
+    /// Error when [GenerateStreamConversion] is used without referencing the Amazon.Lambda.DynamoDBEvents package.
+    /// </summary>
+    public static readonly DiagnosticDescriptor MissingLambdaEventsPackage = new(
+        "SEC002",
+        "Missing Amazon.Lambda.DynamoDBEvents package",
+        "Entity '{0}' is marked with [GenerateStreamConversion] but the Amazon.Lambda.DynamoDBEvents package is not referenced. Add a package reference to Amazon.Lambda.DynamoDBEvents version 3.1.1 or higher to enable stream conversion code generation.",
+        "DynamoDb",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "The [GenerateStreamConversion] attribute requires the Amazon.Lambda.DynamoDBEvents package to provide Lambda AttributeValue types for stream processing.");
+
     // Table Generation Redesign Diagnostics (FDDB001-FDDB004)
 
     /// <summary>
@@ -724,4 +736,16 @@ internal static class DiagnosticDescriptors
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         description: "The Name property in [GenerateEntityProperty] cannot be empty. Either provide a valid custom name or omit the Name property to use the default pluralized entity name.");
+
+    /// <summary>
+    /// Warning when entities in the same table with stream conversion enabled use different discriminator properties.
+    /// </summary>
+    public static readonly DiagnosticDescriptor InconsistentDiscriminatorProperties = new(
+        "FDDB005",
+        "Inconsistent discriminator properties",
+        "Table '{0}' has entities with stream conversion enabled that use different discriminator properties: {1}. All entities should use the same discriminator property for consistent stream processing",
+        "DynamoDb",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "When multiple entities in the same table have stream conversion enabled, they should all use the same discriminator property to ensure consistent stream processing behavior. The OnStream method will use the discriminator property from the first entity.");
 }

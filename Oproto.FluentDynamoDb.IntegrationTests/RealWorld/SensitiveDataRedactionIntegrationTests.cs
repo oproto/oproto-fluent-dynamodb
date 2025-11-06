@@ -1,5 +1,7 @@
 using Oproto.FluentDynamoDb.IntegrationTests.Infrastructure;
 using Oproto.FluentDynamoDb.IntegrationTests.TestEntities;
+using Oproto.FluentDynamoDb.Requests;
+using Oproto.FluentDynamoDb.Requests.Extensions;
 using Oproto.FluentDynamoDb.Storage;
 
 namespace Oproto.FluentDynamoDb.IntegrationTests.RealWorld;
@@ -81,7 +83,8 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var sensitiveEmail = "john.doe@example.com";
         
         // Act - Query using a sensitive property (Email is marked with [Sensitive])
-        var response = await _table.Query<SecureTestEntity>(x => x.Id == "user-1" && x.Email == sensitiveEmail)
+        var response = await _table.Query<SecureTestEntity>()
+            .Where<QueryRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => x.Id == "user-1" && x.Email == sensitiveEmail)
             .ToDynamoDbResponseAsync();
         
         // Assert - Query should succeed
@@ -109,7 +112,8 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var sensitiveSsn = "123-45-6789";
         
         // Act - Query using SSN (marked with both [Sensitive] and [Encrypted])
-        var response = await _table.Query<SecureTestEntity>(x => x.Id == "user-1" && x.SocialSecurityNumber == sensitiveSsn)
+        var response = await _table.Query<SecureTestEntity>()
+            .Where<QueryRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => x.Id == "user-1" && x.SocialSecurityNumber == sensitiveSsn)
             .ToDynamoDbResponseAsync();
         
         // Assert - Query should succeed
@@ -131,7 +135,8 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var publicName = "John Doe";
         
         // Act - Query using a non-sensitive property (Name is not marked with [Sensitive])
-        var response = await _table.Query<SecureTestEntity>(x => x.Id == "user-1" && x.Name == publicName)
+        var response = await _table.Query<SecureTestEntity>()
+            .Where<QueryRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => x.Id == "user-1" && x.Name == publicName)
             .ToDynamoDbResponseAsync();
         
         // Assert - Query should succeed
@@ -153,7 +158,8 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var publicData = "This is public information";
         
         // Act - Query using PublicData (not marked with [Sensitive])
-        var response = await _table.Query<SecureTestEntity>(x => x.Id == "user-1" && x.PublicData == publicData)
+        var response = await _table.Query<SecureTestEntity>()
+            .Where<QueryRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => x.Id == "user-1" && x.PublicData == publicData)
             .ToDynamoDbResponseAsync();
         
         // Assert - Query should succeed
@@ -174,8 +180,9 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var sensitiveEmail = "john.doe@example.com";
         
         // Act - Query with both sensitive and non-sensitive properties
-        var response = await _table.Query<SecureTestEntity>(x => 
-            x.Id == "user-1" && x.Name == publicName && x.Email == sensitiveEmail)
+        var response = await _table.Query<SecureTestEntity>()
+            .Where<QueryRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => 
+                x.Id == "user-1" && x.Name == publicName && x.Email == sensitiveEmail)
             .ToDynamoDbResponseAsync();
         
         // Assert - Query should succeed
@@ -201,7 +208,9 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var sensitiveEmail = "jane.smith@example.com";
         
         // Act - Scan with filter on sensitive property
-        var response = await _table.Scan<SecureTestEntity>(x => x.Email == sensitiveEmail)
+        var response = await new ScanRequestBuilder<SecureTestEntity>(_table.DynamoDbClient, _logger)
+            .ForTable(_table.Name)
+            .WithFilter<ScanRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => x.Email == sensitiveEmail)
             .ToDynamoDbResponseAsync();
         
         // Assert - Scan should succeed
@@ -225,7 +234,9 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var publicData = "Another public record";
         
         // Act - Scan with filter on non-sensitive property
-        var response = await _table.Scan<SecureTestEntity>(x => x.PublicData == publicData)
+        var response = await new ScanRequestBuilder<SecureTestEntity>(_table.DynamoDbClient, _logger)
+            .ForTable(_table.Name)
+            .WithFilter<ScanRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => x.PublicData == publicData)
             .ToDynamoDbResponseAsync();
         
         // Assert - Scan should succeed
@@ -245,7 +256,8 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var sensitiveEmail = "bob.johnson@example.com";
         
         // Act - Query with sensitive property
-        var response = await _table.Query<SecureTestEntity>(x => x.Id == "user-3" && x.Email == sensitiveEmail)
+        var response = await _table.Query<SecureTestEntity>()
+            .Where<QueryRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => x.Id == "user-3" && x.Email == sensitiveEmail)
             .ToDynamoDbResponseAsync();
         
         // Assert - Query should return correct results (redaction only affects logs, not query)
@@ -270,8 +282,9 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var sensitiveEmail = "john.doe@example.com";
         
         // Act & Assert - Should work without logger (no exception)
-        var response = await tableWithoutLogger.Query<SecureTestEntity>(x => 
-            x.Id == "user-1" && x.Email == sensitiveEmail)
+        var response = await tableWithoutLogger.Query<SecureTestEntity>()
+            .Where<QueryRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => 
+                x.Id == "user-1" && x.Email == sensitiveEmail)
             .ToDynamoDbResponseAsync();
         
         response.Items.Should().HaveCount(1);
@@ -286,8 +299,9 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var sensitiveSsn = "123-45-6789";
         
         // Act - Query with multiple sensitive properties
-        var response = await _table.Query<SecureTestEntity>(x => 
-            x.Id == "user-1" && x.Email == sensitiveEmail && x.SocialSecurityNumber == sensitiveSsn)
+        var response = await _table.Query<SecureTestEntity>()
+            .Where<QueryRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => 
+                x.Id == "user-1" && x.Email == sensitiveEmail && x.SocialSecurityNumber == sensitiveSsn)
             .ToDynamoDbResponseAsync();
         
         // Assert - Query should succeed
@@ -296,7 +310,7 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         // Assert - All sensitive values should be redacted
         var logMessages = _logger.Messages;
         var redactedCount = logMessages.Count(m => m.Contains("[REDACTED]"));
-        redactedCount.Should().BeGreaterOrEqualTo(2, 
+        redactedCount.Should().BeGreaterThanOrEqualTo(2, 
             "both sensitive properties should be redacted");
         
         logMessages.Should().NotContain(m => m.Contains(sensitiveEmail), 
@@ -313,11 +327,13 @@ public class SensitiveDataRedactionIntegrationTests : IntegrationTestBase
         var sensitiveEmail = "jane.smith@example.com";
         
         // Act - Scan with comparison on sensitive property
-        var response = await _table.Scan<SecureTestEntity>(x => x.Email.StartsWith("jane"))
+        var response = await new ScanRequestBuilder<SecureTestEntity>(_table.DynamoDbClient, _logger)
+            .ForTable(_table.Name)
+            .WithFilter<ScanRequestBuilder<SecureTestEntity>, SecureTestEntity>(x => x.Email.StartsWith("jane"))
             .ToDynamoDbResponseAsync();
         
         // Assert - Scan should succeed
-        response.Items.Should().HaveCountGreaterOrEqualTo(1);
+        response.Items.Should().HaveCountGreaterThanOrEqualTo(1);
         
         // Assert - The comparison value should be redacted if it's for a sensitive property
         var logMessages = _logger.Messages;

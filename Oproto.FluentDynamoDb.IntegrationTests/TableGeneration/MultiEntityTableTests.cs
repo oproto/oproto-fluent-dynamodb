@@ -1,5 +1,6 @@
 using Oproto.FluentDynamoDb.Attributes;
 using Oproto.FluentDynamoDb.IntegrationTests.Infrastructure;
+using Oproto.FluentDynamoDb.IntegrationTests.TestEntities;
 using Oproto.FluentDynamoDb.Storage;
 
 namespace Oproto.FluentDynamoDb.IntegrationTests.TableGeneration;
@@ -27,8 +28,8 @@ public class MultiEntityTableTests : IntegrationTestBase
 
         // Assert - Table class should be generated with table name (not entity name)
         table.Should().NotBeNull();
-        table.TableName.Should().Be(TableName);
-        table.Client.Should().Be(DynamoDb);
+        table.Name.Should().Be(TableName);
+        table.DynamoDbClient.Should().Be(DynamoDb);
     }
 
     [Fact]
@@ -61,18 +62,16 @@ public class MultiEntityTableTests : IntegrationTestBase
         await table.Orders.Put(order).PutAsync();
 
         // Act - Get item using entity accessor
-        var result = await table.Orders.Get()
-            .WithKey("pk", order.Id)
+        var result = await table.Orders.Get(order.Id)
             .GetItemAsync();
 
         // Assert
         result.Should().NotBeNull();
         result.Item.Should().NotBeNull();
         
-        var retrieved = MultiEntityOrderTestEntity.FromDynamoDb<MultiEntityOrderTestEntity>(result.Item);
-        retrieved.Id.Should().Be(order.Id);
-        retrieved.CustomerName.Should().Be(order.CustomerName);
-        retrieved.TotalAmount.Should().Be(order.TotalAmount);
+        result.Id.Should().Be(order.Id);
+        result.CustomerName.Should().Be(order.CustomerName);
+        result.TotalAmount.Should().Be(order.TotalAmount);
     }
 
     [Fact]
@@ -127,13 +126,10 @@ public class MultiEntityTableTests : IntegrationTestBase
         await table.Orders.Put(order).PutAsync();
 
         // Assert - Verify item was saved
-        var getResult = await table.Orders.Get()
-            .WithKey("pk", order.Id)
-            .GetItemAsync();
+        var getResult = await table.Orders.Get(order.Id).GetItemAsync();
 
-        getResult.Item.Should().NotBeNull();
-        var retrieved = MultiEntityOrderTestEntity.FromDynamoDb<MultiEntityOrderTestEntity>(getResult.Item);
-        retrieved.Should().BeEquivalentTo(order);
+        getResult.Should().NotBeNull();
+        getResult.Should().BeEquivalentTo(order);
     }
 
     [Fact]
@@ -153,16 +149,14 @@ public class MultiEntityTableTests : IntegrationTestBase
         await table.Orders.Put(order).PutAsync();
 
         // Act - Delete using entity accessor
-        await table.Orders.Delete()
-            .WithKey("pk", order.Id)
+        await table.Orders.Delete(order.Id)
             .DeleteAsync();
 
         // Assert - Verify item was deleted
-        var getResult = await table.Orders.Get()
-            .WithKey("pk", order.Id)
+        var getResult = await table.Orders.Get(order.Id)
             .GetItemAsync();
 
-        getResult.Item.Should().BeNull();
+        getResult.Should().BeNull();
     }
 
     [Fact]
@@ -182,21 +176,18 @@ public class MultiEntityTableTests : IntegrationTestBase
         await table.Orders.Put(order).PutAsync();
 
         // Act - Update using entity accessor
-        await table.Orders.Update()
-            .WithKey("pk", order.Id)
+        await table.Orders.Update(order.Id)
             .Set("#name = :name")
             .WithValue(":name", "Updated Customer")
             .WithAttribute("#name", "customer_name")
-            .PutAsync();
+            .UpdateAsync();
 
         // Assert - Verify item was updated
-        var getResult = await table.Orders.Get()
-            .WithKey("pk", order.Id)
+        var getResult = await table.Orders.Get(order.Id)
             .GetItemAsync();
 
-        var retrieved = MultiEntityOrderTestEntity.FromDynamoDb<MultiEntityOrderTestEntity>(getResult.Item);
-        retrieved.CustomerName.Should().Be("Updated Customer");
-        retrieved.TotalAmount.Should().Be(200.00m); // Unchanged
+        getResult.CustomerName.Should().Be("Updated Customer");
+        getResult.TotalAmount.Should().Be(200.00m); // Unchanged
     }
 
     [Fact]
@@ -251,16 +242,15 @@ public class MultiEntityTableTests : IntegrationTestBase
         };
 
         // Act - Use table-level operations (should use default entity type)
-        await table.Put(order).PutAsync();
+        await table.Put<MultiEntityOrderTestEntity>().WithItem(order).PutAsync();
         
-        var getResult = await table.Get()
+        var getResult = await table.Get<MultiEntityOrderTestEntity>()
             .WithKey("pk", order.Id)
             .GetItemAsync();
 
         // Assert - Table-level operations should work with default entity
-        getResult.Item.Should().NotBeNull();
-        var retrieved = MultiEntityOrderTestEntity.FromDynamoDb<MultiEntityOrderTestEntity>(getResult.Item);
-        retrieved.Should().BeEquivalentTo(order);
+        getResult.Should().NotBeNull();
+        getResult.Should().BeEquivalentTo(order);
     }
 
     [Fact]
@@ -278,11 +268,11 @@ public class MultiEntityTableTests : IntegrationTestBase
 
         foreach (var order in orders)
         {
-            await table.Put(order).PutAsync();
+            await table.Put<MultiEntityOrderTestEntity>().WithItem(order).PutAsync();
         }
 
         // Act - Query at table level (should use default entity)
-        var result = await table.Query()
+        var result = await table.Query<MultiEntityOrderTestEntity>()
             .Where("pk = :pk")
             .WithValue(":pk", "ORDER#X")
             .ToDynamoDbResponseAsync();
@@ -319,24 +309,20 @@ public class MultiEntityTableTests : IntegrationTestBase
         await table.OrderLines.Put(orderLine).PutAsync();
 
         // Act - Retrieve both entity types
-        var orderResult = await table.Orders.Get()
-            .WithKey("pk", order.Id)
+        var orderResult = await table.Orders.Get(order.Id)
             .GetItemAsync();
 
-        var orderLineResult = await table.OrderLines.Get()
-            .WithKey("pk", orderLine.Id)
+        var orderLineResult = await table.OrderLines.Get(orderLine.Id)
             .GetItemAsync();
 
         // Assert - Both entities should be retrievable with correct types
-        orderResult.Item.Should().NotBeNull();
-        var retrievedOrder = MultiEntityOrderTestEntity.FromDynamoDb<MultiEntityOrderTestEntity>(orderResult.Item);
-        retrievedOrder.Id.Should().Be(order.Id);
-        retrievedOrder.CustomerName.Should().Be(order.CustomerName);
+        orderResult.Should().NotBeNull();
+        orderResult.Id.Should().Be(order.Id);
+        orderResult.CustomerName.Should().Be(order.CustomerName);
 
-        orderLineResult.Item.Should().NotBeNull();
-        var retrievedOrderLine = MultiEntityOrderLineTestEntity.FromDynamoDb<MultiEntityOrderLineTestEntity>(orderLineResult.Item);
-        retrievedOrderLine.Id.Should().Be(orderLine.Id);
-        retrievedOrderLine.ProductName.Should().Be(orderLine.ProductName);
+        orderLineResult.Should().NotBeNull();
+        orderLineResult.Id.Should().Be(orderLine.Id);
+        orderLineResult.ProductName.Should().Be(orderLine.ProductName);
     }
 
     [Fact]
@@ -355,10 +341,10 @@ public class MultiEntityTableTests : IntegrationTestBase
 
         // Act - Operations should return strongly-typed builders
         var putBuilder = table.Orders.Put(order);
-        var getBuilder = table.Orders.Get();
+        var getBuilder = table.Orders.Get("id");
         var queryBuilder = table.Orders.Query();
-        var deleteBuilder = table.Orders.Delete();
-        var updateBuilder = table.Orders.Update();
+        var deleteBuilder = table.Orders.Delete("id");
+        var updateBuilder = table.Orders.Update("id");
         var scanBuilder = table.Orders.Scan();
 
         // Assert - Verify builders are of correct types (compile-time check)
@@ -392,26 +378,22 @@ public class MultiEntityTableTests : IntegrationTestBase
         };
 
         // Act - Mix table-level and entity accessor operations
-        await table.Put(order).ToDynamoDbResponseAsync(); // Table-level (default entity)
-        await table.OrderLines.Put(orderLine).PutAsync(); // Entity accessor
+        await table.Put<MultiEntityOrderTestEntity>().WithItem(order).ToDynamoDbResponseAsync(); // Table-level (default entity)
+        await table.OrderLines.Put().WithItem(orderLine).PutAsync(); // Entity accessor
 
-        var orderResult = await table.Get() // Table-level (default entity)
+        var orderResult = await table.Get<MultiEntityOrderTestEntity>() // Table-level (default entity)
             .WithKey("pk", order.Id)
-            .PutAsync();
+            .GetItemAsync();
 
-        var orderLineResult = await table.OrderLines.Get() // Entity accessor
-            .WithKey("pk", orderLine.Id)
-            .PutAsync();
+        var orderLineResult = await table.OrderLines.Get(orderLine.Id).GetItemAsync(); // Entity accessor
 
         // Assert - Both operations should work correctly
-        orderResult.Item.Should().NotBeNull();
-        orderLineResult.Item.Should().NotBeNull();
+        orderResult.Should().NotBeNull();
+        orderLineResult.Should().NotBeNull();
         
-        var retrievedOrder = MultiEntityOrderTestEntity.FromDynamoDb<MultiEntityOrderTestEntity>(orderResult.Item);
-        retrievedOrder.Id.Should().Be(order.Id);
+        orderResult.Id.Should().Be(order.Id);
 
-        var retrievedOrderLine = MultiEntityOrderLineTestEntity.FromDynamoDb<MultiEntityOrderLineTestEntity>(orderLineResult.Item);
-        retrievedOrderLine.Id.Should().Be(orderLine.Id);
+        orderLineResult.Id.Should().Be(orderLine.Id);
     }
 }
 
@@ -420,6 +402,8 @@ public class MultiEntityTableTests : IntegrationTestBase
 /// This is the default entity for the table.
 /// </summary>
 [DynamoDbTable("multi-entity-test", IsDefault = true)]
+[GenerateEntityProperty(Name = "Orders")]
+[Scannable]
 public partial class MultiEntityOrderTestEntity
 {
     [PartitionKey]
@@ -431,6 +415,9 @@ public partial class MultiEntityOrderTestEntity
     
     [DynamoDbAttribute("total_amount")]
     public decimal? TotalAmount { get; set; }
+    
+    [DynamoDbAttribute("item")]
+    public string? Item { get; set; }
 }
 
 /// <summary>
@@ -438,6 +425,8 @@ public partial class MultiEntityOrderTestEntity
 /// This is a non-default entity sharing the same table.
 /// </summary>
 [DynamoDbTable("multi-entity-test")]
+[GenerateEntityProperty(Name = "OrderLines")]
+[Scannable]
 public partial class MultiEntityOrderLineTestEntity
 {
     [PartitionKey]

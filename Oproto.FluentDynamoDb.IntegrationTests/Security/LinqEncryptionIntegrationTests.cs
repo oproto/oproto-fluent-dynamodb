@@ -66,7 +66,7 @@ public class LinqEncryptionIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Query using table.Encrypt() in LINQ expression
-        EncryptionContext.Current = "tenant-123";
+        DynamoDbOperationContext.EncryptionContextId = "tenant-123";
         var metadata = SecureTestEntity.GetEntityMetadata();
         
         var queryBuilder = table.Query<SecureTestEntity>()
@@ -149,7 +149,7 @@ public class LinqEncryptionIntegrationTests : IntegrationTestBase
         }
 
         // Act - Scan with filter using table.Encrypt()
-        EncryptionContext.Current = "tenant-456";
+        DynamoDbOperationContext.EncryptionContextId = "tenant-456";
         
         // Note: We're scanning for a specific encrypted SSN
         // This demonstrates the encryption works, but in practice you'd rarely scan for encrypted values
@@ -220,7 +220,7 @@ public class LinqEncryptionIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Query and verify both encrypted fields
-        EncryptionContext.Current = "multi-tenant";
+        DynamoDbOperationContext.EncryptionContextId = "multi-tenant";
         
         var queryBuilder = table.Query<SecureTestEntity>()
             .Where(x => x.Id == "user-999");
@@ -286,7 +286,7 @@ public class LinqEncryptionIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Query with correct context
-        EncryptionContext.Current = "context-A";
+        DynamoDbOperationContext.EncryptionContextId = "context-A";
         
         var queryBuilder = table.Query<SecureTestEntity>()
             .Where(x => x.Id == "user-context-test");
@@ -322,7 +322,7 @@ public class LinqEncryptionIntegrationTests : IntegrationTestBase
     {
         // Arrange
         var table = new TestTable(DynamoDb, TableName, encryptor: null);
-        EncryptionContext.Current = "tenant-123";
+        DynamoDbOperationContext.EncryptionContextId = "tenant-123";
 
         // Act & Assert
         var act = () => table.Encrypt("123-45-6789", "ssn");
@@ -369,7 +369,7 @@ public class LinqEncryptionIntegrationTests : IntegrationTestBase
         }
 
         // Act - Query with encrypted value in filter
-        EncryptionContext.Current = "filter-test";
+        DynamoDbOperationContext.EncryptionContextId = "filter-test";
         var targetSsn = "222-22-2222";
         var encryptedTargetSsn = table.Encrypt(targetSsn, "ssn");
         
@@ -428,7 +428,7 @@ public class LinqEncryptionIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Query with null context
-        EncryptionContext.Current = null;
+        DynamoDbOperationContext.EncryptionContextId = null;
         
         var queryBuilder = table.Query<SecureTestEntity>()
             .Where(x => x.Id == "user-null-context");
@@ -459,7 +459,7 @@ public class LinqEncryptionIntegrationTests : IntegrationTestBase
         var table = new TestTable(DynamoDb, TableName, encryptor);
         
         var originalSsn = "987-65-4321";
-        EncryptionContext.Current = "roundtrip-test";
+        DynamoDbOperationContext.EncryptionContextId = "roundtrip-test";
         
         // Encrypt the value
         var encryptedSsn = table.Encrypt(originalSsn, "ssn");

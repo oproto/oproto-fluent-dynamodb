@@ -23,12 +23,12 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange
         await CreateTableAsync<SingleEntityTestEntity>();
-        var table = new SingleEntityTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntityTestTable(DynamoDb, TableName);
 
         // Assert - Table class should be generated and instantiable
         table.Should().NotBeNull();
-        table.TableName.Should().Be(TableName);
-        table.Client.Should().Be(DynamoDb);
+        table.Name.Should().Be(TableName);
+        table.DynamoDbClient.Should().Be(DynamoDb);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange
         await CreateTableAsync<SingleEntityTestEntity>();
-        var table = new SingleEntityTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntityTestTable(DynamoDb, TableName);
         
         var entity = new SingleEntityTestEntity
         {
@@ -46,22 +46,19 @@ public class SingleEntityTableTests : IntegrationTestBase
         };
 
         // Act - Put item
-        await table.Put(entity)
+        await table.Put().WithItem(entity)
             .PutAsync();
 
         // Act - Get item
-        var result = await table.Get()
-            .WithKey("pk", entity.Id)
+        var result = await table.Get(entity.Id)
             .GetItemAsync();
 
         // Assert
         result.Should().NotBeNull();
-        result.Item.Should().NotBeNull();
         
-        var retrieved = SingleEntityTestEntity.FromDynamoDb<SingleEntityTestEntity>(result.Item);
-        retrieved.Id.Should().Be(entity.Id);
-        retrieved.Name.Should().Be(entity.Name);
-        retrieved.Value.Should().Be(entity.Value);
+        result.Id.Should().Be(entity.Id);
+        result.Name.Should().Be(entity.Name);
+        result.Value.Should().Be(entity.Value);
     }
 
     [Fact]
@@ -69,7 +66,7 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange
         await CreateTableAsync<SingleEntityTestEntity>();
-        var table = new SingleEntityTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntityTestTable(DynamoDb, TableName);
         
         var entities = new[]
         {
@@ -80,7 +77,7 @@ public class SingleEntityTableTests : IntegrationTestBase
 
         foreach (var entity in entities)
         {
-            await table.Put(entity).PutAsync();
+            await table.Put().WithItem(entity).PutAsync();
         }
 
         // Act - Query for specific item
@@ -103,7 +100,7 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange
         await CreateTableAsync<SingleEntityTestEntity>();
-        var table = new SingleEntityTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntityTestTable(DynamoDb, TableName);
         
         var entity = new SingleEntityTestEntity
         {
@@ -116,13 +113,11 @@ public class SingleEntityTableTests : IntegrationTestBase
         await table.Put(entity).PutAsync();
 
         // Assert - Verify item was saved
-        var getResult = await table.Get()
-            .WithKey("pk", entity.Id)
+        var getResult = await table.Get(entity.Id)
             .GetItemAsync();
 
-        getResult.Item.Should().NotBeNull();
-        var retrieved = SingleEntityTestEntity.FromDynamoDb<SingleEntityTestEntity>(getResult.Item);
-        retrieved.Should().BeEquivalentTo(entity);
+        getResult.Should().NotBeNull();
+        getResult.Should().BeEquivalentTo(entity);
     }
 
     [Fact]
@@ -130,7 +125,7 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange
         await CreateTableAsync<SingleEntityTestEntity>();
-        var table = new SingleEntityTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntityTestTable(DynamoDb, TableName);
         
         var entity = new SingleEntityTestEntity
         {
@@ -142,16 +137,14 @@ public class SingleEntityTableTests : IntegrationTestBase
         await table.Put(entity).PutAsync();
 
         // Act - Delete the item
-        await table.Delete()
-            .WithKey("pk", entity.Id)
+        await table.Delete(entity.Id)
             .DeleteAsync();
 
         // Assert - Verify item was deleted
-        var getResult = await table.Get()
-            .WithKey("pk", entity.Id)
+        var getResult = await table.Get(entity.Id)
             .GetItemAsync();
 
-        getResult.Item.Should().BeNull();
+        getResult.Should().BeNull();
     }
 
     [Fact]
@@ -159,7 +152,7 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange
         await CreateTableAsync<SingleEntityTestEntity>();
-        var table = new SingleEntityTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntityTestTable(DynamoDb, TableName);
         
         var entity = new SingleEntityTestEntity
         {
@@ -171,21 +164,19 @@ public class SingleEntityTableTests : IntegrationTestBase
         await table.Put(entity).PutAsync();
 
         // Act - Update the item
-        await table.Update()
-            .WithKey("pk", entity.Id)
+        await table.Update(entity.Id)
             .Set("#name = :name")
             .WithValue(":name", "Updated Name")
             .WithAttribute("#name", "name")
             .UpdateAsync();
 
         // Assert - Verify item was updated
-        var getResult = await table.Get()
-            .WithKey("pk", entity.Id)
+        var item = await table.Get(entity.Id)
             .GetItemAsync();
 
-        var retrieved = SingleEntityTestEntity.FromDynamoDb<SingleEntityTestEntity>(getResult.Item);
-        retrieved.Name.Should().Be("Updated Name");
-        retrieved.Value.Should().Be(10); // Unchanged
+        item.Should().NotBeNull();
+        item.Name.Should().Be("Updated Name");
+        item.Value.Should().Be(10); // Unchanged
     }
 
     [Fact]
@@ -193,7 +184,7 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange
         await CreateTableAsync<SingleEntityTestEntity>();
-        var table = new SingleEntityTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntityTestTable(DynamoDb, TableName);
         
         var entities = new[]
         {
@@ -208,7 +199,7 @@ public class SingleEntityTableTests : IntegrationTestBase
         }
 
         // Act - Scan all items
-        var result = await table.Scan()
+        var result = await table.Scan<SingleEntityTestEntity>()
             .ToDynamoDbResponseAsync();
 
         // Assert
@@ -230,7 +221,7 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange - Single entity should work without IsDefault = true
         await CreateTableAsync<SingleEntityTestEntity>();
-        var table = new SingleEntityTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntityTestTable(DynamoDb, TableName);
         
         var entity = new SingleEntityTestEntity
         {
@@ -242,14 +233,12 @@ public class SingleEntityTableTests : IntegrationTestBase
         // Act - All operations should work without explicit IsDefault
         await table.Put(entity).PutAsync();
         
-        var getResult = await table.Get()
-            .WithKey("pk", entity.Id)
+        var item = await table.Get(entity.Id)
             .GetItemAsync();
 
         // Assert - Table-level operations should use the single entity as default
-        getResult.Item.Should().NotBeNull();
-        var retrieved = SingleEntityTestEntity.FromDynamoDb<SingleEntityTestEntity>(getResult.Item);
-        retrieved.Should().BeEquivalentTo(entity);
+        item.Should().NotBeNull();
+        item.Should().BeEquivalentTo(entity);
     }
 
     [Fact]
@@ -257,7 +246,7 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange
         await CreateTableAsync<SingleEntityTestEntity>();
-        var table = new SingleEntityTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntityTestTable(DynamoDb, TableName);
         
         var entity = new SingleEntityTestEntity
         {
@@ -285,7 +274,7 @@ public class SingleEntityTableTests : IntegrationTestBase
     {
         // Arrange
         await CreateTableAsync<SingleEntityWithSortKeyTestEntity>();
-        var table = new SingleEntityWithSortKeyTestEntityTable(DynamoDb, TableName);
+        var table = new SingleEntitySortkeyTestTable(DynamoDb, TableName);
         
         var entity = new SingleEntityWithSortKeyTestEntity
         {
@@ -297,17 +286,14 @@ public class SingleEntityTableTests : IntegrationTestBase
         // Act
         await table.Put(entity).PutAsync();
         
-        var result = await table.Get()
-            .WithKey("pk", entity.PartitionKey)
-            .WithKey("sk", entity.SortKey)
+        var result = await table.Get(entity.PartitionKey,entity.SortKey)
             .GetItemAsync();
 
         // Assert
-        result.Item.Should().NotBeNull();
-        var retrieved = SingleEntityWithSortKeyTestEntity.FromDynamoDb<SingleEntityWithSortKeyTestEntity>(result.Item);
-        retrieved.PartitionKey.Should().Be(entity.PartitionKey);
-        retrieved.SortKey.Should().Be(entity.SortKey);
-        retrieved.Data.Should().Be(entity.Data);
+        result.Should().NotBeNull();
+        result.PartitionKey.Should().Be(entity.PartitionKey);
+        result.SortKey.Should().Be(entity.SortKey);
+        result.Data.Should().Be(entity.Data);
     }
 }
 

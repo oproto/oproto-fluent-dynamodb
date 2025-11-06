@@ -131,6 +131,16 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
             {
                 context.AddSource($"{entity.ClassName}SecurityMetadata.g.cs", securityMetadata);
             }
+
+            // Generate stream conversion methods if requested
+            if (entity.GenerateStreamConversion)
+            {
+                var streamCode = StreamMapperGenerator.GenerateStreamConversion(entity);
+                if (!string.IsNullOrEmpty(streamCode))
+                {
+                    context.AddSource($"{entity.ClassName}StreamMapper.g.cs", streamCode);
+                }
+            }
         }
 
         // Group entities by table name for table class generation
@@ -154,6 +164,31 @@ public class DynamoDbSourceGenerator : IIncrementalGenerator
                 // Use table name for the file name
                 var tableClassName = GetTableClassName(tableName);
                 context.AddSource($"{tableClassName}.g.cs", tableCode);
+            }
+            
+            // Generate OnStream method and registry if any entities have stream conversion enabled
+            var streamCode = StreamRegistryGenerator.GenerateOnStreamMethod(
+                tableName,
+                tableEntities,
+                GetTableClassName(tableName),
+                tableEntities[0].Namespace);
+            
+            if (!string.IsNullOrEmpty(streamCode))
+            {
+                var tableClassName = GetTableClassName(tableName);
+                context.AddSource($"{tableClassName}StreamProcessor.g.cs", streamCode);
+                
+                // Validate consistent discriminator properties
+                if (!StreamRegistryGenerator.ValidateConsistentDiscriminatorProperty(tableEntities))
+                {
+                    var distinctProperties = StreamRegistryGenerator.GetDistinctDiscriminatorProperties(tableEntities);
+                    var location = tableEntities[0].ClassDeclaration?.Identifier.GetLocation() ?? Location.None;
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        DiagnosticDescriptors.InconsistentDiscriminatorProperties,
+                        location,
+                        tableName,
+                        string.Join(", ", distinctProperties)));
+                }
             }
         }
 

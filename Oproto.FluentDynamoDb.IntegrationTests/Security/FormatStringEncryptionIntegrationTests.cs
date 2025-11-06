@@ -66,7 +66,7 @@ public class FormatStringEncryptionIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Query using table.Encrypt() in format string expression
-        EncryptionContext.Current = "tenant-123";
+        DynamoDbOperationContext.EncryptionContextId = "tenant-123";
         var targetSsn = "123-45-6789";
         
         var queryRequest = new QueryRequest
@@ -143,7 +143,7 @@ public class FormatStringEncryptionIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Query using table.Encrypt() with WithValue pattern
-        EncryptionContext.Current = "tenant-456";
+        DynamoDbOperationContext.EncryptionContextId = "tenant-456";
         var targetSsn = "987-65-4321";
         var encryptedTargetSsn = table.Encrypt(targetSsn, "ssn");
         
@@ -241,7 +241,7 @@ public class FormatStringEncryptionIntegrationTests : IntegrationTestBase
         }
 
         // Act - Scan with filter using table.Encrypt() in format string
-        EncryptionContext.Current = "scan-test";
+        DynamoDbOperationContext.EncryptionContextId = "scan-test";
         var targetSsn = "222-22-2222";
         var encryptedTargetSsn = table.Encrypt(targetSsn, "ssn");
         
@@ -319,7 +319,7 @@ public class FormatStringEncryptionIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Query with multiple encrypted fields in format string
-        EncryptionContext.Current = "multi-field";
+        DynamoDbOperationContext.EncryptionContextId = "multi-field";
         var targetSsn = "555-55-5555";
         var targetCc = "4111-1111-1111-1111";
         
@@ -402,7 +402,7 @@ public class FormatStringEncryptionIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Query with correct context
-        EncryptionContext.Current = "context-A";
+        DynamoDbOperationContext.EncryptionContextId = "context-A";
         var targetSsn = "777-77-7777";
         var encryptedTargetSsn = table.Encrypt(targetSsn, "ssn");
         
@@ -454,7 +454,7 @@ public class FormatStringEncryptionIntegrationTests : IntegrationTestBase
         var table = new TestTable(DynamoDb, TableName, encryptor);
         
         var originalSsn = "999-99-9999";
-        EncryptionContext.Current = "roundtrip";
+        DynamoDbOperationContext.EncryptionContextId = "roundtrip";
         
         // Encrypt the value using format string pattern
         var encryptedSsn = table.Encrypt(originalSsn, "ssn");
@@ -537,7 +537,7 @@ public class FormatStringEncryptionIntegrationTests : IntegrationTestBase
         }
 
         // Act - Scan with complex filter including encrypted value
-        EncryptionContext.Current = "complex-filter";
+        DynamoDbOperationContext.EncryptionContextId = "complex-filter";
         var targetSsn = "222-22-2222";
         var encryptedTargetSsn = table.Encrypt(targetSsn, "ssn");
         
@@ -610,7 +610,7 @@ public class FormatStringEncryptionIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Query with null context using format string
-        EncryptionContext.Current = null;
+        DynamoDbOperationContext.EncryptionContextId = null;
         var targetSsn = "000-00-0000";
         var encryptedTargetSsn = table.Encrypt(targetSsn, "ssn");
         

@@ -43,29 +43,25 @@ public class TransactionOperationTests : IntegrationTestBase
 
         // Act - Use TransactWrite to save both entities atomically
         await table.TransactWrite()
-            .AddPut(table.Orders.Put(order))
-            .AddPut(table.OrderLines.Put(orderLine))
-            .ToDynamoDbResponseAsync();
+            .Put(table, put => put.WithItem(TransactionOrderEntity.ToDynamoDb(order)))
+            .Put(table, put => put.WithItem(TransactionOrderLineEntity.ToDynamoDb(orderLine)))
+            .ExecuteAsync();
 
         // Assert - Both entities should be saved
-        var orderResult = await table.Orders.Get()
-            .WithKey("pk", order.Id)
+        var orderResult = await table.Orders.Get(order.Id)
             .GetItemAsync();
 
-        var orderLineResult = await table.OrderLines.Get()
-            .WithKey("pk", orderLine.Id)
+        var orderLineResult = await table.OrderLines.Get(orderLine.Id)
             .GetItemAsync();
 
-        orderResult.Item.Should().NotBeNull();
-        orderLineResult.Item.Should().NotBeNull();
+        orderResult.Should().NotBeNull();
+        orderLineResult.Should().NotBeNull();
         
-        var retrievedOrder = TransactionOrderEntity.FromDynamoDb<TransactionOrderEntity>(orderResult.Item);
-        retrievedOrder.Id.Should().Be(order.Id);
-        retrievedOrder.CustomerName.Should().Be(order.CustomerName);
+        orderResult.Id.Should().Be(order.Id);
+        orderResult.CustomerName.Should().Be(order.CustomerName);
 
-        var retrievedOrderLine = TransactionOrderLineEntity.FromDynamoDb<TransactionOrderLineEntity>(orderLineResult.Item);
-        retrievedOrderLine.Id.Should().Be(orderLine.Id);
-        retrievedOrderLine.ProductName.Should().Be(orderLine.ProductName);
+        orderLineResult.Id.Should().Be(orderLine.Id);
+        orderLineResult.ProductName.Should().Be(orderLine.ProductName);
     }
 
     [Fact]
@@ -100,34 +96,30 @@ public class TransactionOperationTests : IntegrationTestBase
 
         // Act - Use TransactWrite with Put, Update, and Delete operations
         await table.TransactWrite()
-            .AddPut(table.Orders.Put(newOrder))
-            .AddPut(table.OrderLines.Put(newOrderLine))
-            .AddUpdate(table.Orders.Update()
+            .Put(table, put => put.WithItem(TransactionOrderEntity.ToDynamoDb(newOrder)))
+            .Put(table, put => put.WithItem(TransactionOrderLineEntity.ToDynamoDb(newOrderLine)))
+            .Update(table, update => update
                 .WithKey("pk", existingOrder.Id)
                 .Set("#name = :name")
                 .WithValue(":name", "Updated Customer")
                 .WithAttribute("#name", "customer_name"))
-            .ToDynamoDbResponseAsync();
+            .ExecuteAsync();
 
         // Assert - All operations should be applied
-        var newOrderResult = await table.Orders.Get()
-            .WithKey("pk", newOrder.Id)
+        var newOrderResult = await table.Orders.Get(newOrder.Id)
             .GetItemAsync();
 
-        var newOrderLineResult = await table.OrderLines.Get()
-            .WithKey("pk", newOrderLine.Id)
+        var newOrderLineResult = await table.OrderLines.Get(newOrderLine.Id)
             .GetItemAsync();
 
-        var updatedOrderResult = await table.Orders.Get()
-            .WithKey("pk", existingOrder.Id)
+        var updatedOrderResult = await table.Orders.Get(existingOrder.Id)
             .GetItemAsync();
 
-        newOrderResult.Item.Should().NotBeNull();
-        newOrderLineResult.Item.Should().NotBeNull();
-        updatedOrderResult.Item.Should().NotBeNull();
+        newOrderResult.Should().NotBeNull();
+        newOrderLineResult.Should().NotBeNull();
+        updatedOrderResult.Should().NotBeNull();
         
-        var retrievedUpdatedOrder = TransactionOrderEntity.FromDynamoDb<TransactionOrderEntity>(updatedOrderResult.Item);
-        retrievedUpdatedOrder.CustomerName.Should().Be("Updated Customer");
+        updatedOrderResult.CustomerName.Should().Be("Updated Customer");
     }
 
     [Fact]
@@ -156,9 +148,9 @@ public class TransactionOperationTests : IntegrationTestBase
 
         // Act - Use TransactGet to retrieve both entities atomically
         var result = await table.TransactGet()
-            .AddGet(table.Orders.Get().WithKey("pk", order.Id))
-            .AddGet(table.OrderLines.Get().WithKey("pk", orderLine.Id))
-            .ToDynamoDbResponseAsync();
+            .Get(table, get => get.WithKey("pk", order.Id))
+            .Get(table, get => get.WithKey("pk", orderLine.Id))
+            .ExecuteAsync();
 
         // Assert - Both entities should be retrieved
         result.Should().NotBeNull();
@@ -194,17 +186,18 @@ public class TransactionOperationTests : IntegrationTestBase
 
         // Act - Use BatchWrite to save multiple entities of different types
         await table.BatchWrite()
-            .AddPut(TableName, table.Orders.Put(orders[0]))
-            .AddPut(TableName, table.Orders.Put(orders[1]))
-            .AddPut(TableName, table.OrderLines.Put(orderLines[0]))
-            .AddPut(TableName, table.OrderLines.Put(orderLines[1]))
+            .WriteToTable(TableName, builder => builder
+                .PutItem(TransactionOrderEntity.ToDynamoDb(orders[0]))
+                .PutItem(TransactionOrderEntity.ToDynamoDb(orders[1]))
+                .PutItem(TransactionOrderLineEntity.ToDynamoDb(orderLines[0]))
+                .PutItem(TransactionOrderLineEntity.ToDynamoDb(orderLines[1])))
             .ToDynamoDbResponseAsync();
 
         // Assert - All entities should be saved
-        var order1Result = await table.Orders.Get().WithKey("pk", orders[0].Id).ToDynamoDbResponseAsync();
-        var order2Result = await table.Orders.Get().WithKey("pk", orders[1].Id).ToDynamoDbResponseAsync();
-        var orderLine1Result = await table.OrderLines.Get().WithKey("pk", orderLines[0].Id).ToDynamoDbResponseAsync();
-        var orderLine2Result = await table.OrderLines.Get().WithKey("pk", orderLines[1].Id).ToDynamoDbResponseAsync();
+        var order1Result = await table.Orders.Get(orders[0].Id).ToDynamoDbResponseAsync();
+        var order2Result = await table.Orders.Get(orders[1].Id).ToDynamoDbResponseAsync();
+        var orderLine1Result = await table.OrderLines.Get(orderLines[0].Id).ToDynamoDbResponseAsync();
+        var orderLine2Result = await table.OrderLines.Get(orderLines[1].Id).ToDynamoDbResponseAsync();
 
         order1Result.Item.Should().NotBeNull();
         order2Result.Item.Should().NotBeNull();
@@ -244,10 +237,11 @@ public class TransactionOperationTests : IntegrationTestBase
 
         // Act - Use BatchGet to retrieve multiple entities of different types
         var result = await table.BatchGet()
-            .AddGet(TableName, table.Orders.Get().WithKey("pk", orders[0].Id))
-            .AddGet(TableName, table.Orders.Get().WithKey("pk", orders[1].Id))
-            .AddGet(TableName, table.OrderLines.Get().WithKey("pk", orderLines[0].Id))
-            .AddGet(TableName, table.OrderLines.Get().WithKey("pk", orderLines[1].Id))
+            .GetFromTable(TableName, builder => builder
+                .WithKey("pk", orders[0].Id)
+                .WithKey("pk", orders[1].Id)
+                .WithKey("pk", orderLines[0].Id)
+                .WithKey("pk", orderLines[1].Id))
             .ToDynamoDbResponseAsync();
 
         // Assert - All entities should be retrieved
@@ -300,23 +294,22 @@ public class TransactionOperationTests : IntegrationTestBase
 
         // Act - Use TransactWrite to delete one order and update another
         await table.TransactWrite()
-            .AddDelete(table.Orders.Delete().WithKey("pk", orderToDelete.Id))
-            .AddUpdate(table.Orders.Update()
+            .Delete(table, delete => delete.WithKey("pk", orderToDelete.Id))
+            .Update(table, update => update
                 .WithKey("pk", orderToKeep.Id)
                 .Set("#name = :name")
                 .WithValue(":name", "Updated Keep")
                 .WithAttribute("#name", "customer_name"))
-            .DeleteAsync();
+            .ExecuteAsync();
 
         // Assert - One order should be deleted, the other updated
-        var deletedResult = await table.Orders.Get().WithKey("pk", orderToDelete.Id).DeleteAsync();
-        var keptResult = await table.Orders.Get().WithKey("pk", orderToKeep.Id).DeleteAsync();
+        var deletedResult = await table.Orders.Get(orderToDelete.Id).GetItemAsync();
+        var keptResult = await table.Orders.Get(orderToKeep.Id).GetItemAsync();
 
-        deletedResult.Item.Should().BeNull();
-        keptResult.Item.Should().NotBeNull();
+        deletedResult.Should().BeNull();
+        keptResult.Should().NotBeNull();
         
-        var retrievedKept = TransactionOrderEntity.FromDynamoDb<TransactionOrderEntity>(keptResult.Item);
-        retrievedKept.CustomerName.Should().Be("Updated Keep");
+        keptResult.CustomerName.Should().Be("Updated Keep");
     }
 
     [Fact]
@@ -337,16 +330,17 @@ public class TransactionOperationTests : IntegrationTestBase
 
         // Act - Use BatchWrite to delete multiple orders
         await table.BatchWrite()
-            .AddDelete(TableName, table.Orders.Delete().WithKey("pk", ordersToDelete[0].Id))
-            .AddDelete(TableName, table.Orders.Delete().WithKey("pk", ordersToDelete[1].Id))
+            .WriteToTable(TableName, builder => builder
+                .DeleteItem("pk", ordersToDelete[0].Id)
+                .DeleteItem("pk", ordersToDelete[1].Id))
             .ToDynamoDbResponseAsync();
 
         // Assert - Both orders should be deleted
-        var result1 = await table.Orders.Get().WithKey("pk", ordersToDelete[0].Id).DeleteAsync();
-        var result2 = await table.Orders.Get().WithKey("pk", ordersToDelete[1].Id).DeleteAsync();
+        var result1 = await table.Orders.Get(ordersToDelete[0].Id).GetItemAsync();
+        var result2 = await table.Orders.Get(ordersToDelete[1].Id).GetItemAsync();
 
-        result1.Item.Should().BeNull();
-        result2.Item.Should().BeNull();
+        result1.Should().BeNull();
+        result2.Should().BeNull();
     }
 
     [Fact]
@@ -397,14 +391,14 @@ public class TransactionOperationTests : IntegrationTestBase
 
         // Act - Use TransactWrite with condition check
         await table.TransactWrite()
-            .AddConditionCheck(table.Orders.Get()
+            .CheckCondition(table, check => check
                 .WithKey("pk", existingOrder.Id)
-                .WithCondition("attribute_exists(pk)"))
-            .AddPut(table.Orders.Put(newOrder))
-            .GetItemAsync();
+                .Where("attribute_exists(pk)"))
+            .Put(table, put => put.WithItem(TransactionOrderEntity.ToDynamoDb(newOrder)))
+            .ExecuteAsync();
 
         // Assert - New order should be saved (condition was met)
-        var result = await table.Orders.Get().WithKey("pk", newOrder.Id).ToDynamoDbResponseAsync();
+        var result = await table.Orders.Get(newOrder.Id).ToDynamoDbResponseAsync();
         result.Item.Should().NotBeNull();
         
         var retrieved = TransactionOrderEntity.FromDynamoDb<TransactionOrderEntity>(result.Item);
@@ -432,7 +426,7 @@ public class TransactionOperationTests : IntegrationTestBase
             Quantity = 8
         };
 
-        var payment = new TransactionPaymentEntity
+        var payment = new TransactionPaymentTestEntity
         {
             Id = "PAYMENT#ANYTYPE",
             Amount = 150.00m,
@@ -441,15 +435,15 @@ public class TransactionOperationTests : IntegrationTestBase
 
         // Act - Transaction operations should accept all entity types registered to the table
         await table.TransactWrite()
-            .AddPut(table.Orders.Put(order))
-            .AddPut(table.OrderLines.Put(orderLine))
-            .AddPut(table.Payments.Put(payment))
-            .ToDynamoDbResponseAsync();
+            .Put(table, put => put.WithItem(TransactionOrderEntity.ToDynamoDb(order)))
+            .Put(table, put => put.WithItem(TransactionOrderLineEntity.ToDynamoDb(orderLine)))
+            .Put(table, put => put.WithItem(TransactionPaymentTestEntity.ToDynamoDb(payment)))
+            .ExecuteAsync();
 
         // Assert - All entities should be saved
-        var orderResult = await table.Orders.Get().WithKey("pk", order.Id).ToDynamoDbResponseAsync();
-        var orderLineResult = await table.OrderLines.Get().WithKey("pk", orderLine.Id).ToDynamoDbResponseAsync();
-        var paymentResult = await table.Payments.Get().WithKey("pk", payment.Id).ToDynamoDbResponseAsync();
+        var orderResult = await table.Orders.Get(order.Id).ToDynamoDbResponseAsync();
+        var orderLineResult = await table.OrderLines.Get(orderLine.Id).ToDynamoDbResponseAsync();
+        var paymentResult = await table.Payments.Get(payment.Id).ToDynamoDbResponseAsync();
 
         orderResult.Item.Should().NotBeNull();
         orderLineResult.Item.Should().NotBeNull();
@@ -462,6 +456,7 @@ public class TransactionOperationTests : IntegrationTestBase
 /// This is the default entity for the table.
 /// </summary>
 [DynamoDbTable("transaction-test", IsDefault = true)]
+[GenerateEntityProperty(Name = "Orders")]
 public partial class TransactionOrderEntity
 {
     [PartitionKey]
@@ -479,6 +474,7 @@ public partial class TransactionOrderEntity
 /// Test entity representing an OrderLine for transaction tests.
 /// </summary>
 [DynamoDbTable("transaction-test")]
+[GenerateEntityProperty(Name = "OrderLines")]
 public partial class TransactionOrderLineEntity
 {
     [PartitionKey]
@@ -496,7 +492,8 @@ public partial class TransactionOrderLineEntity
 /// Test entity representing a Payment for transaction tests.
 /// </summary>
 [DynamoDbTable("transaction-test")]
-public partial class TransactionPaymentEntity
+[GenerateEntityProperty(Name = "Payments")]
+public partial class TransactionPaymentTestEntity
 {
     [PartitionKey]
     [DynamoDbAttribute("pk")]

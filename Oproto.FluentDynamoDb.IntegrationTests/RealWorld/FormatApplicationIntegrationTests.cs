@@ -1,6 +1,9 @@
 using Amazon.DynamoDBv2.Model;
+using Oproto.FluentDynamoDb.Expressions;
 using Oproto.FluentDynamoDb.IntegrationTests.Infrastructure;
 using Oproto.FluentDynamoDb.IntegrationTests.TestEntities;
+using Oproto.FluentDynamoDb.Requests;
+using Oproto.FluentDynamoDb.Requests.Extensions;
 using Oproto.FluentDynamoDb.Storage;
 
 namespace Oproto.FluentDynamoDb.IntegrationTests.RealWorld;
@@ -89,7 +92,8 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var date = new DateTime(2024, 10, 24, 15, 30, 45); // Time component should be ignored
         
         // Act - Query using LINQ expression with formatted DateTime
-        var response = await _table.Query<FormattedEntity>(x => x.Id == "item-1" && x.CreatedDate == date)
+        var response = await _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-1" && x.CreatedDate == date)
             .ToDynamoDbResponseAsync();
         
         // Assert - Should find the item because format strips time
@@ -107,8 +111,9 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var date = new DateTime(2024, 10, 24, 23, 59, 59); // Different time, same date
         
         // Act - Build request to inspect the formatted value
-        var request = _table.Query<FormattedEntity>(x => x.Id == "item-1" && x.CreatedDate == date)
-            .ToRequest();
+        var request = _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-1" && x.CreatedDate == date)
+            .ToQueryRequest();
         
         // Assert - Verify the formatted value is "2024-10-24" (date only, no time)
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
@@ -122,8 +127,9 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var dateTime = new DateTime(2024, 10, 24, 15, 30, 45);
         
         // Act - Build request to inspect the formatted value
-        var request = _table.Query<FormattedEntity>(x => x.Id == "item-1" && x.UpdatedAt == dateTime)
-            .ToRequest();
+        var request = _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-1" && x.UpdatedAt == dateTime)
+            .ToQueryRequest();
         
         // Assert - Verify the formatted value includes date and time
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
@@ -137,8 +143,9 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var amount = 1234.5678m; // More precision than format
         
         // Act - Build request to inspect the formatted value
-        var request = _table.Query<FormattedEntity>(x => x.Id == "item-1" && x.Amount == amount)
-            .ToRequest();
+        var request = _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-1" && x.Amount == amount)
+            .ToQueryRequest();
         
         // Assert - Verify the formatted value is rounded to 2 decimal places
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
@@ -152,8 +159,9 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var price = 999.999999m; // More precision than format
         
         // Act - Build request to inspect the formatted value
-        var request = _table.Query<FormattedEntity>(x => x.Id == "item-1" && x.Price == price)
-            .ToRequest();
+        var request = _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-1" && x.Price == price)
+            .ToQueryRequest();
         
         // Assert - Verify the formatted value is rounded to 4 decimal places
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
@@ -167,8 +175,9 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var rating = 4.7567;
         
         // Act - Build request to inspect the formatted value
-        var request = _table.Query<FormattedEntity>(x => x.Id == "item-1" && x.Rating == rating)
-            .ToRequest();
+        var request = _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-1" && x.Rating == rating)
+            .ToQueryRequest();
         
         // Assert - Verify the formatted value is rounded to 2 decimal places
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
@@ -182,8 +191,9 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var orderNumber = 123;
         
         // Act - Build request to inspect the formatted value
-        var request = _table.Query<FormattedEntity>(x => x.Id == "item-1" && x.OrderNumber == orderNumber)
-            .ToRequest();
+        var request = _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-1" && x.OrderNumber == orderNumber)
+            .ToQueryRequest();
         
         // Assert - Verify the formatted value is zero-padded to 8 digits
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
@@ -197,8 +207,9 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var quantity = 10;
         
         // Act - Build request to inspect the value
-        var request = _table.Query<FormattedEntity>(x => x.Id == "item-1" && x.Quantity == quantity)
-            .ToRequest();
+        var request = _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-1" && x.Quantity == quantity)
+            .ToQueryRequest();
         
         // Assert - Verify the value uses default number serialization
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
@@ -212,7 +223,8 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var date = new DateTime(2024, 10, 25);
         
         // Act - Execute query end-to-end
-        var response = await _table.Query<FormattedEntity>(x => x.Id == "item-2" && x.CreatedDate == date)
+        var response = await _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-2" && x.CreatedDate == date)
             .ToDynamoDbResponseAsync();
         
         // Assert - Should find the matching item
@@ -231,8 +243,10 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var date = new DateTime(2024, 10, 26);
         
         // Act - Build scan request with formatted filter
-        var request = _table.Scan<FormattedEntity>(x => x.CreatedDate == date)
-            .ToRequest();
+        var request = new ScanRequestBuilder<FormattedEntity>(_table.DynamoDbClient)
+            .ForTable(_table.Name)
+            .WithFilter<ScanRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.CreatedDate == date)
+            .ToScanRequest();
         
         // Assert - Verify the formatted value
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
@@ -246,8 +260,10 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var amount = 789.123m;
         
         // Act - Build scan request with formatted filter
-        var request = _table.Scan<FormattedEntity>(x => x.Amount == amount)
-            .ToRequest();
+        var request = new ScanRequestBuilder<FormattedEntity>(_table.DynamoDbClient)
+            .ForTable(_table.Name)
+            .WithFilter<ScanRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Amount == amount)
+            .ToScanRequest();
         
         // Assert - Verify the formatted value is rounded to 2 decimal places
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
@@ -261,7 +277,9 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var amount = 567.89m;
         
         // Act - Execute scan end-to-end
-        var response = await _table.Scan<FormattedEntity>(x => x.Amount == amount)
+        var response = await new ScanRequestBuilder<FormattedEntity>(_table.DynamoDbClient)
+            .ForTable(_table.Name)
+            .WithFilter<ScanRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Amount == amount)
             .ToDynamoDbResponseAsync();
         
         // Assert - Should find the matching item
@@ -280,9 +298,10 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var amount = 1234.56m;
         
         // Act - Build request with multiple formatted properties
-        var request = _table.Query<FormattedEntity>(x => 
-            x.Id == "item-1" && x.CreatedDate == date && x.Amount == amount)
-            .ToRequest();
+        var request = _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => 
+                x.Id == "item-1" && x.CreatedDate == date && x.Amount == amount)
+            .ToQueryRequest();
         
         // Assert - Verify both formatted values
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
@@ -299,8 +318,9 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var amount = 600.00m;
         
         // Act - Build request with comparison operator
-        var request = _table.Query<FormattedEntity>(x => x.Id == "item-2" && x.Amount > amount)
-            .ToRequest();
+        var request = _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-2" && x.Amount > amount)
+            .ToQueryRequest();
         
         // Assert - Verify the formatted value in comparison
         request.ExpressionAttributeValues.Should().ContainKey(":p1");
@@ -315,8 +335,10 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var highAmount = 800.00m;
         
         // Act - Build scan request with BETWEEN
-        var request = _table.Scan<FormattedEntity>(x => x.Amount.Between(lowAmount, highAmount))
-            .ToRequest();
+        var request = new ScanRequestBuilder<FormattedEntity>(_table.DynamoDbClient)
+            .ForTable(_table.Name)
+            .WithFilter<ScanRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Amount!.Value.Between(lowAmount, highAmount))
+            .ToScanRequest();
         
         // Assert - Verify both bounds are formatted
         request.ExpressionAttributeValues.Should().ContainKey(":p0");
@@ -333,7 +355,8 @@ public class FormatApplicationIntegrationTests : IntegrationTestBase
         var date = new DateTime(2024, 10, 24);
         
         // Act - Execute query and deserialize results
-        var response = await _table.Query<FormattedEntity>(x => x.Id == "item-1" && x.CreatedDate == date)
+        var response = await _table.Query<FormattedEntity>()
+            .Where<QueryRequestBuilder<FormattedEntity>, FormattedEntity>(x => x.Id == "item-1" && x.CreatedDate == date)
             .ToDynamoDbResponseAsync();
         
         // Assert - Verify deserialization preserves original values

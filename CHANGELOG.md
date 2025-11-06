@@ -8,9 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **DynamoDB Streams Support** - New `Oproto.FluentDynamoDb.Streams` package for processing DynamoDB stream events
+  - Fluent API for type-safe stream record processing with `Process<TEntity>()` extension method
+  - Separate package to avoid bundling Lambda dependencies in non-stream applications
+  - `[GenerateStreamConversion]` attribute for opt-in stream conversion code generation
+  - Generated `FromDynamoDbStream()` and `FromStreamImage()` methods for Lambda AttributeValue deserialization
+  - Event-specific handlers: `OnInsert()`, `OnUpdate()`, `OnDelete()`, `OnTtlDelete()`, `OnNonTtlDelete()`
+  - TTL-aware delete handling to distinguish manual vs. automatic deletions
+  - LINQ-style entity filtering with `Where()` for post-deserialization filtering
+  - Key-based pre-filtering with `WhereKey()` for performance optimization
+  - Discriminator-based routing for single-table designs with `WithDiscriminator()`
+  - Pattern matching support for discriminators (prefix, suffix, contains, exact)
+  - Table-integrated stream processors with generated `OnStream()` methods
+  - Automatic discriminator registry generation for table-level stream configuration
+  - Comprehensive exception types: `StreamProcessingException`, `StreamDeserializationException`, `StreamFilterException`, `DiscriminatorMismatchException`
+  - Full AOT compatibility for Native AOT Lambda deployments
+  - Support for encrypted field deserialization in stream records
 
 ### Changed
-- Source generation now uses nested classes to avoid namespace collissions
+- Source generation now uses nested classes to avoid namespace collisions
+- Enhanced source generator to support Lambda AttributeValue types alongside SDK AttributeValue types
 
 ### Deprecated
 
@@ -18,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed duplicate index generation on tables
+- Fixed fluent chaining in `TypeHandlerRegistration` to allow multiple `.For<T>()` calls in discriminator-based routing
 
 ### Security
 
