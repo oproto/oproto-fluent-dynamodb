@@ -150,6 +150,9 @@ internal class EntityAnalyzer
         // Extract accessor configurations
         ExtractAccessorConfigurations(classDecl, semanticModel, entityModel);
 
+        // Extract stream conversion attribute
+        ExtractStreamConversionAttribute(classDecl, semanticModel, entityModel);
+
         return !string.IsNullOrEmpty(entityModel.TableName);
     }
 
@@ -270,6 +273,33 @@ internal class EntityAnalyzer
         }
 
         entityModel.AccessorConfigs = configs;
+    }
+
+    private void ExtractStreamConversionAttribute(ClassDeclarationSyntax classDecl, SemanticModel semanticModel, EntityModel entityModel)
+    {
+        var streamConversionAttribute = GetAttribute(classDecl, semanticModel, "GenerateStreamConversionAttribute");
+        entityModel.GenerateStreamConversion = streamConversionAttribute != null;
+
+        // Validate that Amazon.Lambda.DynamoDBEvents is referenced when attribute is present
+        if (entityModel.GenerateStreamConversion)
+        {
+            ValidateLambdaEventsPackageReference(semanticModel, entityModel);
+        }
+    }
+
+    private void ValidateLambdaEventsPackageReference(SemanticModel semanticModel, EntityModel entityModel)
+    {
+        // Check if Amazon.Lambda.DynamoDBEvents.AttributeValue type is available in the compilation
+        var lambdaAttributeValueType = semanticModel.Compilation.GetTypeByMetadataName("Amazon.Lambda.DynamoDBEvents.AttributeValue");
+
+        if (lambdaAttributeValueType == null)
+        {
+            // Package is not referenced - emit diagnostic error
+            ReportDiagnostic(
+                DiagnosticDescriptors.MissingLambdaEventsPackage,
+                entityModel.ClassDeclaration?.Identifier.GetLocation(),
+                entityModel.ClassName);
+        }
     }
 
     private TableOperation ExtractOperationsFlags(ExpressionSyntax expression)

@@ -506,12 +506,26 @@ internal static class TableGenerator
     /// </summary>
     private static void GenerateAccessorPutMethod(StringBuilder sb, EntityModel entity, string modifier)
     {
+        // Parameterless Put() method
         sb.AppendLine($"        /// <summary>");
         sb.AppendLine($"        /// Creates a new PutItem operation builder for {entity.ClassName}.");
         sb.AppendLine($"        /// </summary>");
         sb.AppendLine($"        /// <returns>A PutItemRequestBuilder&lt;{entity.ClassName}&gt; configured for this table.</returns>");
         sb.AppendLine($"        {modifier} PutItemRequestBuilder<{entity.ClassName}> Put() =>");
         sb.AppendLine($"            _table.Put<{entity.ClassName}>();");
+        sb.AppendLine();
+        
+        // Put(TEntity entity) overload
+        sb.AppendLine($"        /// <summary>");
+        sb.AppendLine($"        /// Creates a new PutItem operation builder with the entity already set.");
+        sb.AppendLine($"        /// </summary>");
+        sb.AppendLine($"        /// <param name=\"entity\">The entity to put into DynamoDB.</param>");
+        sb.AppendLine($"        /// <returns>A PutItemRequestBuilder&lt;{entity.ClassName}&gt; configured with the entity.</returns>");
+        sb.AppendLine($"        {modifier} PutItemRequestBuilder<{entity.ClassName}> Put({entity.ClassName} entity)");
+        sb.AppendLine($"        {{");
+        sb.AppendLine($"            var item = {entity.ClassName}.ToDynamoDb(entity);");
+        sb.AppendLine($"            return _table.Put<{entity.ClassName}>().WithItem(item);");
+        sb.AppendLine($"        }}");
         sb.AppendLine();
     }
     
@@ -816,6 +830,7 @@ internal static class TableGenerator
     /// </summary>
     private static void GenerateTableLevelPutMethod(StringBuilder sb, EntityModel entity, string entityPropertyName)
     {
+        // Parameterless Put() method
         sb.AppendLine($"    /// <summary>");
         sb.AppendLine($"    /// Creates a new PutItem operation builder for the default entity ({entity.ClassName}).");
         sb.AppendLine($"    /// PutItem creates a new item or completely replaces an existing item with the same primary key.");
@@ -823,6 +838,17 @@ internal static class TableGenerator
         sb.AppendLine($"    /// <returns>A PutItemRequestBuilder&lt;{entity.ClassName}&gt; configured for this table.</returns>");
         sb.AppendLine($"    public PutItemRequestBuilder<{entity.ClassName}> Put() =>");
         sb.AppendLine($"        {entityPropertyName}.Put();");
+        sb.AppendLine();
+        
+        // Put(TEntity entity) overload
+        sb.AppendLine($"    /// <summary>");
+        sb.AppendLine($"    /// Creates a new PutItem operation builder with the entity already set for the default entity ({entity.ClassName}).");
+        sb.AppendLine($"    /// PutItem creates a new item or completely replaces an existing item with the same primary key.");
+        sb.AppendLine($"    /// </summary>");
+        sb.AppendLine($"    /// <param name=\"entity\">The entity to put into DynamoDB.</param>");
+        sb.AppendLine($"    /// <returns>A PutItemRequestBuilder&lt;{entity.ClassName}&gt; configured with the entity.</returns>");
+        sb.AppendLine($"    public PutItemRequestBuilder<{entity.ClassName}> Put({entity.ClassName} entity) =>");
+        sb.AppendLine($"        {entityPropertyName}.Put(entity);");
         sb.AppendLine();
     }
     
@@ -1256,6 +1282,31 @@ internal static class TableGenerator
         sb.AppendLine($"    /// </example>");
         sb.AppendLine($"    public PutItemRequestBuilder<{entity.ClassName}> Put() =>");
         sb.AppendLine($"        base.Put<{entity.ClassName}>();");
+        sb.AppendLine();
+        
+        // Put(TEntity entity) overload
+        sb.AppendLine($"    /// <summary>");
+        sb.AppendLine($"    /// Creates a new PutItem operation builder with the entity already set.");
+        sb.AppendLine($"    /// PutItem creates a new item or completely replaces an existing item with the same primary key.");
+        sb.AppendLine($"    /// </summary>");
+        sb.AppendLine($"    /// <param name=\"entity\">The entity to put into DynamoDB.</param>");
+        sb.AppendLine($"    /// <returns>A PutItemRequestBuilder&lt;{entity.ClassName}&gt; configured with the entity.</returns>");
+        sb.AppendLine($"    /// <example>");
+        sb.AppendLine($"    /// <code>");
+        sb.AppendLine($"    /// // Put an entity directly");
+        sb.AppendLine($"    /// await table.Put(myEntity).PutAsync();");
+        sb.AppendLine($"    /// ");
+        sb.AppendLine($"    /// // Put with condition");
+        sb.AppendLine($"    /// await table.Put(myEntity)");
+        sb.AppendLine($"    ///     .Where(\"attribute_not_exists(id)\")");
+        sb.AppendLine($"    ///     .PutAsync();");
+        sb.AppendLine($"    /// </code>");
+        sb.AppendLine($"    /// </example>");
+        sb.AppendLine($"    public PutItemRequestBuilder<{entity.ClassName}> Put({entity.ClassName} entity)");
+        sb.AppendLine($"    {{");
+        sb.AppendLine($"        var item = {entity.ClassName}.ToDynamoDb(entity);");
+        sb.AppendLine($"        return base.Put<{entity.ClassName}>().WithItem(item);");
+        sb.AppendLine($"    }}");
         sb.AppendLine();
     }
 

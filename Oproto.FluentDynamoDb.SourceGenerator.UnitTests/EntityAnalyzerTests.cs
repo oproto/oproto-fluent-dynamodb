@@ -860,4 +860,70 @@ namespace TestNamespace
         config.Generate.Should().BeFalse();
         analyzer.Diagnostics.Should().BeEmpty();
     }
+
+    [Fact]
+    public void AnalyzeEntity_WithGenerateStreamConversion_SetsGenerateStreamConversionToTrue()
+    {
+        // Arrange
+        var source = @"
+using Oproto.FluentDynamoDb.Attributes;
+
+namespace TestNamespace
+{
+    [DynamoDbTable(""test-table"")]
+    [GenerateStreamConversion]
+    public partial class TestEntity
+    {
+        [PartitionKey]
+        [DynamoDbAttribute(""pk"")]
+        public string Id { get; set; } = string.Empty;
+    }
+}";
+
+        var (classDecl, semanticModel) = ParseSource(source);
+        var analyzer = new EntityAnalyzer();
+
+        // Act
+        var result = analyzer.AnalyzeEntity(classDecl, semanticModel);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.GenerateStreamConversion.Should().BeTrue("entity has [GenerateStreamConversion] attribute");
+        
+        // Should report error for missing Lambda package since it's not referenced in test compilation
+        analyzer.Diagnostics.Should().Contain(d => d.Id == "SEC002");
+        analyzer.Diagnostics.First(d => d.Id == "SEC002").Severity.Should().Be(DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public void AnalyzeEntity_WithoutGenerateStreamConversion_SetsGenerateStreamConversionToFalse()
+    {
+        // Arrange
+        var source = @"
+using Oproto.FluentDynamoDb.Attributes;
+
+namespace TestNamespace
+{
+    [DynamoDbTable(""test-table"")]
+    public partial class TestEntity
+    {
+        [PartitionKey]
+        [DynamoDbAttribute(""pk"")]
+        public string Id { get; set; } = string.Empty;
+    }
+}";
+
+        var (classDecl, semanticModel) = ParseSource(source);
+        var analyzer = new EntityAnalyzer();
+
+        // Act
+        var result = analyzer.AnalyzeEntity(classDecl, semanticModel);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.GenerateStreamConversion.Should().BeFalse("entity does not have [GenerateStreamConversion] attribute");
+        
+        // Should not report Lambda package error when attribute is not present
+        analyzer.Diagnostics.Should().NotContain(d => d.Id == "SEC002");
+    }
 }

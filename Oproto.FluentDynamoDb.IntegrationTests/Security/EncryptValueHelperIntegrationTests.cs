@@ -64,7 +64,7 @@ public class EncryptValueHelperIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Pre-encrypt value and use in LINQ expression
-        EncryptionContext.Current = "tenant-123";
+        DynamoDbOperationContext.EncryptionContextId = "tenant-123";
         var targetSsn = "123-45-6789";
         var encryptedTargetSsn = table.EncryptValue(targetSsn, "ssn");
         
@@ -135,7 +135,7 @@ public class EncryptValueHelperIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Pre-encrypt value and use in format string expression
-        EncryptionContext.Current = "tenant-456";
+        DynamoDbOperationContext.EncryptionContextId = "tenant-456";
         var targetSsn = "987-65-4321";
         var encryptedTargetSsn = table.EncryptValue(targetSsn, "ssn");
         
@@ -228,7 +228,7 @@ public class EncryptValueHelperIntegrationTests : IntegrationTestBase
         }
 
         // Act - Pre-encrypt value and use in scan filter
-        EncryptionContext.Current = "scan-test";
+        DynamoDbOperationContext.EncryptionContextId = "scan-test";
         var targetSsn = "222-22-2222";
         var encryptedTargetSsn = table.EncryptValue(targetSsn, "ssn");
         
@@ -306,7 +306,7 @@ public class EncryptValueHelperIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Pre-encrypt multiple values and use in query
-        EncryptionContext.Current = "multi-field";
+        DynamoDbOperationContext.EncryptionContextId = "multi-field";
         var targetSsn = "555-55-5555";
         var targetCc = "4111-1111-1111-1111";
         var encryptedTargetSsn = table.EncryptValue(targetSsn, "ssn");
@@ -386,7 +386,7 @@ public class EncryptValueHelperIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Pre-encrypt with correct context
-        EncryptionContext.Current = "context-A";
+        DynamoDbOperationContext.EncryptionContextId = "context-A";
         var targetSsn = "777-77-7777";
         var encryptedTargetSsn = table.EncryptValue(targetSsn, "ssn");
         
@@ -438,7 +438,7 @@ public class EncryptValueHelperIntegrationTests : IntegrationTestBase
         var table = new TestTable(DynamoDb, TableName, encryptor);
         
         var originalSsn = "999-99-9999";
-        EncryptionContext.Current = "roundtrip";
+        DynamoDbOperationContext.EncryptionContextId = "roundtrip";
         
         // Pre-encrypt the value
         var encryptedSsn = table.EncryptValue(originalSsn, "ssn");
@@ -520,7 +520,7 @@ public class EncryptValueHelperIntegrationTests : IntegrationTestBase
         }
 
         // Act - Pre-encrypt once and reuse in multiple queries
-        EncryptionContext.Current = "reuse-test";
+        DynamoDbOperationContext.EncryptionContextId = "reuse-test";
         var targetSsn = "111-11-1111";
         var encryptedTargetSsn = table.EncryptValue(targetSsn, "ssn");
         
@@ -580,7 +580,7 @@ public class EncryptValueHelperIntegrationTests : IntegrationTestBase
         await DynamoDb.PutItemAsync(TableName, item);
 
         // Act - Pre-encrypt with null context
-        EncryptionContext.Current = null;
+        DynamoDbOperationContext.EncryptionContextId = null;
         var targetSsn = "000-00-0000";
         var encryptedTargetSsn = table.EncryptValue(targetSsn, "ssn");
         
@@ -617,7 +617,7 @@ public class EncryptValueHelperIntegrationTests : IntegrationTestBase
     {
         // Arrange
         var table = new TestTable(DynamoDb, TableName, encryptor: null);
-        EncryptionContext.Current = "tenant-123";
+        DynamoDbOperationContext.EncryptionContextId = "tenant-123";
 
         // Act & Assert
         var act = () => table.EncryptValue("123-45-6789", "ssn");

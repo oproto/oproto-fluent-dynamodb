@@ -135,6 +135,17 @@ public class UpdateItemRequestBuilder<TEntity> :
 
 
 
+    /// <summary>
+    /// Specifies which values to return in the response.
+    /// </summary>
+    /// <param name="returnValue">The return value option (NONE, ALL_OLD, UPDATED_OLD, ALL_NEW, UPDATED_NEW).</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public UpdateItemRequestBuilder<TEntity> ReturnValues(ReturnValue returnValue)
+    {
+        _req.ReturnValues = returnValue;
+        return this;
+    }
+
     public UpdateItemRequestBuilder<TEntity> ReturnUpdatedNewValues()
     {
         _req.ReturnValues = ReturnValue.UPDATED_NEW;

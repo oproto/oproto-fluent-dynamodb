@@ -4,6 +4,7 @@ using Oproto.FluentDynamoDb.Expressions;
 using Oproto.FluentDynamoDb.Requests.Interfaces;
 using Oproto.FluentDynamoDb.Storage;
 using Oproto.FluentDynamoDb.Utility;
+using Oproto.FluentDynamoDb.Requests;
 
 namespace Oproto.FluentDynamoDb.Requests.Extensions;
 
@@ -185,6 +186,24 @@ public static class WithConditionExpressionExtensions
         var expressionString = translator.Translate(expression, context);
 
         return builder.SetConditionExpression(expressionString);
+    }
+    
+    /// <summary>
+    /// Specifies the condition expression using a C# lambda expression for QueryRequestBuilder.
+    /// This overload provides better type inference for query operations.
+    /// </summary>
+    /// <typeparam name="TEntity">The entity type being queried.</typeparam>
+    /// <param name="builder">The QueryRequestBuilder instance.</param>
+    /// <param name="expression">The lambda expression representing the condition.</param>
+    /// <param name="metadata">Optional entity metadata for property validation.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public static QueryRequestBuilder<TEntity> Where<TEntity>(
+        this QueryRequestBuilder<TEntity> builder,
+        Expression<Func<TEntity, bool>> expression,
+        EntityMetadata? metadata = null)
+        where TEntity : class
+    {
+        return Where<QueryRequestBuilder<TEntity>, TEntity>(builder, expression, metadata);
     }
 
 }

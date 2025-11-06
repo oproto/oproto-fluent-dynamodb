@@ -186,6 +186,100 @@ public abstract class DynamoDbTableBase : IDynamoDbTable
     /// </example>
     public PutItemRequestBuilder<TEntity> Put<TEntity>() where TEntity : class => 
         new PutItemRequestBuilder<TEntity>(DynamoDbClient, Logger).ForTable(Name);
+    
+    /// <summary>
+    /// Creates a new Scan operation builder for this table.
+    /// Use this to scan all items in the table or apply filters.
+    /// </summary>
+    /// <returns>A ScanRequestBuilder configured for this table.</returns>
+    /// <example>
+    /// <code>
+    /// // Basic scan
+    /// var results = await table.Scan&lt;MyEntity&gt;()
+    ///     .ExecuteAsync();
+    /// 
+    /// // Scan with filter
+    /// var results = await table.Scan&lt;MyEntity&gt;()
+    ///     .WithFilter("status = {0}", "ACTIVE")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public ScanRequestBuilder<TEntity> Scan<TEntity>() where TEntity : class => 
+        new ScanRequestBuilder<TEntity>(DynamoDbClient, Logger).ForTable(Name);
+
+    /// <summary>
+    /// Creates a new BatchGetItem operation builder.
+    /// Use this to retrieve multiple items in a single request.
+    /// </summary>
+    /// <returns>A BatchGetItemRequestBuilder configured with this table's client and logger.</returns>
+    /// <example>
+    /// <code>
+    /// // Get multiple items from this table
+    /// var results = await table.BatchGet()
+    ///     .GetFromTable(tableName, builder => builder
+    ///         .WithKey("id", "item1")
+    ///         .WithKey("id", "item2"))
+    ///     .ToDynamoDbResponseAsync();
+    /// </code>
+    /// </example>
+    public BatchGetItemRequestBuilder BatchGet() => 
+        new BatchGetItemRequestBuilder(DynamoDbClient, Logger);
+
+    /// <summary>
+    /// Creates a new BatchWriteItem operation builder.
+    /// Use this to put or delete multiple items in a single request.
+    /// </summary>
+    /// <returns>A BatchWriteItemRequestBuilder configured with this table's client and logger.</returns>
+    /// <example>
+    /// <code>
+    /// // Put and delete items in a single batch
+    /// await table.BatchWrite()
+    ///     .Put(entity1)
+    ///     .Put(entity2)
+    ///     .Delete("id", "item3")
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public BatchWriteItemRequestBuilder BatchWrite() => 
+        new BatchWriteItemRequestBuilder(DynamoDbClient, Logger);
+
+    /// <summary>
+    /// Creates a new TransactGetItems operation builder.
+    /// Use this to retrieve multiple items atomically across tables.
+    /// </summary>
+    /// <returns>A TransactGetItemsRequestBuilder configured with this table's client and logger.</returns>
+    /// <example>
+    /// <code>
+    /// // Get items atomically
+    /// var results = await table.TransactGet()
+    ///     .Get&lt;MyEntity&gt;(g => g
+    ///         .WithKey("id", "item1"))
+    ///     .Get&lt;MyEntity&gt;(g => g
+    ///         .WithKey("id", "item2"))
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public TransactGetItemsRequestBuilder TransactGet() => 
+        new TransactGetItemsRequestBuilder(DynamoDbClient, Logger);
+
+    /// <summary>
+    /// Creates a new TransactWriteItems operation builder.
+    /// Use this to perform multiple write operations atomically across tables.
+    /// </summary>
+    /// <returns>A TransactWriteItemsRequestBuilder configured with this table's client and logger.</returns>
+    /// <example>
+    /// <code>
+    /// // Write items atomically
+    /// await table.TransactWrite()
+    ///     .Put(entity1)
+    ///     .Put(entity2)
+    ///     .Delete&lt;MyEntity&gt;(d => d
+    ///         .WithKey("id", "item3"))
+    ///     .ExecuteAsync();
+    /// </code>
+    /// </example>
+    public TransactWriteItemsRequestBuilder TransactWrite() => 
+        new TransactWriteItemsRequestBuilder(DynamoDbClient, Logger);
 
     /// <summary>
     /// Encrypts a value for use in query expressions.
