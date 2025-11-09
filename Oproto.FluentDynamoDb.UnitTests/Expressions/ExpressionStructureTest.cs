@@ -39,7 +39,16 @@ public class ExpressionStructureTest
 
         var memberInit = (MemberInitExpression)expr.Body;
         var binding = (MemberAssignment)memberInit.Bindings[0];
-        var methodCall = (MethodCallExpression)binding.Expression;
+        
+        // Handle potential Convert wrapper around the method call
+        var bindingExpression = binding.Expression;
+        if (bindingExpression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+        {
+            _output.WriteLine("Unwrapping Convert expression");
+            bindingExpression = unary.Operand;
+        }
+        
+        var methodCall = (MethodCallExpression)bindingExpression;
 
         _output.WriteLine("\nMethod: " + methodCall.Method.Name);
         _output.WriteLine("Arguments count: " + methodCall.Arguments.Count);
