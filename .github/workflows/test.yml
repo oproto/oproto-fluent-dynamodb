@@ -108,7 +108,7 @@ jobs:
           echo "Downloading DynamoDB Local..."
           mkdir -p dynamodb-local
           cd dynamodb-local
-          wget -q https://s3.us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.tar.gz
+          wget -q https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.tar.gz
           tar -xzf dynamodb_local_latest.tar.gz
           rm dynamodb_local_latest.tar.gz
           ls -la
@@ -121,7 +121,7 @@ jobs:
           Write-Host "Downloading DynamoDB Local..."
           New-Item -ItemType Directory -Force -Path dynamodb-local
           Set-Location dynamodb-local
-          Invoke-WebRequest -Uri "https://s3.us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.tar.gz" -OutFile "dynamodb_local_latest.tar.gz"
+          Invoke-WebRequest -Uri "https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.tar.gz" -OutFile "dynamodb_local_latest.tar.gz"
           tar -xzf dynamodb_local_latest.tar.gz
           Remove-Item dynamodb_local_latest.tar.gz
           Get-ChildItem
