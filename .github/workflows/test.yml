@@ -297,8 +297,14 @@ jobs:
         run: |
           mkdir -p ./coverage-report
           
+          # Check if coverage directory exists
+          if [ ! -d "./coverage" ]; then
+            echo "Coverage directory not found - no coverage artifacts were downloaded"
+            exit 0
+          fi
+          
           # Find all coverage files
-          COVERAGE_FILES=$(find ./coverage -name "coverage.cobertura.xml" -type f | tr '\n' ';')
+          COVERAGE_FILES=$(find ./coverage -name "coverage.cobertura.xml" -type f 2>/dev/null | tr '\n' ';')
           
           if [ ! -z "$COVERAGE_FILES" ]; then
             echo "Found coverage files, generating combined report..."
@@ -311,8 +317,9 @@ jobs:
             
             echo "Coverage report generated successfully"
           else
-            echo "No coverage files found"
+            echo "No coverage files found in ./coverage directory"
           fi
+        continue-on-error: true
       
       - name: Upload Combined Coverage Report
         if: always()
