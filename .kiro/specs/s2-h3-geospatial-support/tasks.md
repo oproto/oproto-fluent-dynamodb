@@ -678,12 +678,24 @@
     - Add debug logging to trace through the conversion
     - _Requirements: 1.3, 5.4, 5.5_
   
-  - [ ] 15.7f Run full H3 test suite after fix
+  - [x] 15.7f Run full H3 test suite after fix
     - Run all H3 reference tests (should still pass 217 tests)
     - Run H3ReferenceTests (should now pass all 10 tests)
     - Run H3 property tests (should pass 100 iterations)
     - Verify no regressions in previously passing tests
     - _Requirements: 1.3, 9.2_
+    - _Status: ✅ COMPLETE - All 361 tests passing, property tests pass with 100 iterations_
+  
+  - [ ] 15.8 Fix pentagon encoding in BuildH3IndexFromFaceIJK
+    - **CRITICAL**: Canonicalization loop masks bug in forward encoding for pentagons
+    - Issue: EncodeCore(58.673873878380526, 2.389386851097959, res=1) → 8108fffffffffff (wrong)
+    - Expected: 8108bffffffffff (base cell 4, digit 2) from H3 reference
+    - Actual: 8108fffffffffff (base cell 4, digit 3) - wrong child on pentagon
+    - Root cause: Pentagon orientation/missing-sequence handling in BuildH3IndexFromFaceIJK
+    - The decode path is consistent, so encode→decode→encode converges (property test passes)
+    - But initial encode is misaligned with H3 reference grid at polar pentagons
+    - _Requirements: 1.3, 2.2_
+    - _Reference: h3/src/h3lib/lib/h3Index.c _faceIjkToH3() pentagon handling_
 
 ### Testing and Validation
 

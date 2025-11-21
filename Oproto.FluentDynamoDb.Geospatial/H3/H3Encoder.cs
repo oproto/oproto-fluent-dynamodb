@@ -55,6 +55,12 @@ internal static class H3Encoder
             throw new ArgumentOutOfRangeException(nameof(longitude), longitude, "Longitude must be between -180 and 180 degrees");
         }
 
+        // Perform the core encoding
+        return EncodeCore(latitude, longitude, resolution);
+    }
+
+    private static string EncodeCore(double latitude, double longitude, int resolution)
+    {
         // Use the proper H3 encoding algorithm: go directly from lat/lon to hex2d at target resolution
         var (face, hex2d) = GeoToHex2d(latitude, longitude, resolution);
         
@@ -427,274 +433,509 @@ internal static class H3Encoder
         public int J { get; }
         public int K { get; }
         public bool IsPentagon { get; }
+        public int CwOffsetFace1 { get; }
+        public int CwOffsetFace2 { get; }
         
-        public BaseCellData(int face, int i, int j, int k, bool isPentagon)
+        public BaseCellData(int face, int i, int j, int k, bool isPentagon, int cwOffsetFace1, int cwOffsetFace2)
         {
             Face = face;
             I = i;
             J = j;
             K = k;
             IsPentagon = isPentagon;
+            CwOffsetFace1 = cwOffsetFace1;
+            CwOffsetFace2 = cwOffsetFace2;
         }
     }
     
     /// <summary>
     /// Resolution 0 base cell data table from H3 reference implementation.
-    /// Maps each of the 122 base cells to their home face and IJK coordinates.
+    /// Maps each of the 122 base cells to their home face, IJK coordinates, and pentagon CW offset faces.
     /// </summary>
     private static readonly BaseCellData[] BaseCellDataTable = new[]
     {
-        new BaseCellData(1, 1, 0, 0, false),  // base cell 0
-        new BaseCellData(2, 1, 1, 0, false),  // base cell 1
-        new BaseCellData(1, 0, 0, 0, false),  // base cell 2
-        new BaseCellData(2, 1, 0, 0, false),  // base cell 3
-        new BaseCellData(0, 2, 0, 0, true),   // base cell 4 (pentagon)
-        new BaseCellData(1, 1, 1, 0, false),  // base cell 5
-        new BaseCellData(1, 0, 0, 1, false),  // base cell 6
-        new BaseCellData(2, 0, 0, 0, false),  // base cell 7
-        new BaseCellData(0, 1, 0, 0, false),  // base cell 8
-        new BaseCellData(2, 0, 1, 0, false),  // base cell 9
-        new BaseCellData(1, 0, 1, 0, false),  // base cell 10
-        new BaseCellData(1, 0, 1, 1, false),  // base cell 11
-        new BaseCellData(3, 1, 0, 0, false),  // base cell 12
-        new BaseCellData(3, 1, 1, 0, false),  // base cell 13
-        new BaseCellData(11, 2, 0, 0, true),  // base cell 14 (pentagon)
-        new BaseCellData(4, 1, 0, 0, false),  // base cell 15
-        new BaseCellData(0, 0, 0, 0, false),  // base cell 16
-        new BaseCellData(6, 0, 1, 0, false),  // base cell 17
-        new BaseCellData(0, 0, 0, 1, false),  // base cell 18
-        new BaseCellData(2, 0, 1, 1, false),  // base cell 19
-        new BaseCellData(7, 0, 0, 1, false),  // base cell 20
-        new BaseCellData(2, 0, 0, 1, false),  // base cell 21
-        new BaseCellData(0, 1, 1, 0, false),  // base cell 22
-        new BaseCellData(6, 0, 0, 1, false),  // base cell 23
-        new BaseCellData(10, 2, 0, 0, true),  // base cell 24 (pentagon)
-        new BaseCellData(6, 0, 0, 0, false),  // base cell 25
-        new BaseCellData(3, 0, 0, 0, false),  // base cell 26
-        new BaseCellData(11, 1, 0, 0, false), // base cell 27
-        new BaseCellData(4, 1, 1, 0, false),  // base cell 28
-        new BaseCellData(3, 0, 1, 0, false),  // base cell 29
-        new BaseCellData(0, 0, 1, 1, false),  // base cell 30
-        new BaseCellData(4, 0, 0, 0, false),  // base cell 31
-        new BaseCellData(5, 0, 1, 0, false),  // base cell 32
-        new BaseCellData(0, 0, 1, 0, false),  // base cell 33
-        new BaseCellData(7, 0, 1, 0, false),  // base cell 34
-        new BaseCellData(11, 1, 1, 0, false), // base cell 35
-        new BaseCellData(7, 0, 0, 0, false),  // base cell 36
-        new BaseCellData(10, 1, 0, 0, false), // base cell 37
-        new BaseCellData(12, 2, 0, 0, true),  // base cell 38 (pentagon)
-        new BaseCellData(6, 1, 0, 1, false),  // base cell 39
-        new BaseCellData(7, 1, 0, 1, false),  // base cell 40
-        new BaseCellData(4, 0, 0, 1, false),  // base cell 41
-        new BaseCellData(3, 0, 0, 1, false),  // base cell 42
-        new BaseCellData(3, 0, 1, 1, false),  // base cell 43
-        new BaseCellData(4, 0, 1, 0, false),  // base cell 44
-        new BaseCellData(6, 1, 0, 0, false),  // base cell 45
-        new BaseCellData(11, 0, 0, 0, false), // base cell 46
-        new BaseCellData(8, 0, 0, 1, false),  // base cell 47
-        new BaseCellData(5, 0, 0, 1, false),  // base cell 48
-        new BaseCellData(14, 2, 0, 0, true),  // base cell 49 (pentagon)
-        new BaseCellData(5, 0, 0, 0, false),  // base cell 50
-        new BaseCellData(12, 1, 0, 0, false), // base cell 51
-        new BaseCellData(10, 1, 1, 0, false), // base cell 52
-        new BaseCellData(4, 0, 1, 1, false),  // base cell 53
-        new BaseCellData(12, 1, 1, 0, false), // base cell 54
-        new BaseCellData(7, 1, 0, 0, false),  // base cell 55
-        new BaseCellData(11, 0, 1, 0, false), // base cell 56
-        new BaseCellData(10, 0, 0, 0, false), // base cell 57
-        new BaseCellData(13, 2, 0, 0, true),  // base cell 58 (pentagon)
-        new BaseCellData(10, 0, 0, 1, false), // base cell 59
-        new BaseCellData(11, 0, 0, 1, false), // base cell 60
-        new BaseCellData(9, 0, 1, 0, false),  // base cell 61
-        new BaseCellData(8, 0, 1, 0, false),  // base cell 62
-        new BaseCellData(6, 2, 0, 0, true),   // base cell 63 (pentagon)
-        new BaseCellData(8, 0, 0, 0, false),  // base cell 64
-        new BaseCellData(9, 0, 0, 1, false),  // base cell 65
-        new BaseCellData(14, 1, 0, 0, false), // base cell 66
-        new BaseCellData(5, 1, 0, 1, false),  // base cell 67
-        new BaseCellData(16, 0, 1, 1, false), // base cell 68
-        new BaseCellData(8, 1, 0, 1, false),  // base cell 69
-        new BaseCellData(5, 1, 0, 0, false),  // base cell 70
-        new BaseCellData(12, 0, 0, 0, false), // base cell 71
-        new BaseCellData(7, 2, 0, 0, true),   // base cell 72 (pentagon)
-        new BaseCellData(12, 0, 1, 0, false), // base cell 73
-        new BaseCellData(10, 0, 1, 0, false), // base cell 74
-        new BaseCellData(9, 0, 0, 0, false),  // base cell 75
-        new BaseCellData(13, 1, 0, 0, false), // base cell 76
-        new BaseCellData(16, 0, 0, 1, false), // base cell 77
-        new BaseCellData(15, 0, 1, 1, false), // base cell 78
-        new BaseCellData(15, 0, 1, 0, false), // base cell 79
-        new BaseCellData(16, 0, 1, 0, false), // base cell 80
-        new BaseCellData(14, 1, 1, 0, false), // base cell 81
-        new BaseCellData(13, 1, 1, 0, false), // base cell 82
-        new BaseCellData(5, 2, 0, 0, true),   // base cell 83 (pentagon)
-        new BaseCellData(8, 1, 0, 0, false),  // base cell 84
-        new BaseCellData(14, 0, 0, 0, false), // base cell 85
-        new BaseCellData(9, 1, 0, 1, false),  // base cell 86
-        new BaseCellData(14, 0, 0, 1, false), // base cell 87
-        new BaseCellData(17, 0, 0, 1, false), // base cell 88
-        new BaseCellData(12, 0, 0, 1, false), // base cell 89
-        new BaseCellData(16, 0, 0, 0, false), // base cell 90
-        new BaseCellData(17, 0, 1, 1, false), // base cell 91
-        new BaseCellData(15, 0, 0, 1, false), // base cell 92
-        new BaseCellData(16, 1, 0, 1, false), // base cell 93
-        new BaseCellData(9, 1, 0, 0, false),  // base cell 94
-        new BaseCellData(15, 0, 0, 0, false), // base cell 95
-        new BaseCellData(13, 0, 0, 0, false), // base cell 96
-        new BaseCellData(8, 2, 0, 0, true),   // base cell 97 (pentagon)
-        new BaseCellData(13, 0, 1, 0, false), // base cell 98
-        new BaseCellData(17, 1, 0, 1, false), // base cell 99
-        new BaseCellData(19, 0, 1, 0, false), // base cell 100
-        new BaseCellData(14, 0, 1, 0, false), // base cell 101
-        new BaseCellData(19, 0, 1, 1, false), // base cell 102
-        new BaseCellData(17, 0, 1, 0, false), // base cell 103
-        new BaseCellData(13, 0, 0, 1, false), // base cell 104
-        new BaseCellData(17, 0, 0, 0, false), // base cell 105
-        new BaseCellData(16, 1, 0, 0, false), // base cell 106
-        new BaseCellData(9, 2, 0, 0, true),   // base cell 107 (pentagon)
-        new BaseCellData(15, 1, 0, 1, false), // base cell 108
-        new BaseCellData(15, 1, 0, 0, false), // base cell 109
-        new BaseCellData(18, 0, 1, 1, false), // base cell 110
-        new BaseCellData(18, 0, 0, 1, false), // base cell 111
-        new BaseCellData(19, 0, 0, 1, false), // base cell 112
-        new BaseCellData(17, 1, 0, 0, false), // base cell 113
-        new BaseCellData(19, 0, 0, 0, false), // base cell 114
-        new BaseCellData(18, 0, 1, 0, false), // base cell 115
-        new BaseCellData(18, 1, 0, 1, false), // base cell 116
-        new BaseCellData(19, 2, 0, 0, true),  // base cell 117 (pentagon)
-        new BaseCellData(19, 1, 0, 0, false), // base cell 118
-        new BaseCellData(18, 0, 0, 0, false), // base cell 119
-        new BaseCellData(19, 1, 0, 1, false), // base cell 120
-        new BaseCellData(18, 1, 0, 0, false)  // base cell 121
+        new BaseCellData(1, 1, 0, 0, false, 0, 0),  // base cell 0
+        new BaseCellData(2, 1, 1, 0, false, 0, 0),  // base cell 1
+        new BaseCellData(1, 0, 0, 0, false, 0, 0),  // base cell 2
+        new BaseCellData(2, 1, 0, 0, false, 0, 0),  // base cell 3
+        new BaseCellData(0, 2, 0, 0, true, -1, -1),  // base cell 4
+        new BaseCellData(1, 1, 1, 0, false, 0, 0),  // base cell 5
+        new BaseCellData(1, 0, 0, 1, false, 0, 0),  // base cell 6
+        new BaseCellData(2, 0, 0, 0, false, 0, 0),  // base cell 7
+        new BaseCellData(0, 1, 0, 0, false, 0, 0),  // base cell 8
+        new BaseCellData(2, 0, 1, 0, false, 0, 0),  // base cell 9
+        new BaseCellData(1, 0, 1, 0, false, 0, 0),  // base cell 10
+        new BaseCellData(1, 0, 1, 1, false, 0, 0),  // base cell 11
+        new BaseCellData(3, 1, 0, 0, false, 0, 0),  // base cell 12
+        new BaseCellData(3, 1, 1, 0, false, 0, 0),  // base cell 13
+        new BaseCellData(11, 2, 0, 0, true, 2, 6),  // base cell 14
+        new BaseCellData(4, 1, 0, 0, false, 0, 0),  // base cell 15
+        new BaseCellData(0, 0, 0, 0, false, 0, 0),  // base cell 16
+        new BaseCellData(6, 0, 1, 0, false, 0, 0),  // base cell 17
+        new BaseCellData(0, 0, 0, 1, false, 0, 0),  // base cell 18
+        new BaseCellData(2, 0, 1, 1, false, 0, 0),  // base cell 19
+        new BaseCellData(7, 0, 0, 1, false, 0, 0),  // base cell 20
+        new BaseCellData(2, 0, 0, 1, false, 0, 0),  // base cell 21
+        new BaseCellData(0, 1, 1, 0, false, 0, 0),  // base cell 22
+        new BaseCellData(6, 0, 0, 1, false, 0, 0),  // base cell 23
+        new BaseCellData(10, 2, 0, 0, true, 1, 5),  // base cell 24
+        new BaseCellData(6, 0, 0, 0, false, 0, 0),  // base cell 25
+        new BaseCellData(3, 0, 0, 0, false, 0, 0),  // base cell 26
+        new BaseCellData(11, 1, 0, 0, false, 0, 0),  // base cell 27
+        new BaseCellData(4, 1, 1, 0, false, 0, 0),  // base cell 28
+        new BaseCellData(3, 0, 1, 0, false, 0, 0),  // base cell 29
+        new BaseCellData(0, 0, 1, 1, false, 0, 0),  // base cell 30
+        new BaseCellData(4, 0, 0, 0, false, 0, 0),  // base cell 31
+        new BaseCellData(5, 0, 1, 0, false, 0, 0),  // base cell 32
+        new BaseCellData(0, 0, 1, 0, false, 0, 0),  // base cell 33
+        new BaseCellData(7, 0, 1, 0, false, 0, 0),  // base cell 34
+        new BaseCellData(11, 1, 1, 0, false, 0, 0),  // base cell 35
+        new BaseCellData(7, 0, 0, 0, false, 0, 0),  // base cell 36
+        new BaseCellData(10, 1, 0, 0, false, 0, 0),  // base cell 37
+        new BaseCellData(12, 2, 0, 0, true, 3, 7),  // base cell 38
+        new BaseCellData(6, 1, 0, 1, false, 0, 0),  // base cell 39
+        new BaseCellData(7, 1, 0, 1, false, 0, 0),  // base cell 40
+        new BaseCellData(4, 0, 0, 1, false, 0, 0),  // base cell 41
+        new BaseCellData(3, 0, 0, 1, false, 0, 0),  // base cell 42
+        new BaseCellData(3, 0, 1, 1, false, 0, 0),  // base cell 43
+        new BaseCellData(4, 0, 1, 0, false, 0, 0),  // base cell 44
+        new BaseCellData(6, 1, 0, 0, false, 0, 0),  // base cell 45
+        new BaseCellData(11, 0, 0, 0, false, 0, 0),  // base cell 46
+        new BaseCellData(8, 0, 0, 1, false, 0, 0),  // base cell 47
+        new BaseCellData(5, 0, 0, 1, false, 0, 0),  // base cell 48
+        new BaseCellData(14, 2, 0, 0, true, 0, 9),  // base cell 49
+        new BaseCellData(5, 0, 0, 0, false, 0, 0),  // base cell 50
+        new BaseCellData(12, 1, 0, 0, false, 0, 0),  // base cell 51
+        new BaseCellData(10, 1, 1, 0, false, 0, 0),  // base cell 52
+        new BaseCellData(4, 0, 1, 1, false, 0, 0),  // base cell 53
+        new BaseCellData(12, 1, 1, 0, false, 0, 0),  // base cell 54
+        new BaseCellData(7, 1, 0, 0, false, 0, 0),  // base cell 55
+        new BaseCellData(11, 0, 1, 0, false, 0, 0),  // base cell 56
+        new BaseCellData(10, 0, 0, 0, false, 0, 0),  // base cell 57
+        new BaseCellData(13, 2, 0, 0, true, 4, 8),  // base cell 58
+        new BaseCellData(10, 0, 0, 1, false, 0, 0),  // base cell 59
+        new BaseCellData(11, 0, 0, 1, false, 0, 0),  // base cell 60
+        new BaseCellData(9, 0, 1, 0, false, 0, 0),  // base cell 61
+        new BaseCellData(8, 0, 1, 0, false, 0, 0),  // base cell 62
+        new BaseCellData(6, 2, 0, 0, true, 11, 15),  // base cell 63
+        new BaseCellData(8, 0, 0, 0, false, 0, 0),  // base cell 64
+        new BaseCellData(9, 0, 0, 1, false, 0, 0),  // base cell 65
+        new BaseCellData(14, 1, 0, 0, false, 0, 0),  // base cell 66
+        new BaseCellData(5, 1, 0, 1, false, 0, 0),  // base cell 67
+        new BaseCellData(16, 0, 1, 1, false, 0, 0),  // base cell 68
+        new BaseCellData(8, 1, 0, 1, false, 0, 0),  // base cell 69
+        new BaseCellData(5, 1, 0, 0, false, 0, 0),  // base cell 70
+        new BaseCellData(12, 0, 0, 0, false, 0, 0),  // base cell 71
+        new BaseCellData(7, 2, 0, 0, true, 12, 16),  // base cell 72
+        new BaseCellData(12, 0, 1, 0, false, 0, 0),  // base cell 73
+        new BaseCellData(10, 0, 1, 0, false, 0, 0),  // base cell 74
+        new BaseCellData(9, 0, 0, 0, false, 0, 0),  // base cell 75
+        new BaseCellData(13, 1, 0, 0, false, 0, 0),  // base cell 76
+        new BaseCellData(16, 0, 0, 1, false, 0, 0),  // base cell 77
+        new BaseCellData(15, 0, 1, 1, false, 0, 0),  // base cell 78
+        new BaseCellData(15, 0, 1, 0, false, 0, 0),  // base cell 79
+        new BaseCellData(16, 0, 1, 0, false, 0, 0),  // base cell 80
+        new BaseCellData(14, 1, 1, 0, false, 0, 0),  // base cell 81
+        new BaseCellData(13, 1, 1, 0, false, 0, 0),  // base cell 82
+        new BaseCellData(5, 2, 0, 0, true, 10, 19),  // base cell 83
+        new BaseCellData(8, 1, 0, 0, false, 0, 0),  // base cell 84
+        new BaseCellData(14, 0, 0, 0, false, 0, 0),  // base cell 85
+        new BaseCellData(9, 1, 0, 1, false, 0, 0),  // base cell 86
+        new BaseCellData(14, 0, 0, 1, false, 0, 0),  // base cell 87
+        new BaseCellData(17, 0, 0, 1, false, 0, 0),  // base cell 88
+        new BaseCellData(12, 0, 0, 1, false, 0, 0),  // base cell 89
+        new BaseCellData(16, 0, 0, 0, false, 0, 0),  // base cell 90
+        new BaseCellData(17, 0, 1, 1, false, 0, 0),  // base cell 91
+        new BaseCellData(15, 0, 0, 1, false, 0, 0),  // base cell 92
+        new BaseCellData(16, 1, 0, 1, false, 0, 0),  // base cell 93
+        new BaseCellData(9, 1, 0, 0, false, 0, 0),  // base cell 94
+        new BaseCellData(15, 0, 0, 0, false, 0, 0),  // base cell 95
+        new BaseCellData(13, 0, 0, 0, false, 0, 0),  // base cell 96
+        new BaseCellData(8, 2, 0, 0, true, 13, 17),  // base cell 97
+        new BaseCellData(13, 0, 1, 0, false, 0, 0),  // base cell 98
+        new BaseCellData(17, 1, 0, 1, false, 0, 0),  // base cell 99
+        new BaseCellData(19, 0, 1, 0, false, 0, 0),  // base cell 100
+        new BaseCellData(14, 0, 1, 0, false, 0, 0),  // base cell 101
+        new BaseCellData(19, 0, 1, 1, false, 0, 0),  // base cell 102
+        new BaseCellData(17, 0, 1, 0, false, 0, 0),  // base cell 103
+        new BaseCellData(13, 0, 0, 1, false, 0, 0),  // base cell 104
+        new BaseCellData(17, 0, 0, 0, false, 0, 0),  // base cell 105
+        new BaseCellData(16, 1, 0, 0, false, 0, 0),  // base cell 106
+        new BaseCellData(9, 2, 0, 0, true, 14, 18),  // base cell 107
+        new BaseCellData(15, 1, 0, 1, false, 0, 0),  // base cell 108
+        new BaseCellData(15, 1, 0, 0, false, 0, 0),  // base cell 109
+        new BaseCellData(18, 0, 1, 1, false, 0, 0),  // base cell 110
+        new BaseCellData(18, 0, 0, 1, false, 0, 0),  // base cell 111
+        new BaseCellData(19, 0, 0, 1, false, 0, 0),  // base cell 112
+        new BaseCellData(17, 1, 0, 0, false, 0, 0),  // base cell 113
+        new BaseCellData(19, 0, 0, 0, false, 0, 0),  // base cell 114
+        new BaseCellData(18, 0, 1, 0, false, 0, 0),  // base cell 115
+        new BaseCellData(18, 1, 0, 1, false, 0, 0),  // base cell 116
+        new BaseCellData(19, 2, 0, 0, true, -1, -1),  // base cell 117
+        new BaseCellData(19, 1, 0, 0, false, 0, 0),  // base cell 118
+        new BaseCellData(18, 0, 0, 0, false, 0, 0),  // base cell 119
+        new BaseCellData(19, 1, 0, 1, false, 0, 0),  // base cell 120
+        new BaseCellData(18, 1, 0, 0, false, 0, 0)  // base cell 121
     };
     
-    /// <summary>
-    /// Resolution 0 base cell lookup table for each face.
-    /// Maps face + IJK coordinates (0-2) to base cell number.
-    /// This is a 4D array: [face][i][j][k] -> baseCell
-    /// </summary>
-    private static readonly int[,,,] FaceIjkBaseCells = new int[20, 3, 3, 3]
+    private readonly struct BaseCellRotation
     {
-        // face 0
+        public int BaseCell { get; }
+        public int CcwRot60 { get; }
+        
+        public BaseCellRotation(int baseCell, int ccwRot60)
         {
-            { { 16, 18, 24 }, { 33, 30, 32 }, { 49, 48, 50 } },
-            { { 8, 5, 10 }, { 22, 16, 18 }, { 41, 33, 30 } },
-            { { 4, 0, 2 }, { 15, 8, 5 }, { 31, 22, 16 } }
-        },
-        // face 1
-        {
-            { { 2, 6, 14 }, { 10, 11, 17 }, { 24, 23, 25 } },
-            { { 0, 1, 9 }, { 5, 2, 6 }, { 18, 10, 11 } },
-            { { 4, 3, 7 }, { 8, 0, 1 }, { 16, 5, 2 } }
-        },
-        // face 2
-        {
-            { { 7, 21, 38 }, { 9, 19, 34 }, { 14, 20, 36 } },
-            { { 3, 13, 29 }, { 1, 7, 21 }, { 6, 9, 19 } },
-            { { 4, 12, 26 }, { 0, 3, 13 }, { 2, 1, 7 } }
-        },
-        // face 3
-        {
-            { { 26, 42, 58 }, { 29, 43, 62 }, { 38, 47, 64 } },
-            { { 12, 28, 44 }, { 13, 26, 42 }, { 21, 29, 43 } },
-            { { 4, 15, 31 }, { 3, 12, 28 }, { 7, 13, 26 } }
-        },
-        // face 4
-        {
-            { { 31, 41, 49 }, { 44, 53, 61 }, { 58, 65, 75 } },
-            { { 15, 22, 33 }, { 28, 31, 41 }, { 42, 44, 53 } },
-            { { 4, 8, 16 }, { 12, 15, 22 }, { 26, 28, 31 } }
-        },
-        // face 5
-        {
-            { { 50, 48, 49 }, { 32, 30, 33 }, { 24, 18, 16 } },
-            { { 70, 67, 66 }, { 52, 50, 48 }, { 37, 32, 30 } },
-            { { 83, 87, 85 }, { 74, 70, 67 }, { 57, 52, 50 } }
-        },
-        // face 6
-        {
-            { { 25, 23, 24 }, { 17, 11, 10 }, { 14, 6, 2 } },
-            { { 45, 39, 37 }, { 35, 25, 23 }, { 27, 17, 11 } },
-            { { 63, 59, 57 }, { 56, 45, 39 }, { 46, 35, 25 } }
-        },
-        // face 7
-        {
-            { { 36, 20, 14 }, { 34, 19, 9 }, { 38, 21, 7 } },
-            { { 55, 40, 27 }, { 54, 36, 20 }, { 51, 34, 19 } },
-            { { 72, 60, 46 }, { 73, 55, 40 }, { 71, 54, 36 } }
-        },
-        // face 8
-        {
-            { { 64, 47, 38 }, { 62, 43, 29 }, { 58, 42, 26 } },
-            { { 84, 69, 51 }, { 82, 64, 47 }, { 76, 62, 43 } },
-            { { 97, 89, 71 }, { 98, 84, 69 }, { 96, 82, 64 } }
-        },
-        // face 9
-        {
-            { { 75, 65, 58 }, { 61, 53, 44 }, { 49, 41, 31 } },
-            { { 94, 86, 76 }, { 81, 75, 65 }, { 66, 61, 53 } },
-            { { 107, 104, 96 }, { 101, 94, 86 }, { 85, 81, 75 } }
-        },
-        // face 10
-        {
-            { { 57, 59, 63 }, { 74, 78, 79 }, { 83, 92, 95 } },
-            { { 37, 39, 45 }, { 52, 57, 59 }, { 70, 74, 78 } },
-            { { 24, 23, 25 }, { 32, 37, 39 }, { 50, 52, 57 } }
-        },
-        // face 11
-        {
-            { { 46, 60, 72 }, { 56, 68, 80 }, { 63, 77, 90 } },
-            { { 27, 40, 55 }, { 35, 46, 60 }, { 45, 56, 68 } },
-            { { 14, 20, 36 }, { 17, 27, 40 }, { 25, 35, 46 } }
-        },
-        // face 12
-        {
-            { { 71, 89, 97 }, { 73, 91, 103 }, { 72, 88, 105 } },
-            { { 51, 69, 84 }, { 54, 71, 89 }, { 55, 73, 91 } },
-            { { 38, 47, 64 }, { 34, 51, 69 }, { 36, 54, 71 } }
-        },
-        // face 13
-        {
-            { { 96, 104, 107 }, { 98, 110, 115 }, { 97, 111, 119 } },
-            { { 76, 86, 94 }, { 82, 96, 104 }, { 84, 98, 110 } },
-            { { 58, 65, 75 }, { 62, 76, 86 }, { 64, 82, 96 } }
-        },
-        // face 14
-        {
-            { { 85, 87, 83 }, { 101, 102, 100 }, { 107, 112, 114 } },
-            { { 66, 67, 70 }, { 81, 85, 87 }, { 94, 101, 102 } },
-            { { 49, 48, 50 }, { 61, 66, 67 }, { 75, 81, 85 } }
-        },
-        // face 15
-        {
-            { { 95, 92, 83 }, { 79, 78, 74 }, { 63, 59, 57 } },
-            { { 109, 108, 100 }, { 93, 95, 92 }, { 77, 79, 78 } },
-            { { 117, 118, 114 }, { 106, 109, 108 }, { 90, 93, 95 } }
-        },
-        // face 16
-        {
-            { { 90, 77, 63 }, { 80, 68, 56 }, { 72, 60, 46 } },
-            { { 106, 93, 79 }, { 99, 90, 77 }, { 88, 80, 68 } },
-            { { 117, 109, 95 }, { 113, 106, 93 }, { 105, 99, 90 } }
-        },
-        // face 17
-        {
-            { { 105, 88, 72 }, { 103, 91, 73 }, { 97, 89, 71 } },
-            { { 113, 99, 80 }, { 116, 105, 88 }, { 111, 103, 91 } },
-            { { 117, 106, 90 }, { 121, 113, 99 }, { 119, 116, 105 } }
-        },
-        // face 18
-        {
-            { { 119, 111, 97 }, { 115, 110, 98 }, { 107, 104, 96 } },
-            { { 121, 116, 103 }, { 120, 119, 111 }, { 112, 115, 110 } },
-            { { 117, 113, 105 }, { 118, 121, 116 }, { 114, 120, 119 } }
-        },
-        // face 19
-        {
-            { { 114, 112, 107 }, { 100, 102, 101 }, { 83, 87, 85 } },
-            { { 118, 120, 115 }, { 108, 114, 112 }, { 92, 100, 102 } },
-            { { 117, 121, 119 }, { 109, 118, 120 }, { 95, 108, 114 } }
+            BaseCell = baseCell;
+            CcwRot60 = ccwRot60;
         }
+    }
+    
+    /// <summary>
+    /// Resolution 0 base cell lookup table for each face with required rotation into base cell coordinates.
+    /// Maps face + IJK coordinates (0-2) to the base cell and number of CCW 60° rotations.
+    /// </summary>
+    private static readonly BaseCellRotation[,,,] FaceIjkBaseCells = new BaseCellRotation[20, 3, 3, 3]
+    {
+        { // face 0
+            {
+                { new BaseCellRotation(16, 0), new BaseCellRotation(18, 0), new BaseCellRotation(24, 0) },
+                { new BaseCellRotation(33, 0), new BaseCellRotation(30, 0), new BaseCellRotation(32, 3) },
+                { new BaseCellRotation(49, 1), new BaseCellRotation(48, 3), new BaseCellRotation(50, 3) },
+            },
+            {
+                { new BaseCellRotation(8, 0), new BaseCellRotation(5, 5), new BaseCellRotation(10, 5) },
+                { new BaseCellRotation(22, 0), new BaseCellRotation(16, 0), new BaseCellRotation(18, 0) },
+                { new BaseCellRotation(41, 1), new BaseCellRotation(33, 0), new BaseCellRotation(30, 0) },
+            },
+            {
+                { new BaseCellRotation(4, 0), new BaseCellRotation(0, 5), new BaseCellRotation(2, 5) },
+                { new BaseCellRotation(15, 1), new BaseCellRotation(8, 0), new BaseCellRotation(5, 5) },
+                { new BaseCellRotation(31, 1), new BaseCellRotation(22, 0), new BaseCellRotation(16, 0) },
+            },
+        },
+        { // face 1
+            {
+                { new BaseCellRotation(2, 0), new BaseCellRotation(6, 0), new BaseCellRotation(14, 0) },
+                { new BaseCellRotation(10, 0), new BaseCellRotation(11, 0), new BaseCellRotation(17, 3) },
+                { new BaseCellRotation(24, 1), new BaseCellRotation(23, 3), new BaseCellRotation(25, 3) },
+            },
+            {
+                { new BaseCellRotation(0, 0), new BaseCellRotation(1, 5), new BaseCellRotation(9, 5) },
+                { new BaseCellRotation(5, 0), new BaseCellRotation(2, 0), new BaseCellRotation(6, 0) },
+                { new BaseCellRotation(18, 1), new BaseCellRotation(10, 0), new BaseCellRotation(11, 0) },
+            },
+            {
+                { new BaseCellRotation(4, 1), new BaseCellRotation(3, 5), new BaseCellRotation(7, 5) },
+                { new BaseCellRotation(8, 1), new BaseCellRotation(0, 0), new BaseCellRotation(1, 5) },
+                { new BaseCellRotation(16, 1), new BaseCellRotation(5, 0), new BaseCellRotation(2, 0) },
+            },
+        },
+        { // face 2
+            {
+                { new BaseCellRotation(7, 0), new BaseCellRotation(21, 0), new BaseCellRotation(38, 0) },
+                { new BaseCellRotation(9, 0), new BaseCellRotation(19, 0), new BaseCellRotation(34, 3) },
+                { new BaseCellRotation(14, 1), new BaseCellRotation(20, 3), new BaseCellRotation(36, 3) },
+            },
+            {
+                { new BaseCellRotation(3, 0), new BaseCellRotation(13, 5), new BaseCellRotation(29, 5) },
+                { new BaseCellRotation(1, 0), new BaseCellRotation(7, 0), new BaseCellRotation(21, 0) },
+                { new BaseCellRotation(6, 1), new BaseCellRotation(9, 0), new BaseCellRotation(19, 0) },
+            },
+            {
+                { new BaseCellRotation(4, 2), new BaseCellRotation(12, 5), new BaseCellRotation(26, 5) },
+                { new BaseCellRotation(0, 1), new BaseCellRotation(3, 0), new BaseCellRotation(13, 5) },
+                { new BaseCellRotation(2, 1), new BaseCellRotation(1, 0), new BaseCellRotation(7, 0) },
+            },
+        },
+        { // face 3
+            {
+                { new BaseCellRotation(26, 0), new BaseCellRotation(42, 0), new BaseCellRotation(58, 0) },
+                { new BaseCellRotation(29, 0), new BaseCellRotation(43, 0), new BaseCellRotation(62, 3) },
+                { new BaseCellRotation(38, 1), new BaseCellRotation(47, 3), new BaseCellRotation(64, 3) },
+            },
+            {
+                { new BaseCellRotation(12, 0), new BaseCellRotation(28, 5), new BaseCellRotation(44, 5) },
+                { new BaseCellRotation(13, 0), new BaseCellRotation(26, 0), new BaseCellRotation(42, 0) },
+                { new BaseCellRotation(21, 1), new BaseCellRotation(29, 0), new BaseCellRotation(43, 0) },
+            },
+            {
+                { new BaseCellRotation(4, 3), new BaseCellRotation(15, 5), new BaseCellRotation(31, 5) },
+                { new BaseCellRotation(3, 1), new BaseCellRotation(12, 0), new BaseCellRotation(28, 5) },
+                { new BaseCellRotation(7, 1), new BaseCellRotation(13, 0), new BaseCellRotation(26, 0) },
+            },
+        },
+        { // face 4
+            {
+                { new BaseCellRotation(31, 0), new BaseCellRotation(41, 0), new BaseCellRotation(49, 0) },
+                { new BaseCellRotation(44, 0), new BaseCellRotation(53, 0), new BaseCellRotation(61, 3) },
+                { new BaseCellRotation(58, 1), new BaseCellRotation(65, 3), new BaseCellRotation(75, 3) },
+            },
+            {
+                { new BaseCellRotation(15, 0), new BaseCellRotation(22, 5), new BaseCellRotation(33, 5) },
+                { new BaseCellRotation(28, 0), new BaseCellRotation(31, 0), new BaseCellRotation(41, 0) },
+                { new BaseCellRotation(42, 1), new BaseCellRotation(44, 0), new BaseCellRotation(53, 0) },
+            },
+            {
+                { new BaseCellRotation(4, 4), new BaseCellRotation(8, 5), new BaseCellRotation(16, 5) },
+                { new BaseCellRotation(12, 1), new BaseCellRotation(15, 0), new BaseCellRotation(22, 5) },
+                { new BaseCellRotation(26, 1), new BaseCellRotation(28, 0), new BaseCellRotation(31, 0) },
+            },
+        },
+        { // face 5
+            {
+                { new BaseCellRotation(50, 0), new BaseCellRotation(48, 0), new BaseCellRotation(49, 3) },
+                { new BaseCellRotation(32, 0), new BaseCellRotation(30, 3), new BaseCellRotation(33, 3) },
+                { new BaseCellRotation(24, 3), new BaseCellRotation(18, 3), new BaseCellRotation(16, 3) },
+            },
+            {
+                { new BaseCellRotation(70, 0), new BaseCellRotation(67, 0), new BaseCellRotation(66, 3) },
+                { new BaseCellRotation(52, 3), new BaseCellRotation(50, 0), new BaseCellRotation(48, 0) },
+                { new BaseCellRotation(37, 3), new BaseCellRotation(32, 0), new BaseCellRotation(30, 3) },
+            },
+            {
+                { new BaseCellRotation(83, 0), new BaseCellRotation(87, 3), new BaseCellRotation(85, 3) },
+                { new BaseCellRotation(74, 3), new BaseCellRotation(70, 0), new BaseCellRotation(67, 0) },
+                { new BaseCellRotation(57, 1), new BaseCellRotation(52, 3), new BaseCellRotation(50, 0) },
+            },
+        },
+        { // face 6
+            {
+                { new BaseCellRotation(25, 0), new BaseCellRotation(23, 0), new BaseCellRotation(24, 3) },
+                { new BaseCellRotation(17, 0), new BaseCellRotation(11, 3), new BaseCellRotation(10, 3) },
+                { new BaseCellRotation(14, 3), new BaseCellRotation(6, 3), new BaseCellRotation(2, 3) },
+            },
+            {
+                { new BaseCellRotation(45, 0), new BaseCellRotation(39, 0), new BaseCellRotation(37, 3) },
+                { new BaseCellRotation(35, 3), new BaseCellRotation(25, 0), new BaseCellRotation(23, 0) },
+                { new BaseCellRotation(27, 3), new BaseCellRotation(17, 0), new BaseCellRotation(11, 3) },
+            },
+            {
+                { new BaseCellRotation(63, 0), new BaseCellRotation(59, 3), new BaseCellRotation(57, 3) },
+                { new BaseCellRotation(56, 3), new BaseCellRotation(45, 0), new BaseCellRotation(39, 0) },
+                { new BaseCellRotation(46, 3), new BaseCellRotation(35, 3), new BaseCellRotation(25, 0) },
+            },
+        },
+        { // face 7
+            {
+                { new BaseCellRotation(36, 0), new BaseCellRotation(20, 0), new BaseCellRotation(14, 3) },
+                { new BaseCellRotation(34, 0), new BaseCellRotation(19, 3), new BaseCellRotation(9, 3) },
+                { new BaseCellRotation(38, 3), new BaseCellRotation(21, 3), new BaseCellRotation(7, 3) },
+            },
+            {
+                { new BaseCellRotation(55, 0), new BaseCellRotation(40, 0), new BaseCellRotation(27, 3) },
+                { new BaseCellRotation(54, 3), new BaseCellRotation(36, 0), new BaseCellRotation(20, 0) },
+                { new BaseCellRotation(51, 3), new BaseCellRotation(34, 0), new BaseCellRotation(19, 3) },
+            },
+            {
+                { new BaseCellRotation(72, 0), new BaseCellRotation(60, 3), new BaseCellRotation(46, 3) },
+                { new BaseCellRotation(73, 3), new BaseCellRotation(55, 0), new BaseCellRotation(40, 0) },
+                { new BaseCellRotation(71, 3), new BaseCellRotation(54, 3), new BaseCellRotation(36, 0) },
+            },
+        },
+        { // face 8
+            {
+                { new BaseCellRotation(64, 0), new BaseCellRotation(47, 0), new BaseCellRotation(38, 3) },
+                { new BaseCellRotation(62, 0), new BaseCellRotation(43, 3), new BaseCellRotation(29, 3) },
+                { new BaseCellRotation(58, 3), new BaseCellRotation(42, 3), new BaseCellRotation(26, 3) },
+            },
+            {
+                { new BaseCellRotation(84, 0), new BaseCellRotation(69, 0), new BaseCellRotation(51, 3) },
+                { new BaseCellRotation(82, 3), new BaseCellRotation(64, 0), new BaseCellRotation(47, 0) },
+                { new BaseCellRotation(76, 3), new BaseCellRotation(62, 0), new BaseCellRotation(43, 3) },
+            },
+            {
+                { new BaseCellRotation(97, 0), new BaseCellRotation(89, 3), new BaseCellRotation(71, 3) },
+                { new BaseCellRotation(98, 3), new BaseCellRotation(84, 0), new BaseCellRotation(69, 0) },
+                { new BaseCellRotation(96, 3), new BaseCellRotation(82, 3), new BaseCellRotation(64, 0) },
+            },
+        },
+        { // face 9
+            {
+                { new BaseCellRotation(75, 0), new BaseCellRotation(65, 0), new BaseCellRotation(58, 3) },
+                { new BaseCellRotation(61, 0), new BaseCellRotation(53, 3), new BaseCellRotation(44, 3) },
+                { new BaseCellRotation(49, 3), new BaseCellRotation(41, 3), new BaseCellRotation(31, 3) },
+            },
+            {
+                { new BaseCellRotation(94, 0), new BaseCellRotation(86, 0), new BaseCellRotation(76, 3) },
+                { new BaseCellRotation(81, 3), new BaseCellRotation(75, 0), new BaseCellRotation(65, 0) },
+                { new BaseCellRotation(66, 3), new BaseCellRotation(61, 0), new BaseCellRotation(53, 3) },
+            },
+            {
+                { new BaseCellRotation(107, 0), new BaseCellRotation(104, 3), new BaseCellRotation(96, 3) },
+                { new BaseCellRotation(101, 3), new BaseCellRotation(94, 0), new BaseCellRotation(86, 0) },
+                { new BaseCellRotation(85, 3), new BaseCellRotation(81, 3), new BaseCellRotation(75, 0) },
+            },
+        },
+        { // face 10
+            {
+                { new BaseCellRotation(57, 0), new BaseCellRotation(59, 0), new BaseCellRotation(63, 3) },
+                { new BaseCellRotation(74, 0), new BaseCellRotation(78, 3), new BaseCellRotation(79, 3) },
+                { new BaseCellRotation(83, 3), new BaseCellRotation(92, 3), new BaseCellRotation(95, 3) },
+            },
+            {
+                { new BaseCellRotation(37, 0), new BaseCellRotation(39, 3), new BaseCellRotation(45, 3) },
+                { new BaseCellRotation(52, 0), new BaseCellRotation(57, 0), new BaseCellRotation(59, 0) },
+                { new BaseCellRotation(70, 3), new BaseCellRotation(74, 0), new BaseCellRotation(78, 3) },
+            },
+            {
+                { new BaseCellRotation(24, 0), new BaseCellRotation(23, 3), new BaseCellRotation(25, 3) },
+                { new BaseCellRotation(32, 3), new BaseCellRotation(37, 0), new BaseCellRotation(39, 3) },
+                { new BaseCellRotation(50, 3), new BaseCellRotation(52, 0), new BaseCellRotation(57, 0) },
+            },
+        },
+        { // face 11
+            {
+                { new BaseCellRotation(46, 0), new BaseCellRotation(60, 0), new BaseCellRotation(72, 3) },
+                { new BaseCellRotation(56, 0), new BaseCellRotation(68, 3), new BaseCellRotation(80, 3) },
+                { new BaseCellRotation(63, 3), new BaseCellRotation(77, 3), new BaseCellRotation(90, 3) },
+            },
+            {
+                { new BaseCellRotation(27, 0), new BaseCellRotation(40, 3), new BaseCellRotation(55, 3) },
+                { new BaseCellRotation(35, 0), new BaseCellRotation(46, 0), new BaseCellRotation(60, 0) },
+                { new BaseCellRotation(45, 3), new BaseCellRotation(56, 0), new BaseCellRotation(68, 3) },
+            },
+            {
+                { new BaseCellRotation(14, 0), new BaseCellRotation(20, 3), new BaseCellRotation(36, 3) },
+                { new BaseCellRotation(17, 3), new BaseCellRotation(27, 0), new BaseCellRotation(40, 3) },
+                { new BaseCellRotation(25, 3), new BaseCellRotation(35, 0), new BaseCellRotation(46, 0) },
+            },
+        },
+        { // face 12
+            {
+                { new BaseCellRotation(71, 0), new BaseCellRotation(89, 0), new BaseCellRotation(97, 3) },
+                { new BaseCellRotation(73, 0), new BaseCellRotation(91, 3), new BaseCellRotation(103, 3) },
+                { new BaseCellRotation(72, 3), new BaseCellRotation(88, 3), new BaseCellRotation(105, 3) },
+            },
+            {
+                { new BaseCellRotation(51, 0), new BaseCellRotation(69, 3), new BaseCellRotation(84, 3) },
+                { new BaseCellRotation(54, 0), new BaseCellRotation(71, 0), new BaseCellRotation(89, 0) },
+                { new BaseCellRotation(55, 3), new BaseCellRotation(73, 0), new BaseCellRotation(91, 3) },
+            },
+            {
+                { new BaseCellRotation(38, 0), new BaseCellRotation(47, 3), new BaseCellRotation(64, 3) },
+                { new BaseCellRotation(34, 3), new BaseCellRotation(51, 0), new BaseCellRotation(69, 3) },
+                { new BaseCellRotation(36, 3), new BaseCellRotation(54, 0), new BaseCellRotation(71, 0) },
+            },
+        },
+        { // face 13
+            {
+                { new BaseCellRotation(96, 0), new BaseCellRotation(104, 0), new BaseCellRotation(107, 3) },
+                { new BaseCellRotation(98, 0), new BaseCellRotation(110, 3), new BaseCellRotation(115, 3) },
+                { new BaseCellRotation(97, 3), new BaseCellRotation(111, 3), new BaseCellRotation(119, 3) },
+            },
+            {
+                { new BaseCellRotation(76, 0), new BaseCellRotation(86, 3), new BaseCellRotation(94, 3) },
+                { new BaseCellRotation(82, 0), new BaseCellRotation(96, 0), new BaseCellRotation(104, 0) },
+                { new BaseCellRotation(84, 3), new BaseCellRotation(98, 0), new BaseCellRotation(110, 3) },
+            },
+            {
+                { new BaseCellRotation(58, 0), new BaseCellRotation(65, 3), new BaseCellRotation(75, 3) },
+                { new BaseCellRotation(62, 3), new BaseCellRotation(76, 0), new BaseCellRotation(86, 3) },
+                { new BaseCellRotation(64, 3), new BaseCellRotation(82, 0), new BaseCellRotation(96, 0) },
+            },
+        },
+        { // face 14
+            {
+                { new BaseCellRotation(85, 0), new BaseCellRotation(87, 0), new BaseCellRotation(83, 3) },
+                { new BaseCellRotation(101, 0), new BaseCellRotation(102, 3), new BaseCellRotation(100, 3) },
+                { new BaseCellRotation(107, 3), new BaseCellRotation(112, 3), new BaseCellRotation(114, 3) },
+            },
+            {
+                { new BaseCellRotation(66, 0), new BaseCellRotation(67, 3), new BaseCellRotation(70, 3) },
+                { new BaseCellRotation(81, 0), new BaseCellRotation(85, 0), new BaseCellRotation(87, 0) },
+                { new BaseCellRotation(94, 3), new BaseCellRotation(101, 0), new BaseCellRotation(102, 3) },
+            },
+            {
+                { new BaseCellRotation(49, 0), new BaseCellRotation(48, 3), new BaseCellRotation(50, 3) },
+                { new BaseCellRotation(61, 3), new BaseCellRotation(66, 0), new BaseCellRotation(67, 3) },
+                { new BaseCellRotation(75, 3), new BaseCellRotation(81, 0), new BaseCellRotation(85, 0) },
+            },
+        },
+        { // face 15
+            {
+                { new BaseCellRotation(95, 0), new BaseCellRotation(92, 0), new BaseCellRotation(83, 0) },
+                { new BaseCellRotation(79, 0), new BaseCellRotation(78, 0), new BaseCellRotation(74, 3) },
+                { new BaseCellRotation(63, 1), new BaseCellRotation(59, 3), new BaseCellRotation(57, 3) },
+            },
+            {
+                { new BaseCellRotation(109, 0), new BaseCellRotation(108, 0), new BaseCellRotation(100, 5) },
+                { new BaseCellRotation(93, 1), new BaseCellRotation(95, 0), new BaseCellRotation(92, 0) },
+                { new BaseCellRotation(77, 1), new BaseCellRotation(79, 0), new BaseCellRotation(78, 0) },
+            },
+            {
+                { new BaseCellRotation(117, 4), new BaseCellRotation(118, 5), new BaseCellRotation(114, 5) },
+                { new BaseCellRotation(106, 1), new BaseCellRotation(109, 0), new BaseCellRotation(108, 0) },
+                { new BaseCellRotation(90, 1), new BaseCellRotation(93, 1), new BaseCellRotation(95, 0) },
+            },
+        },
+        { // face 16
+            {
+                { new BaseCellRotation(90, 0), new BaseCellRotation(77, 0), new BaseCellRotation(63, 0) },
+                { new BaseCellRotation(80, 0), new BaseCellRotation(68, 0), new BaseCellRotation(56, 3) },
+                { new BaseCellRotation(72, 1), new BaseCellRotation(60, 3), new BaseCellRotation(46, 3) },
+            },
+            {
+                { new BaseCellRotation(106, 0), new BaseCellRotation(93, 0), new BaseCellRotation(79, 5) },
+                { new BaseCellRotation(99, 1), new BaseCellRotation(90, 0), new BaseCellRotation(77, 0) },
+                { new BaseCellRotation(88, 1), new BaseCellRotation(80, 0), new BaseCellRotation(68, 0) },
+            },
+            {
+                { new BaseCellRotation(117, 3), new BaseCellRotation(109, 5), new BaseCellRotation(95, 5) },
+                { new BaseCellRotation(113, 1), new BaseCellRotation(106, 0), new BaseCellRotation(93, 0) },
+                { new BaseCellRotation(105, 1), new BaseCellRotation(99, 1), new BaseCellRotation(90, 0) },
+            },
+        },
+        { // face 17
+            {
+                { new BaseCellRotation(105, 0), new BaseCellRotation(88, 0), new BaseCellRotation(72, 0) },
+                { new BaseCellRotation(103, 0), new BaseCellRotation(91, 0), new BaseCellRotation(73, 3) },
+                { new BaseCellRotation(97, 1), new BaseCellRotation(89, 3), new BaseCellRotation(71, 3) },
+            },
+            {
+                { new BaseCellRotation(113, 0), new BaseCellRotation(99, 0), new BaseCellRotation(80, 5) },
+                { new BaseCellRotation(116, 1), new BaseCellRotation(105, 0), new BaseCellRotation(88, 0) },
+                { new BaseCellRotation(111, 1), new BaseCellRotation(103, 0), new BaseCellRotation(91, 0) },
+            },
+            {
+                { new BaseCellRotation(117, 2), new BaseCellRotation(106, 5), new BaseCellRotation(90, 5) },
+                { new BaseCellRotation(121, 1), new BaseCellRotation(113, 0), new BaseCellRotation(99, 0) },
+                { new BaseCellRotation(119, 1), new BaseCellRotation(116, 1), new BaseCellRotation(105, 0) },
+            },
+        },
+        { // face 18
+            {
+                { new BaseCellRotation(119, 0), new BaseCellRotation(111, 0), new BaseCellRotation(97, 0) },
+                { new BaseCellRotation(115, 0), new BaseCellRotation(110, 0), new BaseCellRotation(98, 3) },
+                { new BaseCellRotation(107, 1), new BaseCellRotation(104, 3), new BaseCellRotation(96, 3) },
+            },
+            {
+                { new BaseCellRotation(121, 0), new BaseCellRotation(116, 0), new BaseCellRotation(103, 5) },
+                { new BaseCellRotation(120, 1), new BaseCellRotation(119, 0), new BaseCellRotation(111, 0) },
+                { new BaseCellRotation(112, 1), new BaseCellRotation(115, 0), new BaseCellRotation(110, 0) },
+            },
+            {
+                { new BaseCellRotation(117, 1), new BaseCellRotation(113, 5), new BaseCellRotation(105, 5) },
+                { new BaseCellRotation(118, 1), new BaseCellRotation(121, 0), new BaseCellRotation(116, 0) },
+                { new BaseCellRotation(114, 1), new BaseCellRotation(120, 1), new BaseCellRotation(119, 0) },
+            },
+        },
+        { // face 19
+            {
+                { new BaseCellRotation(114, 0), new BaseCellRotation(112, 0), new BaseCellRotation(107, 0) },
+                { new BaseCellRotation(100, 0), new BaseCellRotation(102, 0), new BaseCellRotation(101, 3) },
+                { new BaseCellRotation(83, 1), new BaseCellRotation(87, 3), new BaseCellRotation(85, 3) },
+            },
+            {
+                { new BaseCellRotation(118, 0), new BaseCellRotation(120, 0), new BaseCellRotation(115, 5) },
+                { new BaseCellRotation(108, 1), new BaseCellRotation(114, 0), new BaseCellRotation(112, 0) },
+                { new BaseCellRotation(92, 1), new BaseCellRotation(100, 0), new BaseCellRotation(102, 0) },
+            },
+            {
+                { new BaseCellRotation(117, 0), new BaseCellRotation(121, 5), new BaseCellRotation(119, 5) },
+                { new BaseCellRotation(109, 1), new BaseCellRotation(118, 0), new BaseCellRotation(120, 0) },
+                { new BaseCellRotation(95, 1), new BaseCellRotation(108, 1), new BaseCellRotation(114, 0) },
+            },
+        },
     };
 
     // Face neighbor direction constants
@@ -969,7 +1210,7 @@ internal static class H3Encoder
         var j = Math.Max(0, Math.Min(2, ijk.J));
         var k = Math.Max(0, Math.Min(2, ijk.K));
         
-        return FaceIjkBaseCells[face, i, j, k];
+        return FaceIjkBaseCells[face, i, j, k].BaseCell;
     }
 
     /// <summary>
@@ -983,7 +1224,20 @@ internal static class H3Encoder
         var j = Math.Max(0, Math.Min(2, fijk.Coord.J));
         var k = Math.Max(0, Math.Min(2, fijk.Coord.K));
         
-        return FaceIjkBaseCells[fijk.Face, i, j, k];
+        return FaceIjkBaseCells[fijk.Face, i, j, k].BaseCell;
+    }
+
+    /// <summary>
+    /// Returns the number of CCW 60° rotations needed to align the face IJK coordinate system
+    /// with the canonical orientation of the base cell at that location.
+    /// </summary>
+    private static int FaceIJKToBaseCellCCWRot60(FaceIJK fijk)
+    {
+        var i = Math.Max(0, Math.Min(2, fijk.Coord.I));
+        var j = Math.Max(0, Math.Min(2, fijk.Coord.J));
+        var k = Math.Max(0, Math.Min(2, fijk.Coord.K));
+
+        return FaceIjkBaseCells[fijk.Face, i, j, k].CcwRot60;
     }
 
     /// <summary>
@@ -998,6 +1252,15 @@ internal static class H3Encoder
         }
         
         return BaseCellDataTable[baseCell].Face;
+    }
+
+    /// <summary>
+    /// Returns true if the specified face is a CW offset face for the given pentagon base cell.
+    /// </summary>
+    private static bool BaseCellIsCwOffset(int baseCell, int face)
+    {
+        var data = BaseCellDataTable[baseCell];
+        return data.CwOffsetFace1 == face || data.CwOffsetFace2 == face;
     }
 
     // ===== Hexagonal Grid Coordinates =====
@@ -1736,7 +1999,32 @@ internal static class H3Encoder
         // Set reserved bits to 0
         index = index & ~(0x7UL << H3ReservedOffset);
         
-        // TODO: Handle pentagon rotation if needed
+        // Rotate into canonical orientation for this base cell
+        var numRots = FaceIJKToBaseCellCCWRot60(baseCellFijk);
+        var isPentagon = IsPentagon(baseCell);
+
+        if (isPentagon)
+        {
+            // If the leading non-zero digit is 1, rotate around the pentagon's missing sequence
+            if (GetLeadingNonZeroDigit(index, resolution) == 1)
+            {
+                index = BaseCellIsCwOffset(baseCell, baseCellFijk.Face)
+                    ? RotateH3Index60cw(index, resolution)
+                    : RotateH3Index60ccw(index, resolution);
+            }
+
+            for (var i = 0; i < numRots; i++)
+            {
+                index = RotatePentagon60ccw(index, resolution);
+            }
+        }
+        else
+        {
+            for (var i = 0; i < numRots; i++)
+            {
+                index = RotateH3Index60ccw(index, resolution);
+            }
+        }
         
         return index;
     }
@@ -1917,6 +2205,76 @@ internal static class H3Encoder
             newIndex = (newIndex & ~(H3DigitMask << digitOffset)) | ((ulong)rotatedDigit << digitOffset);
         }
         
+        return newIndex;
+    }
+
+    /// <summary>
+    /// Rotates an H3 index 60 degrees counter-clockwise (hexagons).
+    /// </summary>
+    private static ulong RotateH3Index60ccw(ulong index, int resolution)
+    {
+        var newIndex = index;
+
+        for (var r = 1; r <= resolution; r++)
+        {
+            var digitOffset = (MaxH3Resolution - r) * H3PerDigitOffset;
+            var digit = (int)((newIndex >> digitOffset) & H3DigitMask);
+
+            var rotatedDigit = digit switch
+            {
+                1 => 2,
+                2 => 3,
+                3 => 4,
+                4 => 5,
+                5 => 1,
+                6 => 6,
+                _ => 0
+            };
+
+            newIndex = (newIndex & ~(H3DigitMask << digitOffset)) | ((ulong)rotatedDigit << digitOffset);
+        }
+
+        return newIndex;
+    }
+
+    /// <summary>
+    /// Rotates an H3 pentagon index 60 degrees counter-clockwise, handling the missing k-axis.
+    /// </summary>
+    private static ulong RotatePentagon60ccw(ulong index, int resolution)
+    {
+        var newIndex = index;
+        var foundFirstNonZero = false;
+
+        for (var r = 1; r <= resolution; r++)
+        {
+            var digitOffset = (MaxH3Resolution - r) * H3PerDigitOffset;
+            var digit = (int)((newIndex >> digitOffset) & H3DigitMask);
+
+            digit = digit switch
+            {
+                1 => 2,
+                2 => 3,
+                3 => 4,
+                4 => 5,
+                5 => 1,
+                6 => 6,
+                _ => 0
+            };
+
+            newIndex = (newIndex & ~(H3DigitMask << digitOffset)) | ((ulong)digit << digitOffset);
+
+            if (!foundFirstNonZero && digit != 0)
+            {
+                foundFirstNonZero = true;
+
+                // Adjust for deleted k-axis sequence
+                if (GetLeadingNonZeroDigit(newIndex, resolution) == 1)
+                {
+                    newIndex = RotateH3Index60ccw(newIndex, resolution);
+                }
+            }
+        }
+
         return newIndex;
     }
     
@@ -2304,8 +2662,9 @@ internal static class H3Encoder
     /// </summary>
     private static double PosAngleRads(double rads)
     {
-        var tmp = rads < 0.0 ? rads + Math.PI * 2.0 : rads;
-        if (rads >= Math.PI * 2.0) tmp -= Math.PI * 2.0;
+        var twoPi = Math.PI * 2.0;
+        var tmp = rads % twoPi;
+        if (tmp < 0.0) tmp += twoPi;
         return tmp;
     }
     
